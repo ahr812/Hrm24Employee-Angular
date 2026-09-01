@@ -8,7 +8,7 @@ import { ChatService } from '../../../core/chat/chat.service';
 import { AuthService } from '../../../core/auth/auth.service';
 import { Fish24PermissionService } from '../../../core/fish24/permissions/fish24-permission.service';
 import { Fish24RolePreviewService } from '../../../core/fish24/dev/fish24-role-preview.service';
-import { FISH24_ADMIN_NAV_CONFIG, FISH24_NAV_CONFIG } from '../navigation/fish24-nav.config';
+import { getFish24NavigationConfig } from '../navigation/fish24-nav.config';
 import { Fish24NavItem } from '../navigation/nav-item.model';
 import { Fish24RoleId } from '../../../core/fish24/models/fish24-role.model';
 
@@ -37,6 +37,7 @@ interface NavItem {
           <option value="super-admin">مدیر اصلی سامانه</option>
           <option value="sales-expert">کارشناس فروش</option>
           <option value="support-expert">کارشناس پشتیبانی</option>
+          <option value="employer">کارفرما</option>
         </select>
       </div>
 
@@ -44,8 +45,8 @@ interface NavItem {
       <nav class="flex-1 overflow-y-auto p-4 space-y-1.5">
         <div class="h-4"></div>
         
-        <!-- Fish24 Admin Navigation -->
-        @for (item of filteredAdminItems(); track item.id) {
+        <!-- Fish24 Role-Aware Navigation -->
+        @for (item of filteredNavigationItems(); track item.id) {
           <div>
             @if (item.children && item.children.length > 0) {
               <!-- Group with children - expandable -->
@@ -117,13 +118,14 @@ interface NavItem {
           <option value="super-admin">مدیر</option>
           <option value="sales-expert">فروش</option>
           <option value="support-expert">پشتیبانی</option>
+          <option value="employer">کارفرما</option>
         </select>
       </div>
 
       <nav class="flex-1 overflow-y-auto px-3 pb-3 pt-2">
         <div class="space-y-2">
-          <!-- Mobile Admin Items -->
-          @for (item of filteredAdminItems(); track item.id) {
+          <!-- Mobile Fish24 Navigation Items -->
+          @for (item of filteredNavigationItems(); track item.id) {
             <div>
               @if (item.children && item.children.length > 0) {
                 <!-- Mobile group with expandable children -->
@@ -279,10 +281,11 @@ export class SidebarComponent {
   // Track which groups are expanded
   private expandedGroups = signal<Set<string>>(new Set());
 
-  // Computed filtered admin navigation based on preview role
-  filteredAdminItems = computed(() => {
+  // Computed Fish24 navigation for every active preview role.
+  filteredNavigationItems = computed(() => {
     const previewRoles = this.previewRoleService.getPreviewRoles();
-    return this.filterNavItems(FISH24_ADMIN_NAV_CONFIG, previewRoles);
+    const navigationItems = getFish24NavigationConfig(previewRoles);
+    return this.filterNavItems(navigationItems, previewRoles);
   });
 
   /**

@@ -21,6 +21,7 @@ export const FISH24_PERMISSIONS = {
   employerInvoices: 'employer-invoices',
   employerTickets: 'employer-tickets',
   employerEmployeeNotifications: 'employer-employee-notifications',
+  systemTraining: 'system-training',
   personalDocuments: 'personal-documents',
   employeeNotifications: 'employee-notifications',
   profile: 'profile'

@@ -5,7 +5,7 @@ import { Fish24RoleId } from '../models/fish24-role.model';
 /**
  * TEMPORARY DEVELOPMENT SERVICE
  * 
- * This service provides a role preview mechanism for testing Fish24 administration
+ * This service provides a role preview mechanism for testing Fish24 role-aware
  * menu visibility and permission filtering during development.
  * 
  * It is NOT a production authentication mechanism.
@@ -26,11 +26,11 @@ export class Fish24RolePreviewService {
   }
 
   /**
-   * Set the preview role for testing administration menu visibility.
-   * Valid roles: 'super-admin' | 'sales-expert' | 'support-expert'
+   * Set the preview role for testing navigation visibility.
+   * Valid roles: 'super-admin' | 'sales-expert' | 'support-expert' | 'employer'
    */
   setPreviewRole(role: Fish24RoleId) {
-    if (['super-admin', 'sales-expert', 'support-expert'].includes(role)) {
+    if (['super-admin', 'sales-expert', 'support-expert', 'employer'].includes(role)) {
       this.currentPreviewRole.set(role);
     }
   }

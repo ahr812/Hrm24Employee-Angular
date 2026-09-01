@@ -1,4 +1,5 @@
 import { Fish24NavItem } from './nav-item.model';
+import { Fish24RoleId } from '../../../core/fish24/models/fish24-role.model';
 
 /**
  * Fish24 Administration Navigation Configuration
@@ -190,6 +191,114 @@ export const FISH24_ADMIN_NAV_CONFIG: readonly Fish24NavItem[] = [
     ]
   }
 ];
+
+/**
+ * Fish24 Employer navigation.
+ *
+ * These entries intentionally have no routes until their Fish24 pages are
+ * migrated. Item visibility is still evaluated by Fish24PermissionService.
+ */
+export const FISH24_EMPLOYER_NAV_CONFIG: readonly Fish24NavItem[] = [
+  {
+    id: 'fish24-employer-dashboard',
+    label: 'داشبورد',
+    icon: 'dashboard',
+    permission: 'dashboard'
+  },
+  {
+    id: 'fish24-employer-profile',
+    label: 'پروفایل',
+    icon: 'user',
+    permission: 'profile'
+  },
+  {
+    id: 'fish24-employer-change-password',
+    label: 'تغییر رمز ثابت',
+    icon: 'key',
+    permission: 'profile'
+  },
+  {
+    id: 'fish24-employer-wallet',
+    label: 'کیف پول',
+    icon: 'wallet',
+    permission: 'employer-wallet'
+  },
+  {
+    id: 'fish24-employer-companies-workshops',
+    label: 'شرکت‌ها و کارگاه‌ها',
+    icon: 'briefcase',
+    permission: 'employer-companies-workshops'
+  },
+  {
+    id: 'fish24-employer-outgoing-documents',
+    label: 'فیش‌ها و اسناد ارسالی',
+    icon: 'file-text',
+    permission: 'employer-outgoing-documents'
+  },
+  {
+    id: 'fish24-employer-invoices',
+    label: 'لیست فاکتورها',
+    icon: 'file-text',
+    permission: 'employer-invoices'
+  },
+  {
+    id: 'fish24-employer-employees',
+    label: 'کارکنان تحت پوشش',
+    icon: 'users',
+    permission: 'employer-employees'
+  },
+  {
+    id: 'fish24-employer-tickets',
+    label: 'فهرست تیکت‌ها',
+    icon: 'ticket',
+    permission: 'employer-tickets'
+  },
+  {
+    id: 'fish24-employer-employee-notifications',
+    label: 'اطلاع‌رسانی کارکنان',
+    icon: 'bell',
+    permission: 'employer-employee-notifications'
+  },
+  {
+    id: 'fish24-employer-personal-documents',
+    label: 'اسناد شخصی من',
+    icon: 'save',
+    permission: 'personal-documents'
+  },
+  {
+    id: 'fish24-employer-system-training',
+    label: 'آموزش سامانه',
+    icon: 'graduation-cap',
+    permission: 'system-training'
+  }
+];
+
+const FISH24_ADMIN_ROLE_IDS: readonly Fish24RoleId[] = [
+  'super-admin',
+  'sales-expert',
+  'support-expert'
+];
+
+/**
+ * Select navigation areas for all active roles.
+ *
+ * Keeping this selection centralized preserves multi-role union compatibility;
+ * permission filtering for every selected item remains in the sidebar's
+ * Fish24PermissionService integration.
+ */
+export function getFish24NavigationConfig(roles: readonly Fish24RoleId[]): readonly Fish24NavItem[] {
+  const items: Fish24NavItem[] = [];
+
+  if (roles.some(role => FISH24_ADMIN_ROLE_IDS.includes(role))) {
+    items.push(...FISH24_ADMIN_NAV_CONFIG);
+  }
+
+  if (roles.includes('employer')) {
+    items.push(...FISH24_EMPLOYER_NAV_CONFIG);
+  }
+
+  return items;
+}
 
 /**
  * Employee/Employer personal navigation (for future phases).

@@ -228,6 +228,10 @@ describe('Fish24PermissionService', () => {
       expect(service.hasPermission(employerUser, FISH24_PERMISSIONS.employerEmployeeNotifications)).toBe(true);
     });
 
+    it('employer should have systemTraining', () => {
+      expect(service.hasPermission(employerUser, FISH24_PERMISSIONS.systemTraining)).toBe(true);
+    });
+
     it('employer should have personalDocuments', () => {
       expect(service.hasPermission(employerUser, FISH24_PERMISSIONS.personalDocuments)).toBe(true);
     });
