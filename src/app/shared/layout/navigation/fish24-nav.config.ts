@@ -273,6 +273,33 @@ export const FISH24_EMPLOYER_NAV_CONFIG: readonly Fish24NavItem[] = [
   }
 ];
 
+/**
+ * Fish24 Employee navigation.
+ *
+ * Employee pages have not been migrated yet, so every item intentionally
+ * remains non-routed and is filtered through Fish24PermissionService.
+ */
+export const FISH24_EMPLOYEE_NAV_CONFIG: readonly Fish24NavItem[] = [
+  {
+    id: 'fish24-employee-personal-documents',
+    label: 'اسناد من',
+    icon: 'save',
+    permission: 'personal-documents'
+  },
+  {
+    id: 'fish24-employee-profile',
+    label: 'پروفایل',
+    icon: 'user',
+    permission: 'profile'
+  },
+  {
+    id: 'fish24-employee-notifications',
+    label: 'اطلاع‌رسانی',
+    icon: 'bell',
+    permission: 'employee-notifications'
+  }
+];
+
 const FISH24_ADMIN_ROLE_IDS: readonly Fish24RoleId[] = [
   'super-admin',
   'sales-expert',
@@ -297,33 +324,9 @@ export function getFish24NavigationConfig(roles: readonly Fish24RoleId[]): reado
     items.push(...FISH24_EMPLOYER_NAV_CONFIG);
   }
 
+  if (roles.includes('employee')) {
+    items.push(...FISH24_EMPLOYEE_NAV_CONFIG);
+  }
+
   return items;
 }
-
-/**
- * Employee/Employer personal navigation (for future phases).
- * Currently not used in this task.
- */
-export const FISH24_NAV_CONFIG: readonly Fish24NavItem[] = [
-  {
-    id: 'fish24-dashboard',
-    label: 'داشبورد',
-    icon: 'dashboard',
-    route: '/dashboard',
-    permission: 'dashboard'
-  },
-  {
-    id: 'fish24-my-documents',
-    label: 'اسناد من',
-    icon: 'save',
-    route: '/documents',
-    permission: 'personal-documents'
-  },
-  {
-    id: 'fish24-profile',
-    label: 'پروفایل',
-    icon: 'user',
-    route: '/profile',
-    permission: 'profile'
-  }
-];

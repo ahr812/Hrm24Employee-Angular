@@ -38,6 +38,7 @@ interface NavItem {
           <option value="sales-expert">کارشناس فروش</option>
           <option value="support-expert">کارشناس پشتیبانی</option>
           <option value="employer">کارفرما</option>
+          <option value="employee">کارمند</option>
         </select>
       </div>
 
@@ -119,6 +120,7 @@ interface NavItem {
           <option value="sales-expert">فروش</option>
           <option value="support-expert">پشتیبانی</option>
           <option value="employer">کارفرما</option>
+          <option value="employee">کارمند</option>
         </select>
       </div>
 

@@ -27,10 +27,10 @@ export class Fish24RolePreviewService {
 
   /**
    * Set the preview role for testing navigation visibility.
-   * Valid roles: 'super-admin' | 'sales-expert' | 'support-expert' | 'employer'
+   * Valid roles: 'super-admin' | 'sales-expert' | 'support-expert' | 'employer' | 'employee'
    */
   setPreviewRole(role: Fish24RoleId) {
-    if (['super-admin', 'sales-expert', 'support-expert', 'employer'].includes(role)) {
+    if (['super-admin', 'sales-expert', 'support-expert', 'employer', 'employee'].includes(role)) {
       this.currentPreviewRole.set(role);
     }
   }
