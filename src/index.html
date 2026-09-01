@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+
+<head>
+  <meta charset="utf-8">
+  <title>Fish24 | فیش24</title>
+  <base href="/">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="description" content="فیش24 | تحویل اسناد و فیش حقوقی">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="manifest" href="manifest.webmanifest">
+
+  <!-- ═══ Preload Critical Fonts ═══ -->
+  <link rel="preload" href="assets/fonts/Vazirmatn-Regular.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/Vazirmatn-Bold.woff2" as="font" type="font/woff2" crossorigin>
+
+  <style>
+    /* ── Loading Screen ── */
+    #app-loader {
+      position: fixed;
+      inset: 0;
+      z-index: 99999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #f8fafc;
+      transition: opacity 0.5s ease, visibility 0.5s ease;
+    }
+
+    #app-loader.fade-out {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 3px solid rgba(59, 130, 246, 0.15);
+      border-top-color: #3b82f6;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 20px;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .loader-brand {
+      font-size: 24px;
+      font-weight: 900;
+      color: #1e293b;
+      letter-spacing: 2px;
+      direction: ltr;
+      margin-bottom: 6px;
+    }
+
+    .loader-text {
+      font-size: 13px;
+      color: #64748b;
+      font-family: Tahoma, sans-serif;
+    }
+
+    /* ── Alert Banners ── */
+    .alert-banner {
+      display: none;
+      position: fixed;
+      left: 0;
+      right: 0;
+      z-index: 100000;
+      text-align: center;
+      padding: 8px 12px;
+      font-family: Tahoma, sans-serif;
+      font-size: clamp(11px, 2.8vw, 13px);
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.4;
+    }
+
+    #offline-banner {
+      background: #ef4444;
+      color: white;
+    }
+
+    #offline-banner:hover {
+      background: #dc2626;
+    }
+
+    #vpn-banner {
+      background: #f59e0b;
+      color: #1e293b;
+    }
+
+    #vpn-banner:hover {
+      background: #d97706;
+    }
+
+    /* ── Hide app until ready ── */
+    app-root {
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    app-root.app-ready {
+      opacity: 1;
+    }
+
+    /* Dark mode */
+    @media (prefers-color-scheme: dark) {
+      #app-loader {
+        background: #0f172a;
+      }
+
+      .loader-brand {
+        color: #e2e8f0;
+      }
+
+      .loader-text {
+        color: #94a3b8;
+      }
+
+      .spinner {
+        border-color: rgba(59, 130, 246, 0.15);
+        border-top-color: #3b82f6;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Loading Screen -->
+  <div id="app-loader">
+    <div class="spinner"></div>
+    <div class="loader-brand">Fish24</div>
+    <div class="loader-text">لطفاً صبر کنید...</div>
+  </div>
+
+  <!-- Offline Banner (always first in DOM = always top when visible) -->
+  <div id="offline-banner" class="alert-banner" onclick="location.reload()">
+    ⚠️ اینترنت قطع است — کلیک برای تلاش مجدد
+  </div>
+
+  <!-- VPN Banner (always second in DOM = below offline when both visible) -->
+  <div id="vpn-banner" class="alert-banner">
+    🛡️ VPN روشن است — لطفاً قطع کنید
+  </div>
+
+  <app-root></app-root>
+
+  <script>
+    // ══════════════════════════════════════
+    // Font Loading
+    // ══════════════════════════════════════
+    var fontsLoaded = false;
+    var appRendered = false;
+
+    function loadFonts() {
+      if (!window.FontFace) {
+        fontsLoaded = true;
+        tryHideLoader();
+        return;
+      }
+
+      var regular = new FontFace('Vazirmatn', 'url(assets/fonts/Vazirmatn-Regular.woff2)', { weight: '400', style: 'normal' });
+      var bold = new FontFace('Vazirmatn', 'url(assets/fonts/Vazirmatn-Bold.woff2)', { weight: '700', style: 'normal' });
+
+      Promise.all([regular.load(), bold.load()])
+        .then(function (loadedFonts) {
+          loadedFonts.forEach(function (f) { document.fonts.add(f); });
+          fontsLoaded = true;
+          tryHideLoader();
+        })
+        .catch(function () {
+          fontsLoaded = true;
+          tryHideLoader();
+        });
+    }
+
+    function tryHideLoader() {
+      if (fontsLoaded && appRendered) {
+        var loader = document.getElementById('app-loader');
+        var appRoot = document.querySelector('app-root');
+        if (loader) {
+          loader.classList.add('fade-out');
+          setTimeout(function () { loader.style.display = 'none'; }, 500);
+        }
+        if (appRoot) {
+          appRoot.classList.add('app-ready');
+        }
+      }
+    }
+
+    loadFonts();
+
+    var checkApp = setInterval(function () {
+      var appRoot = document.querySelector('app-root');
+      if (appRoot && appRoot.children.length > 0 && appRoot.innerHTML.trim().length > 50) {
+        appRendered = true;
+        clearInterval(checkApp);
+        tryHideLoader();
+      }
+    }, 100);
+
+    setTimeout(function () {
+      fontsLoaded = true;
+      appRendered = true;
+      tryHideLoader();
+      clearInterval(checkApp);
+    }, 10000);
+
+    // ══════════════════════════════════════
+    // Banner Positioning
+    // Rule: Offline always top:0, VPN always below offline
+    // Single banner always at top:0
+    // ══════════════════════════════════════
+    function repositionBanners() {
+      var vpn = document.getElementById('vpn-banner');
+      var offline = document.getElementById('offline-banner');
+      var vpnVisible = vpn && vpn.style.display === 'block';
+      var offlineVisible = offline && offline.style.display === 'block';
+
+      if (offlineVisible && vpnVisible) {
+        offline.style.top = '0';
+        vpn.style.top = '32px';
+      } else {
+        if (offline) offline.style.top = '0';
+        if (vpn) vpn.style.top = '0';
+      }
+    }
+
+    // ══════════════════════════════════════
+    // Offline Detection
+    // ══════════════════════════════════════
+    function updateOnlineStatus() {
+      var banner = document.getElementById('offline-banner');
+      if (banner) {
+        banner.style.display = navigator.onLine ? 'none' : 'block';
+      }
+      repositionBanners();
+    }
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+    updateOnlineStatus();
+
+    // ══════════════════════════════════════
+    // VPN Detection - Fetch based, no cache
+    // ══════════════════════════════════════
+    (function () {
+      var activeRequest = null;
+
+      function setVPNBanner(visible) {
+        var el = document.getElementById('vpn-banner');
+        if (el) {
+          el.style.display = visible ? 'block' : 'none';
+          repositionBanners();
+        }
+      }
+
+      window.__checkVPN = function () {
+        // Cancel any pending request to avoid stale responses
+        if (activeRequest) {
+          activeRequest.abort();
+          activeRequest = null;
+        }
+
+        var controller = new AbortController();
+        activeRequest = controller;
+
+        fetch('https://ipapi.co/json/', {
+          signal: controller.signal,
+          cache: 'no-store'
+        })
+          .then(function (response) {
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            return response.json();
+          })
+          .then(function (data) {
+            // Only process if this is still the active request
+            if (activeRequest !== controller) return;
+            activeRequest = null;
+
+            if (data && data.country_code) {
+              setVPNBanner(data.country_code !== 'IR');
+            }
+          })
+          .catch(function (err) {
+            if (err.name === 'AbortError') return;
+            // Network error or parse error → don't change banner state
+            activeRequest = null;
+          });
+      };
+
+      // VPN banner click handler
+      var vpnBanner = document.getElementById('vpn-banner');
+      if (vpnBanner) {
+        vpnBanner.onclick = function () {
+          this.style.display = 'none';
+          repositionBanners();
+        };
+      }
+
+      // Initial check
+      window.__checkVPN();
+    })();
+  </script>
+</body>
+
+</html>

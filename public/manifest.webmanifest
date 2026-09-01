@@ -1,0 +1,21 @@
+{
+  "name": "Fish24 | پلتفرم فیش‌ حقوقی",
+  "short_name": "Fish24",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#1e293b",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "images/logofull.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "images/logofull.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}

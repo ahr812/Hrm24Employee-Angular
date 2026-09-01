@@ -1,0 +1,224 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* === متغیرهای CSS پایه === */
+:root {
+    --color-background: 255 255 255;
+    --color-foreground: 15 23 42;
+    --color-surface: 248 250 252;
+    --color-border: 226 232 240;
+    --color-muted: 100 116 139;
+    --color-success: 16 185 129;
+    --color-warning: 245 158 11;
+    --color-danger: 239 68 68;
+    --color-info: 59 130 246;
+    --color-primary: 59 130 246;
+    --color-primary-hover: 37 99 235;
+}
+
+.dark {
+    --color-background: 15 23 42;
+    --color-foreground: 241 245 249;
+    --color-surface: 30 41 59;
+    --color-border: 51 65 85;
+    --color-muted: 148 163 184;
+}
+
+[data-theme="blue"] {
+    --color-primary: 59 130 246;
+    --color-primary-hover: 37 99 235;
+}
+
+[data-theme="green"] {
+    --color-primary: 16 185 129;
+    --color-primary-hover: 5 150 105;
+}
+
+[data-theme="purple"] {
+    --color-primary: 139 92 246;
+    --color-primary-hover: 124 58 237;
+}
+
+[data-theme="orange"] {
+    --color-primary: 249 115 22;
+    --color-primary-hover: 234 88 12;
+}
+
+@font-face {
+    font-family: 'Vazirmatn';
+    src: url('/assets/fonts/Vazirmatn-Regular.woff2') format('woff2');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Vazirmatn';
+    src: url('/assets/fonts/Vazirmatn-Bold.woff2') format('woff2');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+* {
+    font-family: 'Vazirmatn', sans-serif;
+}
+
+body {
+    background-color: rgb(var(--color-background));
+    color: rgb(var(--color-foreground));
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.dir-ltr {
+    direction: ltr;
+}
+
+@keyframes fade-in {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes scale-in {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.animate-fade-in {
+    animation: fade-in 0.2s ease-out;
+}
+
+.animate-scale-in {
+    animation: scale-in 0.2s ease-out;
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgb(var(--color-surface));
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgb(var(--color-muted) / 0.3);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgb(var(--color-muted) / 0.5);
+}
+
+/* ═══════════════════════════════════════════════════════════ */
+/* ✅ استایل‌های چاپ اصلاح شده و هوشمند (فشرده‌سازی برای ۱ صفحه) */
+/* ═══════════════════════════════════════════════════════════ */
+@media print {
+    @page {
+        size: A4 landscape;
+        margin: 0.5cm;
+    }
+
+    /* ۱. شکستن قفل‌های ارتفاع و اسکرول */
+    html,
+    body {
+        height: auto !important;
+        min-height: 0 !important;
+        overflow: visible !important;
+        background: white !important;
+        color: black !important;
+    }
+
+    /* ۲. مخفی کردن هوشمندانه اجزای رابط کاربری */
+    aside,
+    header,
+    nav,
+    button,
+    .sticky,
+    .print\:hidden {
+        display: none !important;
+    }
+
+    /* ۳. آزادسازی کانتینر اصلی */
+    main,
+    .flex-1,
+    .min-h-screen,
+    .overflow-y-auto {
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        overflow: visible !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 100% !important;
+        background: white !important;
+    }
+
+    /* ═══════════════════════════════════════════════════════ */
+    /* ۴. تنظیمات اختصاصی برای جای دادن ۴ ستون در یک صفحه */
+    /* ═══════════════════════════════════════════════════════ */
+    #payslip-content {
+        max-width: 100% !important;
+        width: 100% !important;
+        padding: 0 !important;
+        /* حذف پدینگ اضافی کانتینر برای صرفه‌جویی در فضا */
+        margin: 0 !important;
+        font-size: 8px !important;
+        /* کمی کوچک‌تر کردن فونت برای جا شدن مطمئن */
+        line-height: 1.2 !important;
+    }
+
+    /* اجبار گرید به ۴ ستون مساوی در حالت چاپ (صرف‌نظر از breakpointهای Tailwind) */
+    #payslip-content .grid {
+        display: grid !important;
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 0.25rem !important;
+        /* کاهش فاصله بین ستون‌ها */
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+    }
+
+    /* اطمینان از اینکه هر ستون دقیقاً ۱ واحد از ۴ واحد را اشغال کند */
+    #payslip-content .col-span-1,
+    #payslip-content .md\:col-span-1,
+    #payslip-content .xl\:col-span-3 {
+        grid-column: span 1 !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+    }
+
+    /* فشرده‌سازی پدینگ داخلی باکس‌ها در حالت چاپ */
+    #payslip-content .p-1,
+    #payslip-content .p-1\.5,
+    #payslip-content .p-2 {
+        padding: 0.25rem !important;
+    }
+
+    /* ۵. اجبار به چاپ رنگ‌های پس‌زمینه */
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        box-shadow: none !important;
+    }
+
+    /* ۶. خنثی‌سازی دارک مود در چاپ */
+    .dark,
+    .dark * {
+        background-color: white !important;
+        color: black !important;
+        border-color: #cbd5e1 !important;
+    }
+}

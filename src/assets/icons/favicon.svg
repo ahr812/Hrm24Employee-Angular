@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" id="Layer_2" data-name="Layer 2" viewBox="0 0 71.03 69.82" width="71.03" height="69.82"><metadata><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:dc="http://purl.org/dc/elements/1.1/"><rdf:Description><dc:creator>RealFaviconGenerator</dc:creator><dc:source>https://realfavicongenerator.net</dc:source></rdf:Description></rdf:RDF></metadata><defs>
+    <style>
+      .cls-1 {
+        fill: #097dc2;
+      }
+
+      .cls-2 {
+        fill: #f26722;
+      }
+    </style>
+  </defs><g id="Layer_1-2" data-name="Layer 1">
+    <g>
+      <path class="cls-1" d="m44.94,11.64v17.05c0,.22-.19.4-.44.4h-18.19c-.44,0-.66-.2-.66-.6V11.77c0-.29-.25-.53-.57-.53h-11.15c-.37,0-.55.17-.55.5v16.96c0,.26-.15.4-.44.4H.69c-.25,0-.44-.18-.45-.4-.04-6.45-1.07-16.27,1.46-21.35C3.9,2.88,8.42.01,13.95,0,32.27,0,50.26,0,67.93.01c1.58,0,2.86,1.17,2.87,2.62l.02,25.96c0,.34-.18.51-.55.51h-12.39c-.44,0-.66-.2-.66-.6V11.64c0-.22-.19-.4-.44-.4h-11.4c-.29,0-.44.14-.44.4h0Z"></path>
+      <path class="cls-2" d="m14.26,58.39h11.18c.44,0,.66-.2.66-.6v-16.85c0-.22.19-.4.44-.4h18.41c.25,0,.44.18.44.4v17.05c0,.26.15.4.44.4h11.18c.44,0,.66-.2.66-.6v-16.85c0-.26.15-.4.44-.4h12.27c.3,0,.45.14.45.41,0,11.69,3.31,28.83-15.61,28.87-17.36.02-34.59.02-51.67,0-1.81,0-3.29-1.35-3.29-3.01v-25.87c0-.22.19-.4.44-.4h12.71c.29,0,.44.14.44.4v17.05c0,.26.15.4.44.4h0Z"></path>
+    </g>
+  </g><style>@media (prefers-color-scheme: light) { :root { filter: none; } }
+@media (prefers-color-scheme: dark) { :root { filter: none; } }
+</style></svg>
