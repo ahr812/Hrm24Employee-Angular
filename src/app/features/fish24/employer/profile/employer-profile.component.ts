@@ -1,6 +1,5 @@
 import { NgClass } from '@angular/common';
 import { Component, isDevMode, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { IconComponent } from '../../../../shared/ui/icon/icon.component';
 
 type EmployerProfilePreviewState = 'approved' | 'unapproved';
@@ -32,11 +31,11 @@ interface EmployerProfileField {
   readonly id: string;
   readonly key: EmployerProfileFieldKey;
   readonly label: string;
-  readonly control?: 'input' | 'textarea';
-  readonly inputType?: 'text' | 'email' | 'tel';
+  readonly control?: 'input' | 'select' | 'textarea';
   readonly inputMode?: 'text' | 'email' | 'tel' | 'numeric';
   readonly direction?: 'ltr';
   readonly fullWidth?: boolean;
+  readonly options?: readonly string[];
 }
 
 interface EmployerProfileSection {
@@ -70,9 +69,9 @@ const INITIAL_EMPLOYER_PROFILE: EmployerProfileFormModel = {
 @Component({
   selector: 'app-employer-profile',
   standalone: true,
-  imports: [FormsModule, NgClass, IconComponent],
+  imports: [NgClass, IconComponent],
   template: `
-    <div class="max-w-[95%] mx-auto space-y-6 sm:space-y-8 animate-fade-in-up" dir="rtl">
+    <div class="max-w-[95%] mx-auto space-y-5 sm:space-y-6 animate-fade-in-up" dir="rtl">
       <header class="flex items-center gap-4">
         <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
           <ui-icon name="user" [size]="30" class="text-primary"></ui-icon>
@@ -141,71 +140,69 @@ const INITIAL_EMPLOYER_PROFILE: EmployerProfileFormModel = {
         </div>
       </section>
 
-      <form class="space-y-5 sm:space-y-6" (ngSubmit)="saveProfile()">
+      <form class="space-y-4 sm:space-y-5" autocomplete="off" (submit)="saveProfile($event)">
         @for (row of profileSectionRows; track $index) {
-          <div class="grid grid-cols-1 xl:grid-cols-2 gap-5 sm:gap-6 items-stretch">
+          <div class="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-5 items-stretch">
             @for (section of row; track section.id) {
-              <section class="h-full flex flex-col rounded-2xl border border-border bg-surface p-4 sm:p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800" [attr.aria-labelledby]="section.id + '-title'">
-                <div class="mb-4 sm:mb-5 flex items-center gap-3 border-b border-border pb-4 dark:border-slate-700">
+              <section class="h-full flex flex-col rounded-2xl border border-border bg-surface p-4 sm:p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800" [attr.aria-labelledby]="section.id + '-title'">
+                <div class="mb-3 sm:mb-4 flex items-center gap-3 border-b border-border pb-3 dark:border-slate-700">
                   <div class="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
                     <ui-icon [name]="section.icon" [size]="22"></ui-icon>
                   </div>
                   <h2 [id]="section.id + '-title'" class="text-lg sm:text-xl font-bold text-foreground dark:text-slate-100">{{ section.title }}</h2>
                 </div>
 
-                @if (profilePreviewState() === 'approved') {
-                  <dl class="flex-1 grid grid-cols-1 sm:grid-cols-2 auto-rows-fr gap-3">
-                    @for (field of section.fields; track field.id) {
-                      <div
-                        class="min-w-0 rounded-xl border border-border bg-background/70 p-3.5 sm:p-4 dark:border-slate-700 dark:bg-slate-900/50"
-                        [ngClass]="{ 'sm:col-span-2': field.fullWidth }">
-                        <dt class="text-xs sm:text-sm leading-5 text-muted">{{ field.label }}</dt>
-                        <dd
-                          class="mt-2 min-w-0 break-words text-sm sm:text-base font-bold leading-7 text-right text-foreground dark:text-slate-100"
-                          [class.break-all]="field.direction === 'ltr'"
-                          [attr.dir]="field.direction ?? null">
-                          {{ savedProfile()[field.key] }}
-                        </dd>
-                      </div>
-                    }
-                  </dl>
-                } @else {
-                  <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 auto-rows-fr gap-3">
-                    @for (field of section.fields; track field.id) {
-                      <div class="min-w-0" [ngClass]="{ 'sm:col-span-2': field.fullWidth }">
-                        <label [for]="field.id" class="mb-2 block text-xs sm:text-sm font-bold leading-5 text-muted">{{ field.label }}</label>
-                        @if (field.control === 'textarea') {
-                          <textarea
-                            [id]="field.id"
-                            [name]="field.id"
-                            [ngModel]="draftProfile[field.key]"
-                            (ngModelChange)="updateDraftField(field.key, $event)"
-                            rows="3"
-                            class="min-h-24 w-full resize-y rounded-xl border border-border bg-background px-3.5 py-3 text-sm leading-7 text-right text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
-                          </textarea>
-                        } @else {
-                          <input
-                            [id]="field.id"
-                            [name]="field.id"
-                            [type]="field.inputType ?? 'text'"
-                            [attr.inputmode]="field.inputMode ?? null"
-                            [attr.dir]="field.direction ?? null"
-                            [ngModel]="draftProfile[field.key]"
-                            (ngModelChange)="updateDraftField(field.key, $event)"
-                            class="w-full rounded-xl border border-border bg-background px-3.5 py-3 text-sm font-semibold text-right text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
-                        }
-                      </div>
-                    }
-                  </div>
-                }
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-2.5 sm:gap-x-4 sm:gap-y-3">
+                  @for (field of section.fields; track field.id) {
+                    <div class="min-w-0" [ngClass]="{ 'sm:col-span-2': field.fullWidth }">
+                      <label [for]="field.id" class="mb-1.5 block text-xs sm:text-sm font-bold leading-5 text-muted">{{ field.label }}</label>
+                      @if (field.control === 'textarea') {
+                        <textarea
+                          [id]="field.id"
+                          [readonly]="profilePreviewState() === 'approved'"
+                          [attr.aria-readonly]="profilePreviewState() === 'approved'"
+                          [value]="profileFieldValue(field.key)"
+                          (input)="onProfileFieldInput(field.key, $event)"
+                          rows="3"
+                          autocomplete="off"
+                          class="min-h-20 w-full resize-y rounded-xl border border-border bg-background px-3 py-2.5 text-sm leading-6 text-right text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 read-only:cursor-text read-only:resize-none dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+                        </textarea>
+                      } @else if (field.control === 'select') {
+                        <select
+                          [id]="field.id"
+                          [disabled]="profilePreviewState() === 'approved'"
+                          [attr.aria-readonly]="profilePreviewState() === 'approved'"
+                          [value]="profileFieldValue(field.key)"
+                          (change)="onProfileFieldInput(field.key, $event)"
+                          class="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-semibold text-right text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 disabled:cursor-default disabled:opacity-100 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:disabled:text-slate-100">
+                          @for (option of field.options ?? []; track option) {
+                            <option [value]="option">{{ option }}</option>
+                          }
+                        </select>
+                      } @else {
+                        <input
+                          [id]="field.id"
+                          type="text"
+                          [attr.inputmode]="field.inputMode ?? null"
+                          [attr.dir]="field.direction ?? null"
+                          [readonly]="profilePreviewState() === 'approved'"
+                          [attr.aria-readonly]="profilePreviewState() === 'approved'"
+                          [value]="profileFieldValue(field.key)"
+                          (input)="onProfileFieldInput(field.key, $event)"
+                          autocomplete="off"
+                          class="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-semibold text-right text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 read-only:cursor-text dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+                      }
+                    </div>
+                  }
+                </div>
               </section>
             }
           </div>
         }
 
         @if (profilePreviewState() === 'unapproved') {
-          <div class="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 rounded-2xl border border-border bg-surface p-4 dark:border-slate-700 dark:bg-slate-800">
-            <div class="min-h-6">
+          <div class="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2.5 rounded-2xl border border-border bg-surface p-3 sm:px-4 dark:border-slate-700 dark:bg-slate-800">
+            <div class="min-h-5">
               @if (saveFeedbackVisible()) {
                 <p role="status" class="flex items-center gap-2 text-sm font-bold text-success">
                   <ui-icon name="check-circle" [size]="18"></ui-icon>
@@ -215,7 +212,7 @@ const INITIAL_EMPLOYER_PROFILE: EmployerProfileFormModel = {
             </div>
             <button
               type="submit"
-              class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-white shadow-lg shadow-primary/20 transition-colors hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary/30">
+              class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-primary/20 transition-colors hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary/30">
               <ui-icon name="save" [size]="19"></ui-icon>
               ذخیره اطلاعات
             </button>
@@ -232,7 +229,7 @@ export class EmployerProfileComponent {
   readonly saveFeedbackVisible = signal(false);
   draftProfile: EmployerProfileFormModel = { ...INITIAL_EMPLOYER_PROFILE };
 
-  // Presentation-only field metadata; replace the local model after real backend contracts are defined.
+  // Presentation-only field metadata and select options; replace them after real backend contracts are defined.
   readonly profileSectionRows: readonly (readonly EmployerProfileSection[])[] = [
     [
       {
@@ -240,10 +237,10 @@ export class EmployerProfileComponent {
         title: 'مشخصات کاربر',
         icon: 'user',
         fields: [
-          { id: 'mobile', key: 'mobile', label: 'موبایل', inputType: 'tel', inputMode: 'tel', direction: 'ltr' },
+          { id: 'employer-field-01', key: 'mobile', label: 'موبایل', inputMode: 'tel', direction: 'ltr' },
           { id: 'full-name', key: 'fullName', label: 'نام و نام خانوادگی' },
           { id: 'national-code', key: 'nationalCode', label: 'کد ملی', inputMode: 'numeric', direction: 'ltr' },
-          { id: 'email', key: 'email', label: 'ایمیل', inputType: 'email', inputMode: 'email', direction: 'ltr' }
+          { id: 'employer-field-04', key: 'email', label: 'ایمیل', inputMode: 'email', direction: 'ltr' }
         ]
       },
       {
@@ -251,12 +248,12 @@ export class EmployerProfileComponent {
         title: 'اطلاعات تکمیلی',
         icon: 'map-pin',
         fields: [
-          { id: 'landline', key: 'landline', label: 'تلفن ثابت', inputType: 'tel', inputMode: 'tel', direction: 'ltr' },
-          { id: 'province', key: 'province', label: 'استان' },
-          { id: 'county', key: 'county', label: 'شهرستان' },
-          { id: 'city', key: 'city', label: 'شهر' },
-          { id: 'user-type', key: 'userType', label: 'نوع کاربر' },
-          { id: 'gender', key: 'gender', label: 'جنسیت' }
+          { id: 'landline', key: 'landline', label: 'تلفن ثابت', inputMode: 'tel', direction: 'ltr' },
+          { id: 'province', key: 'province', label: 'استان', control: 'select', options: ['تهران', 'البرز'] },
+          { id: 'county', key: 'county', label: 'شهرستان', control: 'select', options: ['تهران', 'کرج'] },
+          { id: 'city', key: 'city', label: 'شهر', control: 'select', options: ['تهران', 'کرج'] },
+          { id: 'user-type', key: 'userType', label: 'نوع کاربر', control: 'select', options: ['کارفرما', 'کارمند'] },
+          { id: 'gender', key: 'gender', label: 'جنسیت', control: 'select', options: ['مرد', 'زن'] }
         ]
       }
     ],
@@ -279,7 +276,7 @@ export class EmployerProfileComponent {
         icon: 'banknote',
         fields: [
           { id: 'financial-responsible-name', key: 'financialResponsibleName', label: 'نام و نام خانوادگی مسئول مالی' },
-          { id: 'financial-responsible-phone', key: 'financialResponsiblePhone', label: 'تلفن ثابت مسئول مالی', inputType: 'tel', inputMode: 'tel', direction: 'ltr' },
+          { id: 'employer-field-17', key: 'financialResponsiblePhone', label: 'تلفن ثابت مسئول مالی', inputMode: 'tel', direction: 'ltr' },
           { id: 'refund-iban', key: 'refundIban', label: 'شماره شبا جهت بازگشت وجه', direction: 'ltr', fullWidth: true }
         ]
       }
@@ -298,11 +295,28 @@ export class EmployerProfileComponent {
   }
 
   updateDraftField(key: EmployerProfileFieldKey, value: string): void {
+    if (this.profilePreviewState() === 'approved') {
+      return;
+    }
+
     this.draftProfile[key] = value;
     this.saveFeedbackVisible.set(false);
   }
 
-  saveProfile(): void {
+  profileFieldValue(key: EmployerProfileFieldKey): string {
+    return this.profilePreviewState() === 'approved'
+      ? this.savedProfile()[key]
+      : this.draftProfile[key];
+  }
+
+  onProfileFieldInput(key: EmployerProfileFieldKey, event: Event): void {
+    const control = event.target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+    this.updateDraftField(key, control.value);
+  }
+
+  saveProfile(event: SubmitEvent): void {
+    event.preventDefault();
+
     if (this.profilePreviewState() !== 'unapproved') {
       return;
     }
