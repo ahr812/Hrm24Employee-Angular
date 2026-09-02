@@ -54,7 +54,7 @@ const INITIAL_EMPLOYER_PROFILE: EmployerProfileFormModel = {
   province: 'تهران',
   county: 'تهران',
   city: 'تهران',
-  userType: 'کارفرما',
+  userType: 'حقوقی',
   gender: 'مرد',
   companyName: 'شرکت نمونه',
   registrationNumber: '123456',
@@ -252,7 +252,7 @@ export class EmployerProfileComponent {
           { id: 'province', key: 'province', label: 'استان', control: 'select', options: ['تهران', 'البرز'] },
           { id: 'county', key: 'county', label: 'شهرستان', control: 'select', options: ['تهران', 'کرج'] },
           { id: 'city', key: 'city', label: 'شهر', control: 'select', options: ['تهران', 'کرج'] },
-          { id: 'user-type', key: 'userType', label: 'نوع کاربر', control: 'select', options: ['کارفرما', 'کارمند'] },
+          { id: 'user-type', key: 'userType', label: 'نوع کاربر', control: 'select', options: ['حقیقی', 'حقوقی'] },
           { id: 'gender', key: 'gender', label: 'جنسیت', control: 'select', options: ['مرد', 'زن'] }
         ]
       }
