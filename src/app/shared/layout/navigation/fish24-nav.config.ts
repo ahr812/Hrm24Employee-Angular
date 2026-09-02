@@ -238,7 +238,8 @@ export const FISH24_EMPLOYER_NAV_CONFIG: readonly Fish24NavItem[] = [
     id: 'fish24-employer-outgoing-documents',
     label: 'فیش‌ها و اسناد ارسالی',
     icon: 'file-text',
-    permission: 'employer-outgoing-documents'
+    permission: 'employer-outgoing-documents',
+    route: '/fish24/employer/documents'
   },
   {
     id: 'fish24-employer-invoices',
