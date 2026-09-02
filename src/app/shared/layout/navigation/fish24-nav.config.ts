@@ -217,7 +217,8 @@ export const FISH24_EMPLOYER_NAV_CONFIG: readonly Fish24NavItem[] = [
     id: 'fish24-employer-change-password',
     label: 'تغییر رمز ثابت',
     icon: 'key',
-    permission: 'profile'
+    permission: 'profile',
+    route: '/fish24/employer/change-password'
   },
   {
     id: 'fish24-employer-wallet',
