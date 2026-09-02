@@ -224,7 +224,8 @@ export const FISH24_EMPLOYER_NAV_CONFIG: readonly Fish24NavItem[] = [
     id: 'fish24-employer-wallet',
     label: 'کیف پول',
     icon: 'wallet',
-    permission: 'employer-wallet'
+    permission: 'employer-wallet',
+    route: '/fish24/employer/wallet'
   },
   {
     id: 'fish24-employer-companies-workshops',
