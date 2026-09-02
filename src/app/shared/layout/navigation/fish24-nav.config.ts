@@ -231,7 +231,8 @@ export const FISH24_EMPLOYER_NAV_CONFIG: readonly Fish24NavItem[] = [
     id: 'fish24-employer-companies-workshops',
     label: 'شرکت‌ها و کارگاه‌ها',
     icon: 'briefcase',
-    permission: 'employer-companies-workshops'
+    permission: 'employer-companies-workshops',
+    route: '/fish24/employer/companies'
   },
   {
     id: 'fish24-employer-outgoing-documents',
