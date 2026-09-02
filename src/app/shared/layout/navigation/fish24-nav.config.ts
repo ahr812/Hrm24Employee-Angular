@@ -210,7 +210,8 @@ export const FISH24_EMPLOYER_NAV_CONFIG: readonly Fish24NavItem[] = [
     id: 'fish24-employer-profile',
     label: 'پروفایل',
     icon: 'user',
-    permission: 'profile'
+    permission: 'profile',
+    route: '/fish24/employer/profile'
   },
   {
     id: 'fish24-employer-change-password',
