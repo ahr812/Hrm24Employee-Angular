@@ -1,13 +1,40 @@
 import { NgClass } from '@angular/common';
 import { Component, isDevMode, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { IconComponent } from '../../../../shared/ui/icon/icon.component';
 
 type EmployerProfilePreviewState = 'approved' | 'unapproved';
 
+interface EmployerProfileFormModel {
+  mobile: string;
+  fullName: string;
+  nationalCode: string;
+  email: string;
+  landline: string;
+  province: string;
+  county: string;
+  city: string;
+  userType: string;
+  gender: string;
+  companyName: string;
+  registrationNumber: string;
+  nationalId: string;
+  economicCode: string;
+  registeredAddress: string;
+  financialResponsibleName: string;
+  financialResponsiblePhone: string;
+  refundIban: string;
+}
+
+type EmployerProfileFieldKey = keyof EmployerProfileFormModel;
+
 interface EmployerProfileField {
   readonly id: string;
+  readonly key: EmployerProfileFieldKey;
   readonly label: string;
-  readonly value: string;
+  readonly control?: 'input' | 'textarea';
+  readonly inputType?: 'text' | 'email' | 'tel';
+  readonly inputMode?: 'text' | 'email' | 'tel' | 'numeric';
   readonly direction?: 'ltr';
   readonly fullWidth?: boolean;
 }
@@ -19,10 +46,31 @@ interface EmployerProfileSection {
   readonly fields: readonly EmployerProfileField[];
 }
 
+const INITIAL_EMPLOYER_PROFILE: EmployerProfileFormModel = {
+  mobile: '09120000000',
+  fullName: 'کاربر نمونه',
+  nationalCode: '1234567890',
+  email: 'employer@example.test',
+  landline: '02112345678',
+  province: 'تهران',
+  county: 'تهران',
+  city: 'تهران',
+  userType: 'کارفرما',
+  gender: 'مرد',
+  companyName: 'شرکت نمونه',
+  registrationNumber: '123456',
+  nationalId: '14001234567',
+  economicCode: '411111111111',
+  registeredAddress: 'تهران، خیابان نمونه، پلاک ۱۲',
+  financialResponsibleName: 'مسئول مالی نمونه',
+  financialResponsiblePhone: '02187654321',
+  refundIban: 'IR00 0000 0000 0000 0000 0000 00'
+};
+
 @Component({
   selector: 'app-employer-profile',
   standalone: true,
-  imports: [NgClass, IconComponent],
+  imports: [FormsModule, NgClass, IconComponent],
   template: `
     <div class="max-w-[95%] mx-auto space-y-6 sm:space-y-8 animate-fade-in-up" dir="rtl">
       <header class="flex items-center gap-4">
@@ -86,14 +134,14 @@ interface EmployerProfileSection {
               </p>
               <p class="mt-1 flex items-start gap-1.5 text-xs sm:text-sm leading-6 text-muted">
                 <ui-icon name="info" [size]="16" class="mt-1 shrink-0"></ui-icon>
-                <span>اطلاعات پروفایل در حال بررسی و تکمیل است.</span>
+                <span>می‌توانید اطلاعات را تکمیل یا ویرایش کنید؛ پشتیبانی پیش از تأیید آن را بررسی خواهد کرد.</span>
               </p>
             }
           </div>
         </div>
       </section>
 
-      <div class="space-y-5 sm:space-y-6">
+      <form class="space-y-5 sm:space-y-6" (ngSubmit)="saveProfile()">
         @for (row of profileSectionRows; track $index) {
           <div class="grid grid-cols-1 xl:grid-cols-2 gap-5 sm:gap-6 items-stretch">
             @for (section of row; track section.id) {
@@ -105,34 +153,86 @@ interface EmployerProfileSection {
                   <h2 [id]="section.id + '-title'" class="text-lg sm:text-xl font-bold text-foreground dark:text-slate-100">{{ section.title }}</h2>
                 </div>
 
-                <dl class="flex-1 grid grid-cols-1 sm:grid-cols-2 auto-rows-fr gap-3">
-                  @for (field of section.fields; track field.id) {
-                    <div
-                      class="min-w-0 rounded-xl border border-border bg-background/70 p-3.5 sm:p-4 dark:border-slate-700 dark:bg-slate-900/50"
-                      [ngClass]="{ 'sm:col-span-2': field.fullWidth }">
-                      <dt class="text-xs sm:text-sm leading-5 text-muted">{{ field.label }}</dt>
-                      <dd
-                        class="mt-2 min-w-0 break-words text-sm sm:text-base font-bold leading-7 text-right text-foreground dark:text-slate-100"
-                        [class.break-all]="field.direction === 'ltr'"
-                        [attr.dir]="field.direction ?? null">
-                        {{ field.value }}
-                      </dd>
-                    </div>
-                  }
-                </dl>
+                @if (profilePreviewState() === 'approved') {
+                  <dl class="flex-1 grid grid-cols-1 sm:grid-cols-2 auto-rows-fr gap-3">
+                    @for (field of section.fields; track field.id) {
+                      <div
+                        class="min-w-0 rounded-xl border border-border bg-background/70 p-3.5 sm:p-4 dark:border-slate-700 dark:bg-slate-900/50"
+                        [ngClass]="{ 'sm:col-span-2': field.fullWidth }">
+                        <dt class="text-xs sm:text-sm leading-5 text-muted">{{ field.label }}</dt>
+                        <dd
+                          class="mt-2 min-w-0 break-words text-sm sm:text-base font-bold leading-7 text-right text-foreground dark:text-slate-100"
+                          [class.break-all]="field.direction === 'ltr'"
+                          [attr.dir]="field.direction ?? null">
+                          {{ savedProfile()[field.key] }}
+                        </dd>
+                      </div>
+                    }
+                  </dl>
+                } @else {
+                  <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 auto-rows-fr gap-3">
+                    @for (field of section.fields; track field.id) {
+                      <div class="min-w-0" [ngClass]="{ 'sm:col-span-2': field.fullWidth }">
+                        <label [for]="field.id" class="mb-2 block text-xs sm:text-sm font-bold leading-5 text-muted">{{ field.label }}</label>
+                        @if (field.control === 'textarea') {
+                          <textarea
+                            [id]="field.id"
+                            [name]="field.id"
+                            [ngModel]="draftProfile[field.key]"
+                            (ngModelChange)="updateDraftField(field.key, $event)"
+                            rows="3"
+                            class="min-h-24 w-full resize-y rounded-xl border border-border bg-background px-3.5 py-3 text-sm leading-7 text-right text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+                          </textarea>
+                        } @else {
+                          <input
+                            [id]="field.id"
+                            [name]="field.id"
+                            [type]="field.inputType ?? 'text'"
+                            [attr.inputmode]="field.inputMode ?? null"
+                            [attr.dir]="field.direction ?? null"
+                            [ngModel]="draftProfile[field.key]"
+                            (ngModelChange)="updateDraftField(field.key, $event)"
+                            class="w-full rounded-xl border border-border bg-background px-3.5 py-3 text-sm font-semibold text-right text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+                        }
+                      </div>
+                    }
+                  </div>
+                }
               </section>
             }
           </div>
         }
-      </div>
+
+        @if (profilePreviewState() === 'unapproved') {
+          <div class="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 rounded-2xl border border-border bg-surface p-4 dark:border-slate-700 dark:bg-slate-800">
+            <div class="min-h-6">
+              @if (saveFeedbackVisible()) {
+                <p role="status" class="flex items-center gap-2 text-sm font-bold text-success">
+                  <ui-icon name="check-circle" [size]="18"></ui-icon>
+                  اطلاعات در پیش‌نمایش محلی ذخیره شد.
+                </p>
+              }
+            </div>
+            <button
+              type="submit"
+              class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-white shadow-lg shadow-primary/20 transition-colors hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary/30">
+              <ui-icon name="save" [size]="19"></ui-icon>
+              ذخیره اطلاعات
+            </button>
+          </div>
+        }
+      </form>
     </div>
   `
 })
 export class EmployerProfileComponent {
   readonly isDevelopmentPreviewAvailable = isDevMode();
   readonly profilePreviewState = signal<EmployerProfilePreviewState>('approved');
+  readonly savedProfile = signal<EmployerProfileFormModel>({ ...INITIAL_EMPLOYER_PROFILE });
+  readonly saveFeedbackVisible = signal(false);
+  draftProfile: EmployerProfileFormModel = { ...INITIAL_EMPLOYER_PROFILE };
 
-  // Presentation-only profile values; replace after real backend contracts are defined.
+  // Presentation-only field metadata; replace the local model after real backend contracts are defined.
   readonly profileSectionRows: readonly (readonly EmployerProfileSection[])[] = [
     [
       {
@@ -140,10 +240,10 @@ export class EmployerProfileComponent {
         title: 'مشخصات کاربر',
         icon: 'user',
         fields: [
-          { id: 'mobile', label: 'موبایل', value: '09120000000', direction: 'ltr' },
-          { id: 'full-name', label: 'نام و نام خانوادگی', value: 'کاربر نمونه' },
-          { id: 'national-code', label: 'کد ملی', value: '1234567890', direction: 'ltr' },
-          { id: 'email', label: 'ایمیل', value: 'employer@example.test', direction: 'ltr' }
+          { id: 'mobile', key: 'mobile', label: 'موبایل', inputType: 'tel', inputMode: 'tel', direction: 'ltr' },
+          { id: 'full-name', key: 'fullName', label: 'نام و نام خانوادگی' },
+          { id: 'national-code', key: 'nationalCode', label: 'کد ملی', inputMode: 'numeric', direction: 'ltr' },
+          { id: 'email', key: 'email', label: 'ایمیل', inputType: 'email', inputMode: 'email', direction: 'ltr' }
         ]
       },
       {
@@ -151,12 +251,12 @@ export class EmployerProfileComponent {
         title: 'اطلاعات تکمیلی',
         icon: 'map-pin',
         fields: [
-          { id: 'landline', label: 'تلفن ثابت', value: '02112345678', direction: 'ltr' },
-          { id: 'province', label: 'استان', value: 'تهران' },
-          { id: 'county', label: 'شهرستان', value: 'تهران' },
-          { id: 'city', label: 'شهر', value: 'تهران' },
-          { id: 'user-type', label: 'نوع کاربر', value: 'کارفرما' },
-          { id: 'gender', label: 'جنسیت', value: 'مرد' }
+          { id: 'landline', key: 'landline', label: 'تلفن ثابت', inputType: 'tel', inputMode: 'tel', direction: 'ltr' },
+          { id: 'province', key: 'province', label: 'استان' },
+          { id: 'county', key: 'county', label: 'شهرستان' },
+          { id: 'city', key: 'city', label: 'شهر' },
+          { id: 'user-type', key: 'userType', label: 'نوع کاربر' },
+          { id: 'gender', key: 'gender', label: 'جنسیت' }
         ]
       }
     ],
@@ -166,11 +266,11 @@ export class EmployerProfileComponent {
         title: 'مشخصات شرکت حقوقی',
         icon: 'briefcase',
         fields: [
-          { id: 'company-name', label: 'نام شرکت یا موسسه', value: 'شرکت نمونه' },
-          { id: 'registration-number', label: 'شماره ثبت', value: '123456', direction: 'ltr' },
-          { id: 'national-id', label: 'شناسه ملی', value: '14001234567', direction: 'ltr' },
-          { id: 'economic-code', label: 'کد اقتصادی', value: '411111111111', direction: 'ltr' },
-          { id: 'registered-address', label: 'آدرس ثبتی شرکت', value: 'تهران، خیابان نمونه، پلاک ۱۲', fullWidth: true }
+          { id: 'company-name', key: 'companyName', label: 'نام شرکت یا موسسه' },
+          { id: 'registration-number', key: 'registrationNumber', label: 'شماره ثبت', inputMode: 'numeric', direction: 'ltr' },
+          { id: 'national-id', key: 'nationalId', label: 'شناسه ملی', inputMode: 'numeric', direction: 'ltr' },
+          { id: 'economic-code', key: 'economicCode', label: 'کد اقتصادی', inputMode: 'numeric', direction: 'ltr' },
+          { id: 'registered-address', key: 'registeredAddress', label: 'آدرس ثبتی شرکت', control: 'textarea', fullWidth: true }
         ]
       },
       {
@@ -178,9 +278,9 @@ export class EmployerProfileComponent {
         title: 'مشخصات مسئول مالی',
         icon: 'banknote',
         fields: [
-          { id: 'financial-responsible-name', label: 'نام و نام خانوادگی مسئول مالی', value: 'مسئول مالی نمونه' },
-          { id: 'financial-responsible-phone', label: 'تلفن ثابت مسئول مالی', value: '02187654321', direction: 'ltr' },
-          { id: 'refund-iban', label: 'شماره شبا جهت بازگشت وجه', value: 'IR00 0000 0000 0000 0000 0000 00', direction: 'ltr', fullWidth: true }
+          { id: 'financial-responsible-name', key: 'financialResponsibleName', label: 'نام و نام خانوادگی مسئول مالی' },
+          { id: 'financial-responsible-phone', key: 'financialResponsiblePhone', label: 'تلفن ثابت مسئول مالی', inputType: 'tel', inputMode: 'tel', direction: 'ltr' },
+          { id: 'refund-iban', key: 'refundIban', label: 'شماره شبا جهت بازگشت وجه', direction: 'ltr', fullWidth: true }
         ]
       }
     ]
@@ -189,7 +289,25 @@ export class EmployerProfileComponent {
   onProfilePreviewStateChange(event: Event): void {
     const value = (event.target as HTMLSelectElement).value;
     if (value === 'approved' || value === 'unapproved') {
+      if (value === 'unapproved') {
+        this.draftProfile = { ...this.savedProfile() };
+      }
+      this.saveFeedbackVisible.set(false);
       this.profilePreviewState.set(value);
     }
+  }
+
+  updateDraftField(key: EmployerProfileFieldKey, value: string): void {
+    this.draftProfile[key] = value;
+    this.saveFeedbackVisible.set(false);
+  }
+
+  saveProfile(): void {
+    if (this.profilePreviewState() !== 'unapproved') {
+      return;
+    }
+
+    this.savedProfile.set({ ...this.draftProfile });
+    this.saveFeedbackVisible.set(true);
   }
 }
