@@ -203,7 +203,8 @@ export const FISH24_EMPLOYER_NAV_CONFIG: readonly Fish24NavItem[] = [
     id: 'fish24-employer-dashboard',
     label: 'داشبورد',
     icon: 'dashboard',
-    permission: 'dashboard'
+    permission: 'dashboard',
+    route: '/fish24/employer/dashboard'
   },
   {
     id: 'fish24-employer-profile',
