@@ -440,9 +440,20 @@ export class EmployerDocumentsComponent {
 
   onDateInput(field: 'fromDate' | 'toDate', event: Event): void {
     const input = event.target as HTMLInputElement;
-    const normalizedValue = this.formatJalaliDateInput(input.value);
+    const rawValue = input.value;
+    const caretPosition = input.selectionStart ?? rawValue.length;
+    const isDestructiveEdit = (event as InputEvent).inputType?.startsWith('delete') ?? false;
+    const normalizeValue = isDestructiveEdit
+      ? (value: string) => this.sanitizeJalaliDateEdit(value)
+      : (value: string) => this.formatJalaliDateInput(value);
+    const normalizedValue = normalizeValue(rawValue);
+    const normalizedCaretPosition = Math.min(
+      normalizeValue(rawValue.slice(0, caretPosition)).length,
+      normalizedValue.length
+    );
 
     input.value = normalizedValue;
+    input.setSelectionRange(normalizedCaretPosition, normalizedCaretPosition);
     this.filterForm[field] = normalizedValue;
     this.dateRangeError.set(null);
 
@@ -473,9 +484,7 @@ export class EmployerDocumentsComponent {
   }
 
   private formatJalaliDateInput(value: string): string {
-    const asciiDigits = value
-      .replace(/[۰-۹]/g, (digit) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)))
-      .replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)));
+    const asciiDigits = this.toAsciiDigits(value);
     const digits = asciiDigits.replace(/\D/g, '').slice(0, 8);
 
     if (digits.length < 4) {
@@ -495,6 +504,40 @@ export class EmployerDocumentsComponent {
     }
 
     return `${digits.slice(0, 4)}/${digits.slice(4, 6)}/${digits.slice(6)}`;
+  }
+
+  private sanitizeJalaliDateEdit(value: string): string {
+    const asciiValue = this.toAsciiDigits(value);
+    let normalizedValue = '';
+    let digitCount = 0;
+    let slashCount = 0;
+
+    for (const character of asciiValue) {
+      if (/\d/.test(character) && digitCount < 8) {
+        normalizedValue += character;
+        digitCount += 1;
+      } else if (
+        character === '/' &&
+        normalizedValue.length > 0 &&
+        !normalizedValue.endsWith('/') &&
+        slashCount < 2
+      ) {
+        normalizedValue += character;
+        slashCount += 1;
+      }
+
+      if (normalizedValue.length === 10) {
+        break;
+      }
+    }
+
+    return normalizedValue;
+  }
+
+  private toAsciiDigits(value: string): string {
+    return value
+      .replace(/[۰-۹]/g, (digit) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)))
+      .replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)));
   }
 
   private isValidJalaliDate(value: string): boolean {
