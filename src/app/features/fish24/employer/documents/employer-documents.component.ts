@@ -93,10 +93,25 @@ interface EmployerDocumentFilterForm {
                 <input
                   id="employer-document-from-date"
                   name="documentFromDate"
-                  type="date"
-                  [(ngModel)]="filterForm.fromDate"
-                  class="h-11 w-full rounded-xl border border-border bg-background pr-10 pl-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+                  type="text"
+                  inputmode="numeric"
+                  maxlength="10"
+                  autocomplete="off"
+                  spellcheck="false"
+                  dir="ltr"
+                  [value]="filterForm.fromDate"
+                  (input)="onDateInput('fromDate', $event)"
+                  [attr.aria-invalid]="fromDateError() !== null"
+                  [attr.aria-describedby]="fromDateError() ? 'employer-document-from-date-error' : null"
+                  class="h-11 w-full rounded-xl border border-border bg-background pr-10 pl-3 text-left text-sm text-foreground outline-none transition-colors placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                  placeholder="1405/06/12">
               </div>
+              @if (fromDateError(); as error) {
+                <p id="employer-document-from-date-error" role="alert" class="mt-1.5 flex items-start gap-1.5 text-xs font-medium text-danger">
+                  <ui-icon name="alert-circle" [size]="14" class="mt-0.5 shrink-0"></ui-icon>
+                  {{ error }}
+                </p>
+              }
             </div>
 
             <div>
@@ -106,12 +121,34 @@ interface EmployerDocumentFilterForm {
                 <input
                   id="employer-document-to-date"
                   name="documentToDate"
-                  type="date"
-                  [(ngModel)]="filterForm.toDate"
-                  class="h-11 w-full rounded-xl border border-border bg-background pr-10 pl-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+                  type="text"
+                  inputmode="numeric"
+                  maxlength="10"
+                  autocomplete="off"
+                  spellcheck="false"
+                  dir="ltr"
+                  [value]="filterForm.toDate"
+                  (input)="onDateInput('toDate', $event)"
+                  [attr.aria-invalid]="toDateError() !== null"
+                  [attr.aria-describedby]="toDateError() ? 'employer-document-to-date-error' : null"
+                  class="h-11 w-full rounded-xl border border-border bg-background pr-10 pl-3 text-left text-sm text-foreground outline-none transition-colors placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                  placeholder="1405/06/12">
               </div>
+              @if (toDateError(); as error) {
+                <p id="employer-document-to-date-error" role="alert" class="mt-1.5 flex items-start gap-1.5 text-xs font-medium text-danger">
+                  <ui-icon name="alert-circle" [size]="14" class="mt-0.5 shrink-0"></ui-icon>
+                  {{ error }}
+                </p>
+              }
             </div>
           </div>
+
+          @if (dateRangeError(); as error) {
+            <p role="alert" class="mt-3 flex items-start gap-1.5 rounded-xl border border-danger/20 bg-danger/5 px-3 py-2 text-xs font-bold text-danger">
+              <ui-icon name="alert-circle" [size]="15" class="mt-0.5 shrink-0"></ui-icon>
+              {{ error }}
+            </p>
+          }
 
           <fieldset class="mt-4 rounded-xl border border-border bg-background/60 p-3 dark:border-slate-700 dark:bg-slate-900/40">
             <legend class="px-1 text-sm font-bold text-foreground dark:text-slate-200">مبنای جستجوی تاریخ</legend>
@@ -186,7 +223,7 @@ interface EmployerDocumentFilterForm {
                 @for (document of filteredDocuments(); track document.id) {
                   <tr class="transition-colors hover:bg-primary/5 dark:hover:bg-primary/10">
                     <td class="px-2 py-3 font-bold text-foreground dark:text-slate-200"><span dir="ltr">{{ document.id }}</span></td>
-                    <td class="whitespace-nowrap px-2 py-3 text-muted"><span dir="ltr">{{ formatDate(document.sentAt) }}</span></td>
+                    <td class="whitespace-nowrap px-2 py-3 text-muted"><span dir="ltr">{{ document.sentAt }}</span></td>
                     <td class="px-2 py-3 font-bold leading-5 text-foreground dark:text-slate-100">{{ document.title }}</td>
                     <td class="px-2 py-3 leading-5 text-foreground dark:text-slate-200">{{ document.companyName }}</td>
                     <td class="whitespace-nowrap px-2 py-3 font-bold text-foreground dark:text-slate-200">{{ formatAmount(document.amountRial) }}</td>
@@ -197,7 +234,7 @@ interface EmployerDocumentFilterForm {
                       <span [class]="hostingClass(document)">{{ document.hostingLabel }}</span>
                     </td>
                     <td class="whitespace-nowrap px-2 py-3" [class.text-danger]="isExpiredHosting(document)" [class.font-bold]="isExpiredHosting(document)" [class.text-muted]="!isExpiredHosting(document)">
-                      <span dir="ltr">{{ formatDate(document.expiresAt) }}</span>
+                      <span dir="ltr">{{ document.expiresAt }}</span>
                     </td>
                     <td class="px-2 py-3">
                       <span
@@ -232,7 +269,7 @@ interface EmployerDocumentFilterForm {
                   </div>
                   <div>
                     <dt class="text-[11px] text-muted">تاریخ ارسال</dt>
-                    <dd class="mt-1 text-sm font-bold text-foreground dark:text-slate-200" dir="ltr">{{ formatDate(document.sentAt) }}</dd>
+                    <dd class="mt-1 text-sm font-bold text-foreground dark:text-slate-200" dir="ltr">{{ document.sentAt }}</dd>
                   </div>
                   <div>
                     <dt class="text-[11px] text-muted">مبلغ/ریال</dt>
@@ -244,7 +281,7 @@ interface EmployerDocumentFilterForm {
                   </div>
                   <div>
                     <dt class="text-[11px] text-muted">انقضا</dt>
-                    <dd class="mt-1 text-sm" [class.text-danger]="isExpiredHosting(document)" [class.font-bold]="isExpiredHosting(document)" [class.text-foreground]="!isExpiredHosting(document)" [class.dark:text-slate-200]="!isExpiredHosting(document)" dir="ltr">{{ formatDate(document.expiresAt) }}</dd>
+                    <dd class="mt-1 text-sm" [class.text-danger]="isExpiredHosting(document)" [class.font-bold]="isExpiredHosting(document)" [class.text-foreground]="!isExpiredHosting(document)" [class.dark:text-slate-200]="!isExpiredHosting(document)" dir="ltr">{{ document.expiresAt }}</dd>
                   </div>
                   <div>
                     <dt class="text-[11px] text-muted">عملیات</dt>
@@ -282,58 +319,58 @@ export class EmployerDocumentsComponent {
   readonly documents = signal<readonly EmployerDocumentRecord[]>([
     {
       id: 2001,
-      sentAt: '2026-04-10',
+      sentAt: '1405/01/21',
       title: 'گزارش پرداخت فروردین',
       companyId: 101,
       companyName: 'مجموعه نمونه سپهر',
       amountRial: 340_000,
       status: 'توزیع‌شده',
       hostingLabel: '1 ماهه',
-      expiresAt: '2026-05-10'
+      expiresAt: '1405/02/21'
     },
     {
       id: 2002,
-      sentAt: '2026-05-18',
+      sentAt: '1405/02/28',
       title: 'صورت‌حساب دوره‌ای کارکنان',
       companyId: 102,
       companyName: 'مجموعه آزمایشی باران',
       amountRial: 785_000,
       status: 'توزیع‌شده',
       hostingLabel: '12 ماهه',
-      expiresAt: '2027-05-18'
+      expiresAt: '1406/02/28'
     },
     {
       id: 2003,
-      sentAt: '2025-11-07',
+      sentAt: '1404/08/16',
       title: 'گزارش تسویه پاییز',
       companyId: 101,
       companyName: 'مجموعه نمونه سپهر',
       amountRial: 420_000,
       status: 'توزیع‌شده',
       hostingLabel: 'منقضی',
-      expiresAt: '2025-12-07'
+      expiresAt: '1404/09/16'
     },
     {
       id: 2004,
-      sentAt: '2026-06-22',
+      sentAt: '1405/04/01',
       title: 'خلاصه پرداخت خرداد',
       companyId: 103,
       companyName: 'مجموعه نمایشی نارنج',
       amountRial: 610_000,
       status: 'توزیع‌شده',
       hostingLabel: '1 ماهه',
-      expiresAt: '2026-07-22'
+      expiresAt: '1405/05/01'
     },
     {
       id: 2005,
-      sentAt: '2026-07-14',
+      sentAt: '1405/04/23',
       title: 'گزارش تجمیعی تابستان',
       companyId: 102,
       companyName: 'مجموعه آزمایشی باران',
       amountRial: 925_000,
       status: 'توزیع‌شده',
       hostingLabel: '12 ماهه',
-      expiresAt: '2027-07-14'
+      expiresAt: '1406/04/23'
     }
   ]);
 
@@ -343,6 +380,9 @@ export class EmployerDocumentsComponent {
   readonly appliedFromDate = signal('');
   readonly appliedToDate = signal('');
   readonly appliedDateBasis = signal<DocumentDateBasis>('expiration');
+  readonly fromDateError = signal<string | null>(null);
+  readonly toDateError = signal<string | null>(null);
+  readonly dateRangeError = signal<string | null>(null);
 
   readonly filteredDocuments = computed(() => {
     const companyId = this.appliedCompanyId();
@@ -361,6 +401,22 @@ export class EmployerDocumentsComponent {
   });
 
   applyFilters(): void {
+    const fromDateIsValid = this.isValidJalaliDate(this.filterForm.fromDate);
+    const toDateIsValid = this.isValidJalaliDate(this.filterForm.toDate);
+
+    this.fromDateError.set(fromDateIsValid ? null : 'تاریخ شروع معتبر نیست.');
+    this.toDateError.set(toDateIsValid ? null : 'تاریخ پایان معتبر نیست.');
+    this.dateRangeError.set(null);
+
+    if (!fromDateIsValid || !toDateIsValid) {
+      return;
+    }
+
+    if (this.filterForm.fromDate && this.filterForm.toDate && this.filterForm.fromDate > this.filterForm.toDate) {
+      this.dateRangeError.set('بازه تاریخ معتبر نیست.');
+      return;
+    }
+
     this.appliedCompanyId.set(this.filterForm.companyId);
     this.appliedFromDate.set(this.filterForm.fromDate);
     this.appliedToDate.set(this.filterForm.toDate);
@@ -373,15 +429,28 @@ export class EmployerDocumentsComponent {
     this.appliedFromDate.set('');
     this.appliedToDate.set('');
     this.appliedDateBasis.set('expiration');
+    this.fromDateError.set(null);
+    this.toDateError.set(null);
+    this.dateRangeError.set(null);
   }
 
   formatAmount(amount: number): string {
     return `${this.amountFormatter.format(amount)} ریال`;
   }
 
-  formatDate(value: string): string {
-    const persianDigits = '۰۱۲۳۴۵۶۷۸۹';
-    return value.replaceAll('-', '/').replace(/[0-9]/g, (digit) => persianDigits[Number(digit)]);
+  onDateInput(field: 'fromDate' | 'toDate', event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const normalizedValue = this.formatJalaliDateInput(input.value);
+
+    input.value = normalizedValue;
+    this.filterForm[field] = normalizedValue;
+    this.dateRangeError.set(null);
+
+    if (field === 'fromDate') {
+      this.fromDateError.set(null);
+    } else {
+      this.toDateError.set(null);
+    }
   }
 
   isExpiredHosting(document: EmployerDocumentRecord): boolean {
@@ -401,5 +470,47 @@ export class EmployerDocumentsComponent {
       toDate: '',
       dateBasis: 'expiration'
     };
+  }
+
+  private formatJalaliDateInput(value: string): string {
+    const asciiDigits = value
+      .replace(/[۰-۹]/g, (digit) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)))
+      .replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)));
+    const digits = asciiDigits.replace(/\D/g, '').slice(0, 8);
+
+    if (digits.length < 4) {
+      return digits;
+    }
+
+    if (digits.length === 4) {
+      return `${digits}/`;
+    }
+
+    if (digits.length < 6) {
+      return `${digits.slice(0, 4)}/${digits.slice(4)}`;
+    }
+
+    if (digits.length === 6) {
+      return `${digits.slice(0, 4)}/${digits.slice(4)}/`;
+    }
+
+    return `${digits.slice(0, 4)}/${digits.slice(4, 6)}/${digits.slice(6)}`;
+  }
+
+  private isValidJalaliDate(value: string): boolean {
+    if (value.length === 0) {
+      return true;
+    }
+
+    const dateParts = /^(\d{4})\/(\d{2})\/(\d{2})$/.exec(value);
+
+    if (!dateParts) {
+      return false;
+    }
+
+    const month = Number(dateParts[2]);
+    const day = Number(dateParts[3]);
+
+    return month >= 1 && month <= 12 && day >= 1 && day <= 31;
   }
 }
