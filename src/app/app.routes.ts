@@ -16,10 +16,13 @@ export const routes: Routes = [
   { path: 'fish24/employer/companies', loadComponent: () => import('./features/fish24/employer/companies/employer-companies.component').then(m => m.EmployerCompaniesComponent), canActivate: [authGuard] },
   { path: 'fish24/employer/documents/new', loadComponent: () => import('./features/fish24/employer/documents/employer-document-create.component').then(m => m.EmployerDocumentCreateComponent), canActivate: [authGuard] },
   { path: 'fish24/employer/documents/review', loadComponent: () => import('./features/fish24/employer/documents/employer-document-review.component').then(m => m.EmployerDocumentReviewComponent), canActivate: [authGuard] },
+  { path: 'fish24/employer/documents/:id/ticket', loadComponent: () => import('./features/fish24/employer/tickets/employer-ticket-create.component').then(m => m.EmployerTicketCreateComponent), canActivate: [authGuard] },
   { path: 'fish24/employer/documents', loadComponent: () => import('./features/fish24/employer/documents/employer-documents.component').then(m => m.EmployerDocumentsComponent), canActivate: [authGuard] },
   { path: 'fish24/employer/invoices/:id/print', loadComponent: () => import('./features/fish24/employer/invoices/employer-invoice-print.component').then(m => m.EmployerInvoicePrintComponent), canActivate: [authGuard] },
   { path: 'fish24/employer/invoices', loadComponent: () => import('./features/fish24/employer/invoices/employer-invoices.component').then(m => m.EmployerInvoicesComponent), canActivate: [authGuard] },
   { path: 'fish24/employer/employees', loadComponent: () => import('./features/fish24/employer/employees/employer-employees.component').then(m => m.EmployerEmployeesComponent), canActivate: [authGuard] },
+  { path: 'fish24/employer/tickets/:id', loadComponent: () => import('./features/fish24/employer/tickets/employer-ticket-view.component').then(m => m.EmployerTicketViewComponent), canActivate: [authGuard] },
+  { path: 'fish24/employer/tickets', loadComponent: () => import('./features/fish24/employer/tickets/employer-tickets.component').then(m => m.EmployerTicketsComponent), canActivate: [authGuard] },
 
   { path: 'tasks', loadComponent: () => import('./features/tasks/tasks.component').then(m => m.TasksComponent), canActivate: [authGuard] },
   { path: 'missions', loadComponent: () => import('./features/missions/missions.component').then(m => m.MissionsComponent), canActivate: [authGuard] },

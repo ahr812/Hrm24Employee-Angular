@@ -1,23 +1,12 @@
-import { Component, computed, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { EscToCloseDirective } from '../../../../shared/directives/esc-to-close.directive';
 import { IconComponent } from '../../../../shared/ui/icon/icon.component';
+import { ToastService } from '../../../../shared/ui/toast/toast.service';
+import { EmployerDocumentRecord, EmployerTicketPreviewService } from '../tickets/employer-ticket-preview.service';
 
-type DocumentStatus = 'توزیع‌شده';
-type DocumentHostingLabel = '1 ماهه' | '12 ماهه' | 'منقضی';
 type DocumentDateBasis = 'expiration' | 'sent';
-
-interface EmployerDocumentRecord {
-  readonly id: number;
-  readonly sentAt: string;
-  readonly title: string;
-  readonly companyId: number;
-  readonly companyName: string;
-  readonly amountRial: number;
-  readonly status: DocumentStatus;
-  readonly hostingLabel: DocumentHostingLabel;
-  readonly expiresAt: string;
-}
 
 interface EmployerDocumentCompanyOption {
   readonly id: number;
@@ -31,10 +20,18 @@ interface EmployerDocumentFilterForm {
   dateBasis: DocumentDateBasis;
 }
 
+interface PendingDocumentAction {
+  readonly documentId: number;
+  readonly kind: 'lock' | 'delete' | 'distribute';
+  readonly title: string;
+  readonly actionLabel: string;
+  readonly description: string;
+}
+
 @Component({
   selector: 'app-employer-documents',
   standalone: true,
-  imports: [FormsModule, RouterLink, IconComponent],
+  imports: [FormsModule, RouterLink, EscToCloseDirective, IconComponent],
   template: `
     <div class="mx-auto max-w-[95%] space-y-5 animate-fade-in-up sm:space-y-6" dir="rtl">
       <header class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -213,7 +210,7 @@ interface EmployerDocumentFilterForm {
                   <th class="w-24 px-2 py-3 text-right font-bold text-muted">وضعیت</th>
                   <th class="w-20 px-2 py-3 text-right font-bold text-muted">میزبانی</th>
                   <th class="w-24 px-2 py-3 text-right font-bold text-muted">انقضا</th>
-                  <th class="w-28 px-2 py-3 text-right font-bold text-muted">عملیات</th>
+                  <th class="w-48 px-2 py-3 text-center font-bold text-muted">عملیات</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-border dark:divide-slate-700">
@@ -225,7 +222,7 @@ interface EmployerDocumentFilterForm {
                     <td class="px-2 py-3 leading-5 text-foreground dark:text-slate-200">{{ document.companyName }}</td>
                     <td class="whitespace-nowrap px-2 py-3 font-bold text-foreground dark:text-slate-200">{{ formatAmount(document.amountRial) }}</td>
                     <td class="px-2 py-3">
-                      <span class="inline-flex items-center rounded-full bg-success/15 px-2 py-1 font-bold text-success">{{ document.status }}</span>
+                      <span [class]="documentStatusClass(document)">{{ document.status }}</span>
                     </td>
                     <td class="px-2 py-3">
                       <span [class]="hostingClass(document)">{{ document.hostingLabel }}</span>
@@ -234,13 +231,14 @@ interface EmployerDocumentFilterForm {
                       <span dir="ltr">{{ document.expiresAt }}</span>
                     </td>
                     <td class="px-2 py-3">
-                      <span
-                        role="status"
-                        aria-label="عملیات این سند در این مرحله تعریف نشده است"
-                        class="inline-flex cursor-not-allowed items-center gap-1 rounded-lg border border-border px-2 py-1.5 font-bold text-muted dark:border-slate-600">
-                        <ui-icon name="info" [size]="14"></ui-icon>
-                        در دسترس نیست
-                      </span>
+                      <div class="flex items-center justify-center gap-1.5">
+                        <button type="button" (click)="requestLockToggle(document)" [attr.aria-label]="lockActionLabel(document) + ' سند ' + document.id" [title]="lockActionLabel(document)" [class]="document.isLocked ? actionButtonClass('success') : actionButtonClass('warning')"><ui-icon [name]="document.isLocked ? 'check-circle' : 'lock'" [size]="16"></ui-icon></button>
+                        <a [routerLink]="['/fish24/employer/documents', document.id, 'ticket']" [attr.aria-label]="'تیکت سند ' + document.id" title="تیکت" [class]="actionButtonClass('primary')"><ui-icon name="ticket" [size]="16"></ui-icon></a>
+                        @if (document.status === 'توزیع‌نشده') {
+                          <button type="button" (click)="requestDelete(document)" [attr.aria-label]="'حذف سند ' + document.id" title="حذف" [class]="actionButtonClass('danger')"><ui-icon name="trash-2" [size]="16"></ui-icon></button>
+                          <button type="button" (click)="requestDistribution(document)" [attr.aria-label]="'کسر مبلغ از کیف پول و توزیع سند ' + document.id" title="کسر مبلغ از کیف پول و توزیع سند" [class]="actionButtonClass('success')"><ui-icon name="send" [size]="16"></ui-icon></button>
+                        }
+                      </div>
                     </td>
                   </tr>
                 }
@@ -256,7 +254,7 @@ interface EmployerDocumentFilterForm {
                     <h3 class="break-words text-base font-extrabold leading-6 text-foreground dark:text-slate-100">{{ document.title }}</h3>
                     <p class="mt-1 text-xs leading-5 text-muted">{{ document.companyName }}</p>
                   </div>
-                  <span class="inline-flex shrink-0 items-center rounded-full bg-success/15 px-2.5 py-1 text-xs font-bold text-success">{{ document.status }}</span>
+                  <span [class]="documentStatusClass(document)">{{ document.status }}</span>
                 </div>
 
                 <dl class="mt-3 grid grid-cols-2 gap-3 rounded-lg border border-border bg-surface p-3 dark:border-slate-700 dark:bg-slate-800 sm:grid-cols-3">
@@ -280,16 +278,15 @@ interface EmployerDocumentFilterForm {
                     <dt class="text-[11px] text-muted">انقضا</dt>
                     <dd class="mt-1 text-sm" [class.text-danger]="isExpiredHosting(document)" [class.font-bold]="isExpiredHosting(document)" [class.text-foreground]="!isExpiredHosting(document)" [class.dark:text-slate-200]="!isExpiredHosting(document)" dir="ltr">{{ document.expiresAt }}</dd>
                   </div>
-                  <div>
-                    <dt class="text-[11px] text-muted">عملیات</dt>
-                    <dd class="mt-1">
-                      <span role="status" aria-label="عملیات این سند در این مرحله تعریف نشده است" class="inline-flex cursor-not-allowed items-center gap-1 text-xs font-bold text-muted">
-                        <ui-icon name="info" [size]="13"></ui-icon>
-                        در دسترس نیست
-                      </span>
-                    </dd>
-                  </div>
                 </dl>
+                <div class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <button type="button" (click)="requestLockToggle(document)" [class]="mobileActionButtonClass(document.isLocked ? 'success' : 'warning')"><ui-icon [name]="document.isLocked ? 'check-circle' : 'lock'" [size]="17"></ui-icon>{{ lockActionLabel(document) }}</button>
+                  <a [routerLink]="['/fish24/employer/documents', document.id, 'ticket']" [class]="mobileActionButtonClass('primary')"><ui-icon name="ticket" [size]="17"></ui-icon>تیکت</a>
+                  @if (document.status === 'توزیع‌نشده') {
+                    <button type="button" (click)="requestDelete(document)" [class]="mobileActionButtonClass('danger')"><ui-icon name="trash-2" [size]="17"></ui-icon>حذف</button>
+                    <button type="button" (click)="requestDistribution(document)" [class]="mobileActionButtonClass('success')"><ui-icon name="send" [size]="17"></ui-icon>کسر مبلغ از کیف پول و توزیع سند</button>
+                  }
+                </div>
               </article>
             }
           </div>
@@ -301,10 +298,29 @@ interface EmployerDocumentFilterForm {
           </div>
         }
       </section>
+
+      @if (pendingAction(); as action) {
+        <div appEscToClose (escPressed)="cancelDocumentAction()" (click)="cancelDocumentAction()" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-fade-in" role="presentation">
+          <section role="alertdialog" aria-modal="true" aria-labelledby="document-action-title" aria-describedby="document-action-description" (click)="$event.stopPropagation()" class="w-full max-w-md overflow-hidden rounded-2xl border border-border bg-surface shadow-2xl animate-scale-in dark:border-slate-700 dark:bg-slate-800">
+            <div class="p-5 text-center">
+              <div [class]="action.kind === 'delete' ? 'mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-danger/10 text-danger' : 'mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary'"><ui-icon [name]="action.kind === 'delete' ? 'trash-2' : action.kind === 'distribute' ? 'send' : 'lock'" [size]="25"></ui-icon></div>
+              <h2 id="document-action-title" class="mt-3 text-lg font-bold text-foreground dark:text-slate-100">{{ action.title }}</h2>
+              <p id="document-action-description" class="mt-2 text-sm leading-6 text-muted">{{ action.description }}</p>
+              @if (action.kind === 'distribute') { <p class="mt-3 rounded-xl border border-warning/20 bg-warning/10 px-3 py-2 text-xs font-bold leading-5 text-warning">این عملیات فقط پیش‌نمایش رابط کاربری است؛ هیچ مبلغی از کیف پول کسر و هیچ سندی واقعاً توزیع نمی‌شود.</p> }
+            </div>
+            <div class="flex flex-col-reverse gap-2 border-t border-border p-4 dark:border-slate-700 sm:flex-row sm:justify-end">
+              <button type="button" (click)="cancelDocumentAction()" class="inline-flex w-full items-center justify-center rounded-xl border border-border px-4 py-2.5 text-sm font-bold text-foreground dark:border-slate-600 dark:text-slate-200 sm:w-auto">انصراف</button>
+              <button type="button" (click)="confirmDocumentAction()" [class]="action.kind === 'delete' ? 'inline-flex w-full items-center justify-center rounded-xl bg-danger px-5 py-2.5 text-sm font-bold text-white sm:w-auto' : 'inline-flex w-full items-center justify-center rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-white sm:w-auto'">{{ action.actionLabel }}</button>
+            </div>
+          </section>
+        </div>
+      }
     </div>
   `
 })
 export class EmployerDocumentsComponent {
+  private readonly preview = inject(EmployerTicketPreviewService);
+  private readonly toast = inject(ToastService);
   private readonly amountFormatter = new Intl.NumberFormat('fa-IR', { maximumFractionDigits: 0 });
 
   readonly companyOptions: readonly EmployerDocumentCompanyOption[] = [
@@ -313,63 +329,8 @@ export class EmployerDocumentsComponent {
     { id: 103, name: 'مجموعه نمایشی نارنج' }
   ];
 
-  readonly documents = signal<readonly EmployerDocumentRecord[]>([
-    {
-      id: 2001,
-      sentAt: '1405/01/21',
-      title: 'گزارش پرداخت فروردین',
-      companyId: 101,
-      companyName: 'مجموعه نمونه سپهر',
-      amountRial: 340_000,
-      status: 'توزیع‌شده',
-      hostingLabel: '1 ماهه',
-      expiresAt: '1405/02/21'
-    },
-    {
-      id: 2002,
-      sentAt: '1405/02/28',
-      title: 'صورت‌حساب دوره‌ای کارکنان',
-      companyId: 102,
-      companyName: 'مجموعه آزمایشی باران',
-      amountRial: 785_000,
-      status: 'توزیع‌شده',
-      hostingLabel: '12 ماهه',
-      expiresAt: '1406/02/28'
-    },
-    {
-      id: 2003,
-      sentAt: '1404/08/16',
-      title: 'گزارش تسویه پاییز',
-      companyId: 101,
-      companyName: 'مجموعه نمونه سپهر',
-      amountRial: 420_000,
-      status: 'توزیع‌شده',
-      hostingLabel: 'منقضی',
-      expiresAt: '1404/09/16'
-    },
-    {
-      id: 2004,
-      sentAt: '1405/04/01',
-      title: 'خلاصه پرداخت خرداد',
-      companyId: 103,
-      companyName: 'مجموعه نمایشی نارنج',
-      amountRial: 610_000,
-      status: 'توزیع‌شده',
-      hostingLabel: '1 ماهه',
-      expiresAt: '1405/05/01'
-    },
-    {
-      id: 2005,
-      sentAt: '1405/04/23',
-      title: 'گزارش تجمیعی تابستان',
-      companyId: 102,
-      companyName: 'مجموعه آزمایشی باران',
-      amountRial: 925_000,
-      status: 'توزیع‌شده',
-      hostingLabel: '12 ماهه',
-      expiresAt: '1406/04/23'
-    }
-  ]);
+  readonly documents = this.preview.documents;
+  readonly pendingAction = signal<PendingDocumentAction | null>(null);
 
   filterForm: EmployerDocumentFilterForm = this.createDefaultFilterForm();
 
@@ -469,6 +430,91 @@ export class EmployerDocumentsComponent {
     return this.isExpiredHosting(document)
       ? 'inline-flex items-center rounded-full bg-danger/15 px-2 py-1 text-xs font-bold text-danger'
       : 'inline-flex items-center rounded-full bg-primary/10 px-2 py-1 text-xs font-bold text-primary';
+  }
+
+  documentStatusClass(document: EmployerDocumentRecord): string {
+    return document.status === 'توزیع‌شده'
+      ? 'inline-flex shrink-0 items-center rounded-full bg-success/15 px-2 py-1 font-bold text-success'
+      : 'inline-flex shrink-0 items-center rounded-full bg-warning/15 px-2 py-1 font-bold text-warning';
+  }
+
+  lockActionLabel(document: EmployerDocumentRecord): string {
+    return document.isLocked ? 'باز کردن قفل' : 'قفل کردن';
+  }
+
+  requestLockToggle(document: EmployerDocumentRecord): void {
+    const actionLabel = this.lockActionLabel(document);
+    this.pendingAction.set({
+      documentId: document.id,
+      kind: 'lock',
+      title: 'تغییر وضعیت قفل سند',
+      actionLabel,
+      description: `آیا از ${actionLabel} سند «${document.title}» اطمینان دارید؟`
+    });
+  }
+
+  requestDelete(document: EmployerDocumentRecord): void {
+    if (document.status !== 'توزیع‌نشده') return;
+    this.pendingAction.set({
+      documentId: document.id,
+      kind: 'delete',
+      title: 'حذف سند توزیع‌نشده',
+      actionLabel: 'حذف',
+      description: `آیا از حذف سند توزیع‌نشده «${document.title}» اطمینان دارید؟`
+    });
+  }
+
+  requestDistribution(document: EmployerDocumentRecord): void {
+    if (document.status !== 'توزیع‌نشده') return;
+    this.pendingAction.set({
+      documentId: document.id,
+      kind: 'distribute',
+      title: 'تأیید توزیع سند',
+      actionLabel: 'کسر مبلغ از کیف پول و توزیع سند',
+      description: `وضعیت سند «${document.title}» در نسخه نمایشی به توزیع‌شده تغییر کند؟`
+    });
+  }
+
+  cancelDocumentAction(): void {
+    this.pendingAction.set(null);
+  }
+
+  confirmDocumentAction(): void {
+    const action = this.pendingAction();
+    if (!action) return;
+
+    if (action.kind === 'lock') {
+      this.preview.toggleDocumentLock(action.documentId);
+      this.toast.show('وضعیت قفل سند به‌صورت محلی تغییر کرد.', 'success');
+    } else if (action.kind === 'delete') {
+      this.preview.deleteUndistributedDocument(action.documentId);
+      this.toast.show('سند توزیع‌نشده از پیش‌نمایش محلی حذف شد.', 'success');
+    } else {
+      this.preview.previewDistributeDocument(action.documentId);
+      this.toast.show('وضعیت سند در پیش‌نمایش محلی به توزیع‌شده تغییر کرد؛ کیف پول تغییری نکرد.', 'success');
+    }
+
+    this.pendingAction.set(null);
+  }
+
+  actionButtonClass(tone: 'primary' | 'success' | 'warning' | 'danger'): string {
+    const tones = {
+      primary: 'border-primary/30 text-primary hover:bg-primary/10 focus:ring-primary/25',
+      success: 'border-success/30 text-success hover:bg-success/10 focus:ring-success/25',
+      warning: 'border-warning/30 text-warning hover:bg-warning/10 focus:ring-warning/25',
+      danger: 'border-danger/30 text-danger hover:bg-danger/10 focus:ring-danger/25'
+    };
+    return `inline-flex h-8 w-8 items-center justify-center rounded-lg border transition-colors focus:outline-none focus:ring-2 ${tones[tone]}`;
+  }
+
+  mobileActionButtonClass(tone: 'primary' | 'success' | 'warning' | 'danger'): string {
+    const tones = {
+      primary: 'border-primary/30 text-primary hover:bg-primary/10 focus:ring-primary/25',
+      success: 'border-success/30 text-success hover:bg-success/10 focus:ring-success/25',
+      warning: 'border-warning/30 text-warning hover:bg-warning/10 focus:ring-warning/25',
+      danger: 'border-danger/30 text-danger hover:bg-danger/10 focus:ring-danger/25'
+    };
+    return `inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs font-bold transition-colors focus:outline-none focus:ring-2 ${tones[tone]}`;
   }
 
   private createDefaultFilterForm(): EmployerDocumentFilterForm {
