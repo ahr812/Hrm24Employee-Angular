@@ -1,5 +1,6 @@
 import { Component, computed, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { IconComponent } from '../../../../shared/ui/icon/icon.component';
 
 type DocumentStatus = 'توزیع‌شده';
@@ -33,7 +34,7 @@ interface EmployerDocumentFilterForm {
 @Component({
   selector: 'app-employer-documents',
   standalone: true,
-  imports: [FormsModule, IconComponent],
+  imports: [FormsModule, RouterLink, IconComponent],
   template: `
     <div class="mx-auto max-w-[95%] space-y-5 animate-fade-in-up sm:space-y-6" dir="rtl">
       <header class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -47,16 +48,12 @@ interface EmployerDocumentFilterForm {
           </div>
         </div>
 
-        <button
-          type="button"
-          disabled
-          aria-disabled="true"
-          aria-describedby="employer-new-document-status"
-          class="inline-flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-xl bg-primary/85 px-5 py-2.5 text-sm font-bold text-white opacity-85 shadow-lg shadow-primary/15 sm:w-auto">
+        <a
+          routerLink="/fish24/employer/documents/new"
+          class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-primary/15 transition-colors hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary/30 sm:w-auto">
           <ui-icon name="send" [size]="19"></ui-icon>
           ارسال سند جدید
-          <span id="employer-new-document-status" class="rounded-full bg-white/15 px-2 py-0.5 text-[10px]">به‌زودی</span>
-        </button>
+        </a>
       </header>
 
       <section class="rounded-2xl border border-border bg-surface p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:p-6" aria-labelledby="employer-document-search-title">
