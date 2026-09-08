@@ -197,9 +197,9 @@ interface PendingStateAction {
                       class="h-4 w-4 rounded border-border text-primary focus:ring-primary/30">
                   </th>
                   <th class="w-16 px-3 py-3 text-right text-xs font-bold text-muted">شناسه</th>
-                  <th class="px-3 py-3 text-right text-xs font-bold text-muted">نام شرکت یا کارگاه</th>
+                  <th class="w-[28%] px-3 py-3 text-right text-xs font-bold text-muted">نام شرکت یا کارگاه</th>
                   <th class="w-32 px-3 py-3 text-right text-xs font-bold text-muted">موبایل پرسنل</th>
-                  <th class="w-48 px-3 py-3 text-right text-xs font-bold text-muted">نام پرسنل</th>
+                  <th class="w-[32%] px-3 py-3 text-right text-xs font-bold text-muted">نام پرسنل</th>
                   <th class="w-44 px-3 py-3 text-right text-xs font-bold text-muted">وضعیت</th>
                   <th class="w-40 px-3 py-3 text-center text-xs font-bold text-muted">عملیات</th>
                 </tr>
