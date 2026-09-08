@@ -245,7 +245,8 @@ export const FISH24_EMPLOYER_NAV_CONFIG: readonly Fish24NavItem[] = [
     id: 'fish24-employer-invoices',
     label: 'لیست فاکتورها',
     icon: 'file-text',
-    permission: 'employer-invoices'
+    permission: 'employer-invoices',
+    route: '/fish24/employer/invoices'
   },
   {
     id: 'fish24-employer-employees',
