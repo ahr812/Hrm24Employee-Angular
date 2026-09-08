@@ -240,7 +240,10 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   get isMainLayout(): boolean {
-    return !this.router.url.startsWith('/login') &&
+    const isEmployerInvoicePrint = /^\/fish24\/employer\/invoices\/[^/]+\/print(?:[?#].*)?$/.test(this.router.url);
+
+    return !isEmployerInvoicePrint &&
+      !this.router.url.startsWith('/login') &&
       !this.router.url.startsWith('/register') &&
       !this.router.url.startsWith('/forgot-password');
   }
