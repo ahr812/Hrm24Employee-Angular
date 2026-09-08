@@ -138,6 +138,14 @@ import {
     }
   `,
   styles: [`
+    @font-face {
+      font-family: 'Fish24OfficialInvoiceIranSans';
+      src: url('/assets/fish24/invoices/iransansweb.woff2') format('woff2');
+      font-style: normal;
+      font-weight: 400;
+      font-display: block;
+    }
+
     :host {
       display: block;
       min-height: 100vh;
@@ -188,7 +196,7 @@ import {
 
     .official-invoice,
     .official-invoice * {
-      font-family: IRANSansWeb, Tahoma, Arial, sans-serif !important;
+      font-family: 'Fish24OfficialInvoiceIranSans', sans-serif !important;
     }
 
     .official-invoice {
@@ -362,7 +370,9 @@ export class EmployerInvoicePrintComponent implements OnInit {
     this.invoice.set(invoice);
   }
 
-  printInvoice(): void {
+  async printInvoice(): Promise<void> {
+    await document.fonts.load('13px "Fish24OfficialInvoiceIranSans"');
+    await document.fonts.ready;
     window.print();
   }
 

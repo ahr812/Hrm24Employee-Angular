@@ -64,6 +64,8 @@ import { EMPLOYER_INVOICE_PREVIEWS } from './employer-invoice-preview.data';
                     <td class="px-4 py-4 text-center">
                       <a
                         [routerLink]="['/fish24/employer/invoices', invoice.id, 'print']"
+                        target="_blank"
+                        rel="noopener"
                         [attr.aria-label]="'مشاهده و چاپ فاکتور شماره ' + invoice.invoiceNumber"
                         title="مشاهده و چاپ فاکتور"
                         class="inline-flex items-center justify-center rounded-lg border border-primary/30 bg-primary/10 p-2 text-primary transition-colors hover:bg-primary/20 focus:outline-none focus:ring-2 focus:ring-primary/30">
@@ -86,6 +88,8 @@ import { EMPLOYER_INVOICE_PREVIEWS } from './employer-invoice-preview.data';
                   </div>
                   <a
                     [routerLink]="['/fish24/employer/invoices', invoice.id, 'print']"
+                    target="_blank"
+                    rel="noopener"
                     [attr.aria-label]="'مشاهده و چاپ فاکتور شماره ' + invoice.invoiceNumber"
                     title="مشاهده و چاپ فاکتور"
                     class="inline-flex shrink-0 items-center justify-center rounded-lg border border-primary/30 bg-primary/10 p-2 text-primary transition-colors hover:bg-primary/20 focus:outline-none focus:ring-2 focus:ring-primary/30">
