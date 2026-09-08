@@ -469,9 +469,9 @@ export class EmployerDocumentsComponent {
     this.pendingAction.set({
       documentId: document.id,
       kind: 'distribute',
-      title: 'تأیید توزیع سند',
-      actionLabel: 'کسر مبلغ از کیف پول و توزیع سند',
-      description: `وضعیت سند «${document.title}» در نسخه نمایشی به توزیع‌شده تغییر کند؟`
+      title: 'تأیید کسر مبلغ و توزیع سند',
+      actionLabel: 'کسر مبلغ و توزیع سند',
+      description: 'با تأیید این عملیات، هزینه مربوط به این سند از کیف پول شما کسر شده و سند به کارکنان مربوطه توزیع می‌شود. پس از انجام توزیع، این سند دیگر قابل حذف نخواهد بود. آیا از ادامه عملیات اطمینان دارید؟'
     });
   }
 
