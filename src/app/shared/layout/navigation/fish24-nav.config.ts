@@ -252,7 +252,8 @@ export const FISH24_EMPLOYER_NAV_CONFIG: readonly Fish24NavItem[] = [
     id: 'fish24-employer-employees',
     label: 'کارکنان تحت پوشش',
     icon: 'users',
-    permission: 'employer-employees'
+    permission: 'employer-employees',
+    route: '/fish24/employer/employees'
   },
   {
     id: 'fish24-employer-tickets',
