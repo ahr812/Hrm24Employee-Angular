@@ -294,7 +294,8 @@ export const FISH24_EMPLOYER_NAV_CONFIG: readonly Fish24NavItem[] = [
     id: 'fish24-employer-system-training',
     label: 'آموزش سامانه',
     icon: 'graduation-cap',
-    permission: 'system-training'
+    permission: 'system-training',
+    route: '/fish24/employer/training'
   }
 ];
 

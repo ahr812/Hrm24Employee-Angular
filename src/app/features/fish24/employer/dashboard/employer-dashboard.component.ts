@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { IconComponent } from '../../../../shared/ui/icon/icon.component';
 
 interface EmployerDashboardMetric {
@@ -12,7 +13,7 @@ interface EmployerDashboardMetric {
 @Component({
   selector: 'app-employer-dashboard',
   standalone: true,
-  imports: [IconComponent],
+  imports: [RouterLink, IconComponent],
   template: `
     <div class="max-w-[95%] mx-auto space-y-6 sm:space-y-8 animate-fade-in-up" dir="rtl">
       <header class="flex items-center gap-4">
@@ -112,7 +113,7 @@ interface EmployerDashboardMetric {
       </section>
 
       <section aria-labelledby="employer-dashboard-training">
-        <div class="relative overflow-hidden flex items-center gap-4 rounded-2xl border border-primary/30 bg-gradient-to-l from-primary/20 via-primary/10 to-surface p-5 sm:p-6 shadow-sm dark:to-slate-800">
+        <a routerLink="/fish24/employer/training" class="relative flex items-center gap-4 overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-l from-primary/20 via-primary/10 to-surface p-5 shadow-sm transition-colors hover:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/25 dark:to-slate-800 sm:p-6">
           <div class="absolute -left-8 -bottom-10 w-32 h-32 rounded-full bg-primary/10" aria-hidden="true"></div>
           <div class="relative w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-primary text-white flex items-center justify-center shrink-0 shadow-lg shadow-primary/20">
             <ui-icon name="graduation-cap" [size]="28"></ui-icon>
@@ -121,7 +122,8 @@ interface EmployerDashboardMetric {
             <h2 id="employer-dashboard-training" class="text-lg sm:text-xl font-extrabold text-foreground dark:text-slate-100">آموزش سامانه</h2>
             <p class="mt-1 text-sm leading-6 text-muted">راهنمای استفاده از سامانه</p>
           </div>
-        </div>
+          <ui-icon name="chevron-left" [size]="22" class="relative mr-auto shrink-0 text-primary"></ui-icon>
+        </a>
       </section>
     </div>
   `

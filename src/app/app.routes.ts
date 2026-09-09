@@ -22,6 +22,7 @@ export const routes: Routes = [
   { path: 'fish24/employer/invoices', loadComponent: () => import('./features/fish24/employer/invoices/employer-invoices.component').then(m => m.EmployerInvoicesComponent), canActivate: [authGuard] },
   { path: 'fish24/employer/employees', loadComponent: () => import('./features/fish24/employer/employees/employer-employees.component').then(m => m.EmployerEmployeesComponent), canActivate: [authGuard] },
   { path: 'fish24/employer/employee-notifications', loadComponent: () => import('./features/fish24/employer/employee-notifications/employer-employee-notifications.component').then(m => m.EmployerEmployeeNotificationsComponent), canActivate: [authGuard] },
+  { path: 'fish24/employer/training', loadComponent: () => import('./features/fish24/employer/training/employer-training.component').then(m => m.EmployerTrainingComponent), canActivate: [authGuard] },
   { path: 'fish24/employer/tickets/:id', loadComponent: () => import('./features/fish24/employer/tickets/employer-ticket-view.component').then(m => m.EmployerTicketViewComponent), canActivate: [authGuard] },
   { path: 'fish24/employer/tickets', loadComponent: () => import('./features/fish24/employer/tickets/employer-tickets.component').then(m => m.EmployerTicketsComponent), canActivate: [authGuard] },
   { path: 'fish24/my/documents', loadComponent: () => import('./features/fish24/my/documents/my-documents.component').then(m => m.MyDocumentsComponent), canActivate: [authGuard] },
