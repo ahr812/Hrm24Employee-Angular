@@ -5,13 +5,13 @@ import { ToastService } from '../../../../shared/ui/toast/toast.service';
 interface EmployeeProfileIdentity {
   mobile: string;
   name: string;
-  employeeIdentifier: string;
+  nationalId: string;
 }
 
 const EMPLOYEE_PROFILE_IDENTITY: EmployeeProfileIdentity = {
   mobile: '09191239004',
   name: 'امیر رنجبر',
-  employeeIdentifier: '0014133729'
+  nationalId: '0014133729'
 };
 
 @Component({
@@ -38,7 +38,7 @@ const EMPLOYEE_PROFILE_IDENTITY: EmployeeProfileIdentity = {
             <span class="sr-only">انتخاب عکس پروفایل</span>
             <img
               [src]="profileImage() || 'images/avatar3.jpg'"
-              alt="تصویر پروفایل امیر رنجبر"
+              [alt]="'تصویر پروفایل ' + (name().trim() || 'کارمند')"
               class="h-full w-full rounded-full border-4 border-primary/15 object-cover shadow-sm">
             <span class="absolute inset-0 flex items-center justify-center rounded-full bg-slate-950/45 text-white opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
               <ui-icon name="camera" [size]="25"></ui-icon>
@@ -57,16 +57,52 @@ const EMPLOYEE_PROFILE_IDENTITY: EmployeeProfileIdentity = {
             <span dir="ltr">{{ identity.mobile }}</span>
           </div>
 
-          <dl class="mt-3 grid w-full grid-cols-1 gap-2 sm:grid-cols-2">
-            <div class="rounded-xl border border-border bg-background px-3 py-2.5 text-center dark:border-slate-700 dark:bg-slate-900">
-              <dt class="sr-only">نام کارمند</dt>
-              <dd class="text-sm font-bold text-foreground dark:text-slate-100">{{ identity.name }}</dd>
+          <div class="mt-3 grid w-full grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <label for="employee-profile-name" class="mb-1.5 block text-sm font-bold text-foreground dark:text-slate-200">نام و نام خانوادگی</label>
+              <input
+                id="employee-profile-name"
+                form="employee-profile-form"
+                type="text"
+                autocomplete="name"
+                required
+                [value]="name()"
+                [attr.aria-invalid]="submissionAttempted() && !isNameValid()"
+                [attr.aria-describedby]="submissionAttempted() && !isNameValid() ? 'employee-profile-name-error' : null"
+                (input)="onNameInput($event)"
+                class="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-semibold text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+              @if (submissionAttempted() && !isNameValid()) {
+                <p id="employee-profile-name-error" class="mt-1.5 flex items-center gap-1.5 text-xs font-semibold text-danger" role="alert">
+                  <ui-icon name="alert-circle" [size]="14"></ui-icon>
+                  نام و نام خانوادگی را وارد کنید.
+                </p>
+              }
             </div>
-            <div class="rounded-xl border border-border bg-background px-3 py-2.5 text-center dark:border-slate-700 dark:bg-slate-900">
-              <dt class="sr-only">شناسه کارمند</dt>
-              <dd class="text-sm font-bold text-foreground dark:text-slate-100" dir="ltr">{{ identity.employeeIdentifier }}</dd>
+            <div>
+              <label for="employee-profile-national-id" class="mb-1.5 block text-sm font-bold text-foreground dark:text-slate-200">کد ملی</label>
+              <input
+                id="employee-profile-national-id"
+                form="employee-profile-form"
+                type="text"
+                inputmode="numeric"
+                pattern="[0-9]*"
+                maxlength="10"
+                autocomplete="off"
+                required
+                dir="ltr"
+                [value]="nationalId()"
+                [attr.aria-invalid]="submissionAttempted() && !isNationalIdValid()"
+                [attr.aria-describedby]="submissionAttempted() && !isNationalIdValid() ? 'employee-profile-national-id-error' : null"
+                (input)="onNationalIdInput($event)"
+                class="h-11 w-full rounded-xl border border-border bg-background px-3 text-left text-sm font-semibold text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+              @if (submissionAttempted() && !isNationalIdValid()) {
+                <p id="employee-profile-national-id-error" class="mt-1.5 flex items-center gap-1.5 text-xs font-semibold text-danger" role="alert">
+                  <ui-icon name="alert-circle" [size]="14"></ui-icon>
+                  کد ملی باید دقیقاً شامل ۱۰ رقم باشد.
+                </p>
+              }
             </div>
-          </dl>
+          </div>
         </div>
       </section>
 
@@ -81,7 +117,7 @@ const EMPLOYEE_PROFILE_IDENTITY: EmployeeProfileIdentity = {
           </div>
         </div>
 
-        <form class="mt-4" (submit)="submitProfile($event)" novalidate>
+        <form id="employee-profile-form" class="mt-4" (submit)="submitProfile($event)" novalidate>
           <fieldset class="min-w-0">
             <legend class="sr-only">رمز جدید ۵ رقمی</legend>
             <div class="mx-auto flex w-full max-w-sm justify-center gap-2" dir="ltr">
@@ -127,6 +163,8 @@ export class MyProfileComponent {
 
   readonly identity = EMPLOYEE_PROFILE_IDENTITY;
   readonly profileImage = signal<string | null>(null);
+  readonly name = signal(EMPLOYEE_PROFILE_IDENTITY.name);
+  readonly nationalId = signal(EMPLOYEE_PROFILE_IDENTITY.nationalId);
   readonly pinDigits = signal<string[]>(['', '', '', '', '']);
   readonly submissionAttempted = signal(false);
 
@@ -141,6 +179,17 @@ export class MyProfileComponent {
     const reader = new FileReader();
     reader.onload = () => this.profileImage.set(reader.result as string);
     reader.readAsDataURL(file);
+  }
+
+  onNameInput(event: Event): void {
+    this.name.set((event.target as HTMLInputElement).value);
+  }
+
+  onNationalIdInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const value = this.normalizeDigits(input.value).slice(0, 10);
+    this.nationalId.set(value);
+    input.value = value;
   }
 
   onPinInput(index: number, event: Event): void {
@@ -181,10 +230,21 @@ export class MyProfileComponent {
     return /^\d{5}$/.test(this.pinDigits().join(''));
   }
 
+  isNameValid(): boolean {
+    return this.name().trim().length > 0;
+  }
+
+  isNationalIdValid(): boolean {
+    return /^\d{10}$/.test(this.nationalId());
+  }
+
   submitProfile(event: Event): void {
     event.preventDefault();
     this.submissionAttempted.set(true);
-    if (!this.isPinValid()) {
+    const trimmedName = this.name().trim();
+    this.name.set(trimmedName);
+
+    if (!this.isNameValid() || !this.isNationalIdValid() || !this.isPinValid()) {
       return;
     }
 
