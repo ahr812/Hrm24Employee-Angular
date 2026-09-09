@@ -112,40 +112,66 @@ const EMPLOYEE_PROFILE_IDENTITY: EmployeeProfileIdentity = {
             <ui-icon name="key" [size]="21"></ui-icon>
           </div>
           <div class="min-w-0">
-            <h2 id="employee-pin-title" class="text-base font-bold text-foreground dark:text-slate-100 sm:text-lg">رمز عبور ۵ رقمی</h2>
-            <p class="mt-0.5 text-xs leading-5 text-muted sm:text-sm">جهت تغییر رمز عبور، لطفا رمز جدید ۵ رقمی را وارد نمایید.</p>
+            <h2 id="employee-pin-title" class="text-base font-bold text-foreground dark:text-slate-100 sm:text-lg">تغییر رمز عبور</h2>
+            <p class="mt-0.5 text-xs leading-5 text-muted sm:text-sm">در صورت تمایل به تغییر رمز، هر دو فیلد را با یک رمز ۵ رقمی یکسان تکمیل کنید.</p>
           </div>
         </div>
 
         <form id="employee-profile-form" class="mt-4" (submit)="submitProfile($event)" novalidate>
-          <fieldset class="min-w-0">
-            <legend class="sr-only">رمز جدید ۵ رقمی</legend>
-            <div class="mx-auto flex w-full max-w-sm justify-center gap-2" dir="ltr">
-              @for (digit of pinDigits(); track $index) {
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <label for="employee-new-password" class="mb-1.5 block text-sm font-bold text-foreground dark:text-slate-200">رمز عبور جدید</label>
+              <div class="relative">
+                <ui-icon name="key" [size]="17" class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted"></ui-icon>
                 <input
-                  [id]="'employee-pin-' + $index"
+                  id="employee-new-password"
                   type="password"
                   inputmode="numeric"
                   pattern="[0-9]*"
-                  maxlength="1"
+                  maxlength="5"
                   autocomplete="new-password"
-                  [value]="digit"
-                  [attr.aria-label]="'رقم ' + ($index + 1) + ' از رمز ۵ رقمی'"
-                  [attr.aria-invalid]="submissionAttempted() && !isPinValid()"
-                  (input)="onPinInput($index, $event)"
-                  (keydown)="onPinKeydown($index, $event)"
-                  (paste)="onPinPaste($index, $event)"
-                  class="h-12 min-w-0 w-0 flex-1 rounded-xl border border-border bg-background text-center text-xl font-extrabold text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 sm:h-14 sm:max-w-16">
+                  dir="ltr"
+                  [value]="newPassword()"
+                  [attr.aria-invalid]="submissionAttempted() && hasNewPasswordError()"
+                  [attr.aria-describedby]="submissionAttempted() && hasNewPasswordError() ? 'employee-new-password-error' : null"
+                  (input)="onPasswordInput('new', $event)"
+                  class="h-11 w-full rounded-xl border border-border bg-background pr-10 pl-3 text-center text-base font-extrabold tracking-[0.35em] text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                  placeholder="۵ رقم">
+              </div>
+              @if (submissionAttempted() && hasNewPasswordError()) {
+                <p id="employee-new-password-error" class="mt-1.5 flex items-center gap-1.5 text-xs font-semibold text-danger" role="alert">
+                  <ui-icon name="alert-circle" [size]="14"></ui-icon>
+                  {{ newPasswordErrorMessage() }}
+                </p>
               }
             </div>
-          </fieldset>
-
-          @if (submissionAttempted() && !isPinValid()) {
-            <p class="mt-2 flex items-center justify-center gap-1.5 text-xs font-semibold text-danger" role="alert">
-              <ui-icon name="alert-circle" [size]="15"></ui-icon>
-              رمز عبور باید دقیقاً شامل ۵ رقم باشد.
-            </p>
-          }
+            <div>
+              <label for="employee-password-confirmation" class="mb-1.5 block text-sm font-bold text-foreground dark:text-slate-200">تکرار رمز عبور</label>
+              <div class="relative">
+                <ui-icon name="lock" [size]="17" class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted"></ui-icon>
+                <input
+                  id="employee-password-confirmation"
+                  type="password"
+                  inputmode="numeric"
+                  pattern="[0-9]*"
+                  maxlength="5"
+                  autocomplete="new-password"
+                  dir="ltr"
+                  [value]="passwordConfirmation()"
+                  [attr.aria-invalid]="submissionAttempted() && hasPasswordConfirmationError()"
+                  [attr.aria-describedby]="submissionAttempted() && hasPasswordConfirmationError() ? 'employee-password-confirmation-error' : null"
+                  (input)="onPasswordInput('confirmation', $event)"
+                  class="h-11 w-full rounded-xl border border-border bg-background pr-10 pl-3 text-center text-base font-extrabold tracking-[0.35em] text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                  placeholder="۵ رقم">
+              </div>
+              @if (submissionAttempted() && hasPasswordConfirmationError()) {
+                <p id="employee-password-confirmation-error" class="mt-1.5 flex items-center gap-1.5 text-xs font-semibold text-danger" role="alert">
+                  <ui-icon name="alert-circle" [size]="14"></ui-icon>
+                  {{ passwordConfirmationErrorMessage() }}
+                </p>
+              }
+            </div>
+          </div>
 
           <div class="mt-4 border-t border-border pt-4 dark:border-slate-700">
             <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-primary/20 transition-colors hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary/30 sm:mr-auto sm:w-auto">
@@ -165,7 +191,10 @@ export class MyProfileComponent {
   readonly profileImage = signal<string | null>(null);
   readonly name = signal(EMPLOYEE_PROFILE_IDENTITY.name);
   readonly nationalId = signal(EMPLOYEE_PROFILE_IDENTITY.nationalId);
-  readonly pinDigits = signal<string[]>(['', '', '', '', '']);
+  readonly newPassword = signal('');
+  readonly passwordConfirmation = signal('');
+  readonly newPasswordHadNonDigit = signal(false);
+  readonly passwordConfirmationHadNonDigit = signal(false);
   readonly submissionAttempted = signal(false);
 
   onProfileImageSelected(event: Event): void {
@@ -192,42 +221,74 @@ export class MyProfileComponent {
     input.value = value;
   }
 
-  onPinInput(index: number, event: Event): void {
+  onPasswordInput(field: 'new' | 'confirmation', event: Event): void {
     const input = event.target as HTMLInputElement;
-    const digit = this.normalizeDigits(input.value).slice(-1);
-    this.setPinDigit(index, digit);
-    input.value = digit;
+    const rawValue = input.value;
+    const value = this.normalizeDigits(rawValue).slice(0, 5);
+    const hadNonDigit = /[^0-9۰-۹٠-٩]/.test(rawValue);
+    input.value = value;
 
-    if (digit && index < 4) {
-      this.focusPinDigit(index + 1);
+    if (field === 'new') {
+      this.newPassword.set(value);
+      this.newPasswordHadNonDigit.set(hadNonDigit);
+    } else {
+      this.passwordConfirmation.set(value);
+      this.passwordConfirmationHadNonDigit.set(hadNonDigit);
     }
   }
 
-  onPinKeydown(index: number, event: KeyboardEvent): void {
-    if (event.key !== 'Backspace' || this.pinDigits()[index] || index === 0) {
-      return;
-    }
-
-    event.preventDefault();
-    this.setPinDigit(index - 1, '');
-    this.focusPinDigit(index - 1);
+  passwordChangeRequested(): boolean {
+    return this.newPassword().length > 0
+      || this.passwordConfirmation().length > 0
+      || this.newPasswordHadNonDigit()
+      || this.passwordConfirmationHadNonDigit();
   }
 
-  onPinPaste(index: number, event: ClipboardEvent): void {
-    event.preventDefault();
-    const pastedDigits = this.normalizeDigits(event.clipboardData?.getData('text') ?? '').slice(0, 5 - index);
-    if (!pastedDigits) {
-      return;
-    }
-
-    const digits = [...this.pinDigits()];
-    [...pastedDigits].forEach((digit, offset) => digits[index + offset] = digit);
-    this.pinDigits.set(digits);
-    this.focusPinDigit(Math.min(index + pastedDigits.length, 4));
+  hasNewPasswordError(): boolean {
+    return this.passwordChangeRequested()
+      && (this.newPasswordHadNonDigit() || !/^\d{5}$/.test(this.newPassword()));
   }
 
-  isPinValid(): boolean {
-    return /^\d{5}$/.test(this.pinDigits().join(''));
+  hasPasswordConfirmationError(): boolean {
+    if (!this.passwordChangeRequested()) {
+      return false;
+    }
+
+    if (this.passwordConfirmationHadNonDigit() || !/^\d{5}$/.test(this.passwordConfirmation())) {
+      return true;
+    }
+
+    return /^\d{5}$/.test(this.newPassword())
+      && !this.newPasswordHadNonDigit()
+      && this.newPassword() !== this.passwordConfirmation();
+  }
+
+  newPasswordErrorMessage(): string {
+    if (this.newPasswordHadNonDigit()) {
+      return 'رمز عبور جدید فقط باید شامل اعداد باشد.';
+    }
+    if (!this.newPassword()) {
+      return 'رمز عبور جدید را وارد کنید.';
+    }
+    return 'رمز عبور جدید باید دقیقاً ۵ رقم باشد.';
+  }
+
+  passwordConfirmationErrorMessage(): string {
+    if (this.passwordConfirmationHadNonDigit()) {
+      return 'تکرار رمز عبور فقط باید شامل اعداد باشد.';
+    }
+    if (!this.passwordConfirmation()) {
+      return 'تکرار رمز عبور را وارد کنید.';
+    }
+    if (!/^\d{5}$/.test(this.passwordConfirmation())) {
+      return 'تکرار رمز عبور باید دقیقاً ۵ رقم باشد.';
+    }
+    return 'رمز عبور جدید و تکرار آن یکسان نیستند.';
+  }
+
+  arePasswordFieldsValid(): boolean {
+    return !this.passwordChangeRequested()
+      || (!this.hasNewPasswordError() && !this.hasPasswordConfirmationError());
   }
 
   isNameValid(): boolean {
@@ -244,24 +305,16 @@ export class MyProfileComponent {
     const trimmedName = this.name().trim();
     this.name.set(trimmedName);
 
-    if (!this.isNameValid() || !this.isNationalIdValid() || !this.isPinValid()) {
+    if (!this.isNameValid() || !this.isNationalIdValid() || !this.arePasswordFieldsValid()) {
       return;
     }
 
     this.toastService.show('فرم با موفقیت بررسی شد.', 'success');
-    this.pinDigits.set(['', '', '', '', '']);
+    this.newPassword.set('');
+    this.passwordConfirmation.set('');
+    this.newPasswordHadNonDigit.set(false);
+    this.passwordConfirmationHadNonDigit.set(false);
     this.submissionAttempted.set(false);
-    this.focusPinDigit(0);
-  }
-
-  private setPinDigit(index: number, digit: string): void {
-    const digits = [...this.pinDigits()];
-    digits[index] = digit;
-    this.pinDigits.set(digits);
-  }
-
-  private focusPinDigit(index: number): void {
-    document.getElementById(`employee-pin-${index}`)?.focus();
   }
 
   private normalizeDigits(value: string): string {
