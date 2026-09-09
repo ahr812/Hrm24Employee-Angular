@@ -25,6 +25,7 @@ export const routes: Routes = [
   { path: 'fish24/employer/tickets/:id', loadComponent: () => import('./features/fish24/employer/tickets/employer-ticket-view.component').then(m => m.EmployerTicketViewComponent), canActivate: [authGuard] },
   { path: 'fish24/employer/tickets', loadComponent: () => import('./features/fish24/employer/tickets/employer-tickets.component').then(m => m.EmployerTicketsComponent), canActivate: [authGuard] },
   { path: 'fish24/my/documents', loadComponent: () => import('./features/fish24/my/documents/my-documents.component').then(m => m.MyDocumentsComponent), canActivate: [authGuard] },
+  { path: 'fish24/my/profile', loadComponent: () => import('./features/fish24/my/profile/my-profile.component').then(m => m.MyProfileComponent), canActivate: [authGuard] },
   { path: 'fish24/my/notifications', loadComponent: () => import('./features/fish24/my/notifications/my-notifications.component').then(m => m.MyNotificationsComponent), canActivate: [authGuard] },
 
   { path: 'tasks', loadComponent: () => import('./features/tasks/tasks.component').then(m => m.TasksComponent), canActivate: [authGuard] },

@@ -316,7 +316,8 @@ export const FISH24_EMPLOYEE_NAV_CONFIG: readonly Fish24NavItem[] = [
     id: 'fish24-employee-profile',
     label: 'پروفایل',
     icon: 'user',
-    permission: 'profile'
+    permission: 'profile',
+    route: '/fish24/my/profile'
   },
   {
     id: 'fish24-my-notifications',
