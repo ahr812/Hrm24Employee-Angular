@@ -254,64 +254,22 @@
     updateOnlineStatus();
 
     // ══════════════════════════════════════
-    // VPN Detection - Fetch based, no cache
+    // VPN Detection
+    // Geo-IP alone cannot distinguish a VPN from proxies, corporate gateways,
+    // browser relays, or a remote test runner. Keep the existing banner and the
+    // optional window.__checkVPN integration point, but default to the safe
+    // hidden state until a reliable detector is supplied by the host.
     // ══════════════════════════════════════
     (function () {
-      var activeRequest = null;
-
-      function setVPNBanner(visible) {
-        var el = document.getElementById('vpn-banner');
-        if (el) {
-          el.style.display = visible ? 'block' : 'none';
-          repositionBanners();
-        }
-      }
-
-      window.__checkVPN = function () {
-        // Cancel any pending request to avoid stale responses
-        if (activeRequest) {
-          activeRequest.abort();
-          activeRequest = null;
-        }
-
-        var controller = new AbortController();
-        activeRequest = controller;
-
-        fetch('https://ipapi.co/json/', {
-          signal: controller.signal,
-          cache: 'no-store'
-        })
-          .then(function (response) {
-            if (!response.ok) throw new Error('HTTP ' + response.status);
-            return response.json();
-          })
-          .then(function (data) {
-            // Only process if this is still the active request
-            if (activeRequest !== controller) return;
-            activeRequest = null;
-
-            if (data && data.country_code) {
-              setVPNBanner(data.country_code !== 'IR');
-            }
-          })
-          .catch(function (err) {
-            if (err.name === 'AbortError') return;
-            // Network error or parse error → don't change banner state
-            activeRequest = null;
-          });
-      };
-
-      // VPN banner click handler
       var vpnBanner = document.getElementById('vpn-banner');
       if (vpnBanner) {
+        vpnBanner.style.display = 'none';
         vpnBanner.onclick = function () {
           this.style.display = 'none';
           repositionBanners();
         };
       }
-
-      // Initial check
-      window.__checkVPN();
+      repositionBanners();
     })();
   </script>
 </body>

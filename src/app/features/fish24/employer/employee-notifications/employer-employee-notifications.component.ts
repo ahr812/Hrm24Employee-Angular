@@ -5,8 +5,6 @@ import { IconComponent } from '../../../../shared/ui/icon/icon.component';
 import { ToastService } from '../../../../shared/ui/toast/toast.service';
 import { EmployerEmployeeNotificationsService } from './employer-employee-notifications.service';
 
-type WorkplaceFilter = 'all' | `${number}`;
-
 @Component({
   selector: 'app-employer-employee-notifications',
   standalone: true,
@@ -32,8 +30,8 @@ type WorkplaceFilter = 'all' | `${number}`;
           <div>
             <label for="employee-notification-workplace-filter" class="mb-1.5 block text-sm font-bold text-foreground dark:text-slate-200">شرکت / کارگاه</label>
             <select id="employee-notification-workplace-filter" name="notificationWorkplaceFilter" [ngModel]="selectedWorkplaceFilter()" (ngModelChange)="selectedWorkplaceFilter.set($event)" class="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-semibold text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
-              <option value="all">همه شرکت‌ها و کارگاه‌ها</option>
-              @for (workplace of workplaces; track workplace.id) { <option [value]="workplace.id">{{ workplace.name }}</option> }
+              <option [ngValue]="null">همه شرکت‌ها و کارگاه‌ها</option>
+              @for (workplace of workplaces; track workplace.id) { <option [ngValue]="workplace.id">{{ workplace.name }}</option> }
             </select>
           </div>
           <button type="button" (click)="showAll()" class="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-border bg-surface px-4 text-sm font-bold text-foreground hover:bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"><ui-icon name="list-check" [size]="18"></ui-icon>مشاهده همه</button>
@@ -113,16 +111,16 @@ export class EmployerEmployeeNotificationsComponent {
 
   readonly notifications = this.notificationService.notifications;
   readonly workplaces = this.notificationService.workplaces;
-  readonly selectedWorkplaceFilter = signal<WorkplaceFilter>('all');
-  readonly appliedWorkplaceFilter = signal<WorkplaceFilter>('all');
+  readonly selectedWorkplaceFilter = signal<number | null>(null);
+  readonly appliedWorkplaceFilter = signal<number | null>(null);
   readonly createModalOpen = signal(false);
   readonly createAttempted = signal(false);
   createWorkplaceId = '';
   createMessage = '';
 
   readonly filteredNotifications = computed(() => {
-    const workplace = this.appliedWorkplaceFilter();
-    return this.notifications().filter((notification) => workplace === 'all' || notification.workplaceId === Number(workplace));
+    const workplaceId = this.appliedWorkplaceFilter();
+    return this.notifications().filter((notification) => workplaceId === null || notification.workplaceId === workplaceId);
   });
 
   applyFilter(): void {
@@ -130,8 +128,8 @@ export class EmployerEmployeeNotificationsComponent {
   }
 
   showAll(): void {
-    this.selectedWorkplaceFilter.set('all');
-    this.appliedWorkplaceFilter.set('all');
+    this.selectedWorkplaceFilter.set(null);
+    this.appliedWorkplaceFilter.set(null);
   }
 
   openCreateModal(): void {
