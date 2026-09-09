@@ -270,10 +270,25 @@ export const FISH24_EMPLOYER_NAV_CONFIG: readonly Fish24NavItem[] = [
     route: '/fish24/employer/employee-notifications'
   },
   {
-    id: 'fish24-employer-personal-documents',
-    label: 'اسناد شخصی من',
+    id: 'fish24-employer-employee-workspace',
+    label: 'فضای کارمندی من',
     icon: 'save',
-    permission: 'personal-documents'
+    children: [
+      {
+        id: 'fish24-my-documents',
+        label: 'اسناد من',
+        icon: 'save',
+        permission: 'personal-documents',
+        route: '/fish24/my/documents'
+      },
+      {
+        id: 'fish24-my-notifications',
+        label: 'اطلاع‌رسانی‌های من',
+        icon: 'bell',
+        permission: 'employee-notifications',
+        route: '/fish24/my/notifications'
+      }
+    ]
   },
   {
     id: 'fish24-employer-system-training',
@@ -291,10 +306,11 @@ export const FISH24_EMPLOYER_NAV_CONFIG: readonly Fish24NavItem[] = [
  */
 export const FISH24_EMPLOYEE_NAV_CONFIG: readonly Fish24NavItem[] = [
   {
-    id: 'fish24-employee-personal-documents',
+    id: 'fish24-my-documents',
     label: 'اسناد من',
     icon: 'save',
-    permission: 'personal-documents'
+    permission: 'personal-documents',
+    route: '/fish24/my/documents'
   },
   {
     id: 'fish24-employee-profile',
@@ -303,10 +319,11 @@ export const FISH24_EMPLOYEE_NAV_CONFIG: readonly Fish24NavItem[] = [
     permission: 'profile'
   },
   {
-    id: 'fish24-employee-notifications',
-    label: 'اطلاع‌رسانی',
+    id: 'fish24-my-notifications',
+    label: 'اطلاع‌رسانی‌های من',
     icon: 'bell',
-    permission: 'employee-notifications'
+    permission: 'employee-notifications',
+    route: '/fish24/my/notifications'
   }
 ];
 
@@ -335,7 +352,10 @@ export function getFish24NavigationConfig(roles: readonly Fish24RoleId[]): reado
   }
 
   if (roles.includes('employee')) {
-    items.push(...FISH24_EMPLOYEE_NAV_CONFIG);
+    const employeeItems = roles.includes('employer')
+      ? []
+      : FISH24_EMPLOYEE_NAV_CONFIG;
+    items.push(...employeeItems);
   }
 
   return items;

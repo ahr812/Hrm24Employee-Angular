@@ -70,6 +70,7 @@ export const ROLE_CAPABILITIES: Record<Fish24RoleId, readonly Fish24Permission[]
     FISH24_PERMISSIONS.employerEmployeeNotifications,
     FISH24_PERMISSIONS.systemTraining,
     FISH24_PERMISSIONS.personalDocuments,
+    FISH24_PERMISSIONS.employeeNotifications,
     FISH24_PERMISSIONS.profile
   ],
   employee: [

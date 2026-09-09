@@ -55,6 +55,7 @@ interface NavItem {
                 <button
                   (click)="toggleGroup(item.id)"
                   type="button"
+                  [attr.aria-expanded]="isGroupExpanded(item.id)"
                   class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-muted dark:text-slate-300 transition-all duration-200 hover:bg-primary/8 dark:hover:bg-primary/15 group">
                   <ui-icon [name]="item.icon || 'folder'" [size]="20" class="text-slate-500 dark:text-slate-400 group-hover:scale-110 transition-transform duration-200"></ui-icon>
                   <span class="font-extrabold text-sm flex-1">{{ item.label }}</span>
@@ -70,10 +71,19 @@ interface NavItem {
                 @if (isGroupExpanded(item.id)) {
                   <div class="pl-8 space-y-1.5 mt-3 mb-1">
                     @for (child of item.children; track child.id) {
-                      <div class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors duration-200 group cursor-default text-foreground dark:text-slate-300">
-                        <span class="w-2 h-2 rounded-full bg-slate-400 dark:bg-slate-500 flex-shrink-0 mt-0.5"></span>
-                        <span class="text-sm font-medium leading-tight">{{ child.label }}</span>
-                      </div>
+                      @if (child.route) {
+                        <a [routerLink]="child.route" routerLinkActive="bg-primary/10 text-primary"
+                           class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors duration-200 group text-foreground dark:text-slate-300"
+                           (click)="onDesktopNavClick()">
+                          <span class="w-2 h-2 rounded-full bg-slate-400 dark:bg-slate-500 flex-shrink-0 mt-0.5"></span>
+                          <span class="text-sm font-medium leading-tight">{{ child.label }}</span>
+                        </a>
+                      } @else {
+                        <div class="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground dark:text-slate-300">
+                          <span class="w-2 h-2 rounded-full bg-slate-400 dark:bg-slate-500 flex-shrink-0 mt-0.5"></span>
+                          <span class="text-sm font-medium leading-tight">{{ child.label }}</span>
+                        </div>
+                      }
                     }
                   </div>
                 }
@@ -134,6 +144,7 @@ interface NavItem {
                 <button
                   (click)="toggleGroup(item.id)"
                   type="button"
+                  [attr.aria-expanded]="isGroupExpanded(item.id)"
                   class="mobile-nav-item w-full relative flex flex-col items-center justify-center gap-2 py-3.5 px-1 rounded-xl border border-border dark:border-slate-700 transition-all duration-300"
                   [class.mobile-nav-active]="isGroupExpanded(item.id)">
                   <ui-icon [name]="item.icon || 'folder'" [size]="isTablet ? 40 : 28" class="text-blue-500 mobile-nav-icon transition-all duration-300"></ui-icon>
@@ -144,10 +155,19 @@ interface NavItem {
                 @if (isGroupExpanded(item.id)) {
                   <div class="px-3 py-2.5 ml-2 border-l-2 border-primary/20 dark:border-primary/30 space-y-1.5 mt-2">
                     @for (child of item.children; track child.id) {
-                      <div class="text-sm text-foreground dark:text-slate-300 px-3 py-2.5 rounded-lg bg-slate-50/50 dark:bg-slate-700/30 border border-slate-200/30 dark:border-slate-600/30 hover:bg-slate-100/70 dark:hover:bg-slate-700/50 transition-colors duration-200">
-                        <span class="inline-block w-2 h-2 rounded-full bg-slate-400 dark:bg-slate-500 mr-2.5 align-middle"></span>
-                        <span class="font-medium">{{ child.label }}</span>
-                      </div>
+                      @if (child.route) {
+                        <a [routerLink]="child.route" routerLinkActive="mobile-nav-active"
+                           class="block text-sm text-foreground dark:text-slate-300 px-3 py-2.5 rounded-lg bg-slate-50/50 dark:bg-slate-700/30 border border-slate-200/30 dark:border-slate-600/30 hover:bg-slate-100/70 dark:hover:bg-slate-700/50 transition-colors duration-200"
+                           (click)="onMobileLeafNavClick()">
+                          <span class="inline-block w-2 h-2 rounded-full bg-slate-400 dark:bg-slate-500 mr-2.5 align-middle"></span>
+                          <span class="font-medium">{{ child.label }}</span>
+                        </a>
+                      } @else {
+                        <div class="text-sm text-foreground dark:text-slate-300 px-3 py-2.5 rounded-lg bg-slate-50/50 dark:bg-slate-700/30 border border-slate-200/30 dark:border-slate-600/30">
+                          <span class="inline-block w-2 h-2 rounded-full bg-slate-400 dark:bg-slate-500 mr-2.5 align-middle"></span>
+                          <span class="font-medium">{{ child.label }}</span>
+                        </div>
+                      }
                     }
                   </div>
                 }
