@@ -58,19 +58,21 @@ const PERSONAL_DOCUMENTS: readonly PersonalDocument[] = [
           </p>
         }
         @if (filteredDocuments().length > 0) {
-          <div class="grid grid-cols-1 gap-3 xl:grid-cols-2">
+          <div class="grid grid-cols-1 gap-2 xl:grid-cols-2">
             @for (document of filteredDocuments(); track document.id) {
-              <article class="min-w-0 rounded-2xl border border-border bg-surface p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:p-5">
-                <div class="flex min-w-0 items-start gap-3">
-                  <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><ui-icon name="file-text" [size]="20"></ui-icon></div>
-                  <div class="min-w-0 flex-1"><h3 class="break-words text-base font-extrabold leading-7 text-foreground dark:text-slate-100 sm:text-lg">{{ document.title }}</h3><p class="mt-1 break-words text-sm font-semibold leading-6 text-primary">{{ document.senderDisplayName }}</p></div>
+              <article class="min-w-0 rounded-xl border border-border bg-surface px-3 py-2.5 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:px-4 sm:py-3">
+                <div class="flex items-center justify-between gap-3">
+                  <div class="flex items-center gap-1.5 text-xs text-muted">
+                    <span>تاریخ سند</span>
+                    <time class="font-semibold text-foreground dark:text-slate-200" dir="ltr">{{ document.documentDate }}</time>
+                  </div>
+                  <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><ui-icon name="file-text" [size]="17"></ui-icon></div>
                 </div>
-                <dl class="mt-4 grid grid-cols-1 gap-2 border-t border-border pt-4 text-sm dark:border-slate-700 sm:grid-cols-2">
-                  <div class="flex items-center justify-between gap-3 rounded-lg bg-background/70 px-3 py-2 dark:bg-slate-900/50"><dt class="text-muted">تاریخ سند</dt><dd class="font-semibold text-foreground dark:text-slate-200" dir="ltr">{{ document.documentDate }}</dd></div>
-                  <div class="flex items-center justify-between gap-3 rounded-lg bg-background/70 px-3 py-2 dark:bg-slate-900/50"><dt class="text-muted">انقضا</dt><dd class="font-semibold text-foreground dark:text-slate-200" dir="ltr">{{ document.expirationDate }}</dd></div>
-                </dl>
-                <div class="mt-4 flex justify-end">
-                  <button type="button" (click)="requestDownload(document)" [attr.aria-label]="'دانلود ' + document.title" class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-primary/30 px-4 py-2.5 text-sm font-bold text-primary transition-colors hover:bg-primary/5 focus:outline-none focus:ring-2 focus:ring-primary/25 sm:w-auto"><ui-icon name="download" [size]="18"></ui-icon>دانلود</button>
+                <p class="mt-1 break-words text-xs font-semibold leading-5 text-primary sm:text-sm">{{ document.senderDisplayName }}</p>
+                <h3 class="mt-0.5 break-words text-base font-extrabold leading-6 text-foreground dark:text-slate-100">{{ document.title }}</h3>
+                <div class="mt-2.5 flex items-center justify-between gap-3 border-t border-border pt-2.5 dark:border-slate-700">
+                  <div class="min-w-0 text-xs"><span class="text-muted">انقضا: </span><time class="font-semibold text-foreground dark:text-slate-200" dir="ltr">{{ document.expirationDate }}</time></div>
+                  <button type="button" (click)="requestDownload(document)" [attr.aria-label]="'دانلود و مشاهده ' + document.title" class="inline-flex min-h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-primary/30 px-3 py-1.5 text-xs font-bold text-primary transition-colors hover:bg-primary/5 focus:outline-none focus:ring-2 focus:ring-primary/25"><ui-icon name="download" [size]="16"></ui-icon>دانلود و مشاهده</button>
                 </div>
               </article>
             }
