@@ -266,7 +266,8 @@ export const FISH24_EMPLOYER_NAV_CONFIG: readonly Fish24NavItem[] = [
     id: 'fish24-employer-employee-notifications',
     label: 'اطلاع‌رسانی کارکنان',
     icon: 'bell',
-    permission: 'employer-employee-notifications'
+    permission: 'employer-employee-notifications',
+    route: '/fish24/employer/employee-notifications'
   },
   {
     id: 'fish24-employer-personal-documents',

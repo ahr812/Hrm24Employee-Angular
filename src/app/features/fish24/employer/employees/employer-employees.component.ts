@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { EscToCloseDirective } from '../../../../shared/directives/esc-to-close.directive';
 import { IconComponent } from '../../../../shared/ui/icon/icon.component';
 import { ToastService } from '../../../../shared/ui/toast/toast.service';
+import { EMPLOYER_NOTIFICATION_WORKPLACES, EmployerEmployeeNotificationsService } from '../employee-notifications/employer-employee-notifications.service';
 
 interface EmployerCompanyOption {
   readonly id: number;
@@ -261,14 +262,16 @@ interface PendingStateAction {
                             : actionButtonClass('primary')">
                           <ui-icon name="ticket" [size]="17"></ui-icon>
                         </button>
-                        <button
-                          type="button"
-                          (click)="openNotificationModal(record)"
-                          [attr.aria-label]="'ارسال اطلاع رسانی به کارمند ' + employeeReference(record)"
-                          title="ارسال اطلاع رسانی به کارمند"
-                          [class]="actionButtonClass('primary')">
-                          <ui-icon name="bell" [size]="17"></ui-icon>
-                        </button>
+                        @if (record.name?.trim()) {
+                          <button
+                            type="button"
+                            (click)="openNotificationModal(record)"
+                            [attr.aria-label]="'ارسال اطلاع رسانی به کارمند ' + employeeReference(record)"
+                            title="ارسال اطلاع رسانی به کارمند"
+                            [class]="actionButtonClass('primary')">
+                            <ui-icon name="bell" [size]="17"></ui-icon>
+                          </button>
+                        }
                       </div>
                     </td>
                   </tr>
@@ -335,14 +338,16 @@ interface PendingStateAction {
                     <ui-icon name="ticket" [size]="17"></ui-icon>
                     {{ ticketActionLabel(record) }}
                   </button>
-                  <button
-                    type="button"
-                    (click)="openNotificationModal(record)"
-                    [attr.aria-label]="'ارسال اطلاع رسانی به کارمند ' + employeeReference(record)"
-                    [class]="mobileActionButtonClass('primary')">
-                    <ui-icon name="bell" [size]="17"></ui-icon>
-                    اطلاع‌رسانی
-                  </button>
+                  @if (record.name?.trim()) {
+                    <button
+                      type="button"
+                      (click)="openNotificationModal(record)"
+                      [attr.aria-label]="'ارسال اطلاع رسانی به کارمند ' + employeeReference(record)"
+                      [class]="mobileActionButtonClass('primary')">
+                      <ui-icon name="bell" [size]="17"></ui-icon>
+                      اطلاع‌رسانی
+                    </button>
+                  }
                 </div>
               </article>
             }
@@ -479,13 +484,10 @@ interface PendingStateAction {
 })
 export class EmployerEmployeesComponent {
   private readonly toastService = inject(ToastService);
+  private readonly notificationService = inject(EmployerEmployeeNotificationsService);
   private readonly numberFormatter = new Intl.NumberFormat('fa-IR', { maximumFractionDigits: 0 });
 
-  readonly companyOptions: readonly EmployerCompanyOption[] = [
-    { id: 201, name: 'مجموعه نمونه سپهر' },
-    { id: 202, name: 'مجموعه آزمایشی باران' },
-    { id: 203, name: 'مجموعه نمایشی نارنج' }
-  ];
+  readonly companyOptions: readonly EmployerCompanyOption[] = EMPLOYER_NOTIFICATION_WORKPLACES;
 
   readonly records = signal<readonly CoveredEmployeeRecord[]>([
     { id: 1001, companyWorkshopId: 201, companyWorkshopName: 'مجموعه نمونه سپهر', mobile: '09120001001', name: 'آرمان نمونه', isBlocked: false, hasTicketAccess: true },
@@ -659,6 +661,10 @@ export class EmployerEmployeesComponent {
   }
 
   openNotificationModal(record: CoveredEmployeeRecord): void {
+    if (!record.name?.trim()) {
+      this.closeNotificationModal();
+      return;
+    }
     this.notificationText = '';
     this.notificationSubmissionAttempted.set(false);
     this.notificationRecord.set(record);
@@ -676,13 +682,22 @@ export class EmployerEmployeesComponent {
 
   submitNotification(): void {
     this.notificationSubmissionAttempted.set(true);
+    const record = this.notificationRecord();
 
-    if (this.showNotificationError()) {
+    if (!record?.name?.trim() || this.showNotificationError()) {
       return;
     }
 
+    const created = this.notificationService.createEmployeeNotification({
+      employeeId: record.id,
+      employeeName: record.name,
+      workplaceId: record.companyWorkshopId,
+      message: this.notificationText
+    });
+    if (!created) return;
+
     this.closeNotificationModal();
-    this.toastService.show('متن اطلاع‌رسانی در نسخه نمایشی بررسی شد.', 'success');
+    this.toastService.show('اطلاع‌رسانی به کارمند در نسخه نمایشی ثبت شد.', 'success');
   }
 
   blockedActionLabel(record: CoveredEmployeeRecord): string {
