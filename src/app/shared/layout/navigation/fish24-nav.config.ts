@@ -18,8 +18,8 @@ export const FISH24_ADMIN_NAV_CONFIG: readonly Fish24NavItem[] = [
     id: 'fish24-admin-dashboard',
     label: 'داشبورد',
     icon: 'dashboard',
-    permission: 'dashboard'
-    // Future: route: '/fish24/admin/dashboard'
+    permission: 'dashboard',
+    route: '/dashboard'
   },
   {
     id: 'fish24-admin-reports',
