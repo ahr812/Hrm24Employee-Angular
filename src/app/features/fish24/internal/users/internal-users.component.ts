@@ -16,8 +16,10 @@ type ConfirmationActionType = 'activation' | 'employer-approval';
 interface InternalUserRecord {
   readonly id: number;
   readonly mobile: string;
+  readonly joinedAt: string;
   readonly fullName: string | null;
   readonly nationalId: string | null;
+  readonly companyName: string;
   readonly roles: readonly UserCapability[];
   readonly isActive: boolean;
   readonly employerApproval?: EmployerApprovalState;
@@ -34,6 +36,13 @@ interface PendingConfirmation {
   readonly title: string;
   readonly message: string;
   readonly confirmLabel: string;
+  readonly targetEmployerApproval?: EmployerApprovalState;
+}
+
+interface DeferredAction {
+  readonly label: string;
+  readonly hiddenForSupport?: boolean;
+  readonly employerOnly?: boolean;
 }
 
 const INTERNAL_ROLE_IDS: readonly Fish24RoleId[] = [
@@ -50,13 +59,14 @@ const ROLE_LABELS: Readonly<Record<UserCapability, string>> = {
   employee: 'کارمند'
 };
 
-const DEFERRED_ACTIONS: readonly string[] = [
-  'ارسال پیامک',
-  'ارسال‌ها',
-  'تراکنش‌ها',
-  'کوپن',
-  'نظرات',
-  'ورود به حساب کاربر'
+const DEFERRED_ACTIONS: readonly DeferredAction[] = [
+  { label: 'ارسال پیامک' },
+  { label: 'لیست ارسال‌ها', hiddenForSupport: true },
+  { label: 'لیست تراکنش‌ها', hiddenForSupport: true },
+  { label: 'تخصیص کوپن', hiddenForSupport: true },
+  { label: 'لیست کوپن‌ها', hiddenForSupport: true },
+  { label: 'ثبت نظر کارفرما', employerOnly: true },
+  { label: 'ورود به حساب کاربری' }
 ];
 
 @Component({
@@ -83,28 +93,28 @@ const DEFERRED_ACTIONS: readonly string[] = [
             </div>
             <div>
               <h2 id="internal-user-filters-title" class="text-base font-extrabold text-foreground dark:text-slate-100 sm:text-lg">فیلتر کاربران</h2>
-              <p class="mt-0.5 text-xs text-muted">جستجو بر اساس موبایل، نام یا کد ملی</p>
+              <p class="mt-0.5 text-xs text-muted">فیلتر فهرست بر اساس مشخصات قطعی کاربر</p>
             </div>
           </div>
 
-          <form class="grid grid-cols-1 gap-3 md:grid-cols-[minmax(14rem,1.5fr)_minmax(10rem,1fr)_minmax(10rem,1fr)_auto]" (submit)="applySearch($event)">
+          <form class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-6" (submit)="applySearch($event)">
             <div>
-              <label for="internal-user-search" class="mb-1.5 block text-sm font-bold text-foreground dark:text-slate-200">جستجو</label>
-              <div class="relative">
-                <ui-icon name="search" [size]="18" class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted"></ui-icon>
-                <input
-                  id="internal-user-search"
-                  type="search"
-                  autocomplete="off"
-                  [value]="searchDraft()"
-                  (input)="onSearchDraftInput($event)"
-                  class="h-11 w-full rounded-xl border border-border bg-background pr-10 pl-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
-                  placeholder="موبایل، نام یا کد ملی">
-              </div>
+              <label for="internal-user-name-filter" class="mb-1.5 block text-sm font-bold text-foreground dark:text-slate-200">نام</label>
+              <input id="internal-user-name-filter" type="search" autocomplete="off" [value]="nameDraft()" (input)="onTextFilterInput($event, 'name')" class="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100" placeholder="نام و نام خانوادگی">
             </div>
 
             <div>
-              <label for="internal-user-role-filter" class="mb-1.5 block text-sm font-bold text-foreground dark:text-slate-200">نقش / قابلیت</label>
+              <label for="internal-user-mobile-filter" class="mb-1.5 block text-sm font-bold text-foreground dark:text-slate-200">موبایل</label>
+              <input id="internal-user-mobile-filter" type="search" inputmode="numeric" autocomplete="off" dir="ltr" [value]="mobileDraft()" (input)="onTextFilterInput($event, 'mobile')" class="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100" placeholder="09xxxxxxxxx">
+            </div>
+
+            <div>
+              <label for="internal-user-company-filter" class="mb-1.5 block text-sm font-bold text-foreground dark:text-slate-200">نام شرکت</label>
+              <input id="internal-user-company-filter" type="search" autocomplete="off" [value]="companyDraft()" (input)="onTextFilterInput($event, 'company')" class="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100" placeholder="نام شرکت">
+            </div>
+
+            <div>
+              <label for="internal-user-role-filter" class="mb-1.5 block text-sm font-bold text-foreground dark:text-slate-200">نقش</label>
               <select
                 id="internal-user-role-filter"
                 [value]="roleFilter()"
@@ -129,7 +139,7 @@ const DEFERRED_ACTIONS: readonly string[] = [
               </select>
             </div>
 
-            <div class="grid grid-cols-2 gap-2 md:self-end">
+            <div class="grid grid-cols-2 gap-2 sm:col-span-2 xl:col-span-1 xl:self-end">
               <button type="submit" class="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-white transition-colors hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary/30">
                 <ui-icon name="search" [size]="17"></ui-icon>
                 جستجو
@@ -142,57 +152,70 @@ const DEFERRED_ACTIONS: readonly string[] = [
         </section>
 
         <section class="rounded-2xl border border-border bg-surface p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:p-5" aria-labelledby="internal-user-list-title">
-          <div class="flex flex-col gap-2 border-b border-border pb-3 dark:border-slate-700 sm:flex-row sm:items-center sm:justify-between">
+          <div class="flex flex-col gap-3 border-b border-border pb-3 dark:border-slate-700 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 id="internal-user-list-title" class="text-base font-extrabold text-foreground dark:text-slate-100 sm:text-lg" aria-live="polite">
                 فهرست کاربران ({{ formatNumber(filteredUsers().length) }} رکورد)
               </h2>
               <p class="mt-0.5 text-xs leading-5 text-muted">هر موبایل فقط یک هویت سراسری دارد؛ نقش‌های هم‌زمان در همان ردیف نمایش داده می‌شوند.</p>
             </div>
-            <span class="inline-flex w-fit items-center gap-1.5 rounded-full bg-warning/10 px-2.5 py-1 text-[10px] font-bold text-warning sm:text-xs">
-              <ui-icon name="info" [size]="13"></ui-icon>
-              داده نمایشی و حافظه‌ای
-            </span>
+            <div class="flex flex-wrap items-center gap-2">
+              <button type="button" disabled aria-disabled="true" title="نیازمند تعیین قواعد ایجاد کاربر" class="inline-flex min-h-10 cursor-not-allowed items-center gap-1.5 rounded-xl border border-border px-3 text-xs font-bold text-muted opacity-70 dark:border-slate-600">
+                <ui-icon name="plus" [size]="16"></ui-icon>کارمند جدید
+              </button>
+              <button type="button" disabled aria-disabled="true" title="نیازمند تعیین قواعد ارسال پیامک گروهی" class="inline-flex min-h-10 cursor-not-allowed items-center gap-1.5 rounded-xl border border-border px-3 text-xs font-bold text-muted opacity-70 dark:border-slate-600">
+                <ui-icon name="message-square" [size]="16"></ui-icon>ارسال پیامک گروهی
+              </button>
+            </div>
           </div>
 
           @if (filteredUsers().length > 0) {
-            <div class="mt-3 hidden overflow-visible rounded-xl border border-border dark:border-slate-700 lg:block">
-              <table class="w-full table-fixed text-sm">
+            <div class="mt-3 hidden overflow-x-auto rounded-xl border border-border dark:border-slate-700 lg:block">
+              <table class="min-w-[1260px] w-full text-sm">
                 <thead class="bg-background/80 dark:bg-slate-900/60">
                   <tr>
-                    <th class="w-14 px-2 py-3 text-right text-xs font-bold text-muted">شناسه</th>
-                    <th class="w-32 px-2 py-3 text-right text-xs font-bold text-muted">موبایل</th>
-                    <th class="w-[17%] px-2 py-3 text-right text-xs font-bold text-muted">نام و نام خانوادگی</th>
-                    <th class="w-28 px-2 py-3 text-right text-xs font-bold text-muted">کد ملی</th>
-                    <th class="w-[20%] px-2 py-3 text-right text-xs font-bold text-muted">نقش‌ها</th>
-                    <th class="w-24 px-2 py-3 text-right text-xs font-bold text-muted">وضعیت کاربر</th>
-                    <th class="w-28 px-2 py-3 text-right text-xs font-bold text-muted">وضعیت کارفرما</th>
-                    <th class="w-24 px-2 py-3 text-center text-xs font-bold text-muted">عملیات</th>
+                    <th class="whitespace-nowrap px-3 py-3 text-right text-xs font-bold text-muted">شناسه</th>
+                    <th class="whitespace-nowrap px-3 py-3 text-right text-xs font-bold text-muted">عضویت</th>
+                    <th class="min-w-40 px-3 py-3 text-right text-xs font-bold text-muted">نقش</th>
+                    <th class="min-w-48 px-3 py-3 text-right text-xs font-bold text-muted">نام و نام خانوادگی</th>
+                    <th class="min-w-44 px-3 py-3 text-right text-xs font-bold text-muted">نام شرکت</th>
+                    <th class="whitespace-nowrap px-3 py-3 text-right text-xs font-bold text-muted">موبایل</th>
+                    <th class="whitespace-nowrap px-3 py-3 text-right text-xs font-bold text-muted">کد ملی</th>
+                    <th class="whitespace-nowrap px-3 py-3 text-right text-xs font-bold text-muted">وضعیت</th>
+                    <th class="whitespace-nowrap px-3 py-3 text-right text-xs font-bold text-muted">تأیید کارفرما</th>
+                    <th class="whitespace-nowrap px-3 py-3 text-center text-xs font-bold text-muted">عملیات</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-border dark:divide-slate-700">
                   @for (user of filteredUsers(); track user.id) {
                     <tr class="transition-colors hover:bg-primary/5 dark:hover:bg-primary/10">
-                      <td class="px-2 py-3 font-bold text-foreground dark:text-slate-200" dir="ltr">{{ user.id }}</td>
-                      <td class="px-2 py-3 font-semibold text-foreground dark:text-slate-200" dir="ltr">{{ user.mobile }}</td>
-                      <td class="px-2 py-3">
+                      <td class="px-3 py-3 font-bold text-foreground dark:text-slate-200" dir="ltr">{{ user.id }}</td>
+                      <td class="whitespace-nowrap px-3 py-3 font-semibold text-foreground dark:text-slate-200">{{ user.joinedAt }}</td>
+                      <td class="px-3 py-3"><div class="flex flex-wrap gap-1">@for (role of user.roles; track role) {<span class="rounded-full bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary">{{ roleLabel(role) }}</span>}</div></td>
+                      <td class="px-3 py-3">
+                        <div class="flex items-start gap-1.5">
+                          @if (isEmployerApprovalPending(user)) {
+                            <span title="در انتظار تأیید کارفرما" aria-label="در انتظار تأیید کارفرما" class="mt-0.5 inline-flex shrink-0 text-warning"><ui-icon name="alert-triangle" [size]="16"></ui-icon></span>
+                          }
                         @if (user.fullName) {
                           <span class="font-bold text-foreground dark:text-slate-100">{{ user.fullName }}</span>
                         } @else {
                           <span class="text-xs font-bold leading-5 text-danger">کاربر پروفایلش را تکمیل نکرده</span>
                         }
+                        </div>
                       </td>
-                      <td class="px-2 py-3 font-semibold text-foreground dark:text-slate-200" dir="ltr">{{ user.nationalId || '—' }}</td>
-                      <td class="px-2 py-3"><div class="flex flex-wrap gap-1">@for (role of user.roles; track role) {<span class="rounded-full bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary">{{ roleLabel(role) }}</span>}</div></td>
-                      <td class="px-2 py-3"><span [class]="statusClass(user.isActive)">{{ user.isActive ? 'فعال' : 'غیرفعال' }}</span></td>
-                      <td class="px-2 py-3">
+                      <td class="px-3 py-3 font-semibold text-foreground dark:text-slate-200">{{ user.companyName }}</td>
+                      <td class="whitespace-nowrap px-3 py-3 font-semibold text-foreground dark:text-slate-200" dir="ltr">{{ user.mobile }}</td>
+                      <td class="whitespace-nowrap px-3 py-3 font-semibold text-foreground dark:text-slate-200" dir="ltr">{{ user.nationalId || '—' }}</td>
+                      <td class="px-3 py-3"><span [class]="statusClass(user.isActive)">{{ user.isActive ? 'فعال' : 'غیرفعال' }}</span></td>
+                      <td class="px-3 py-3">
                         @if (hasEmployerCapability(user)) {
                           <span [class]="approvalClass(user.employerApproval)">{{ employerApprovalLabel(user.employerApproval) }}</span>
                         } @else {
                           <span class="text-muted">—</span>
                         }
                       </td>
-                      <td class="px-2 py-3 text-center">
+                      <td class="px-3 py-3 text-center">
                         <button type="button" (click)="openOperations(user)" [attr.aria-label]="'عملیات کاربر ' + user.mobile" class="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-primary/30 px-3 text-xs font-bold text-primary transition-colors hover:bg-primary/10 focus:outline-none focus:ring-2 focus:ring-primary/25">
                           <ui-icon name="sliders" [size]="15"></ui-icon>
                           عملیات
@@ -209,13 +232,26 @@ const DEFERRED_ACTIONS: readonly string[] = [
                 <article class="rounded-xl border border-border bg-background/55 p-3 dark:border-slate-700 dark:bg-slate-900/40">
                   <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0">
-                      <p class="font-bold text-foreground dark:text-slate-100">{{ user.fullName || 'کاربر پروفایلش را تکمیل نکرده' }}</p>
+                      <p class="flex items-start gap-1.5 font-bold text-foreground dark:text-slate-100">
+                        @if (isEmployerApprovalPending(user)) {
+                          <span title="در انتظار تأیید کارفرما" aria-label="در انتظار تأیید کارفرما" class="mt-0.5 inline-flex shrink-0 text-warning"><ui-icon name="alert-triangle" [size]="16"></ui-icon></span>
+                        }
+                        <span>{{ user.fullName || 'کاربر پروفایلش را تکمیل نکرده' }}</span>
+                      </p>
                       <p class="mt-1 text-sm font-semibold text-muted" dir="ltr">{{ user.mobile }}</p>
                     </div>
                     <span [class]="statusClass(user.isActive)">{{ user.isActive ? 'فعال' : 'غیرفعال' }}</span>
                   </div>
 
                   <dl class="mt-3 grid grid-cols-2 gap-2 border-y border-border py-2.5 text-xs dark:border-slate-700">
+                    <div>
+                      <dt class="text-muted">عضویت</dt>
+                      <dd class="mt-1 font-bold text-foreground dark:text-slate-200">{{ user.joinedAt }}</dd>
+                    </div>
+                    <div>
+                      <dt class="text-muted">نام شرکت</dt>
+                      <dd class="mt-1 min-h-4 font-bold text-foreground dark:text-slate-200">{{ user.companyName }}</dd>
+                    </div>
                     <div>
                       <dt class="text-muted">کد ملی</dt>
                       <dd class="mt-1 font-bold text-foreground dark:text-slate-200" dir="ltr">{{ user.nationalId || '—' }}</dd>
@@ -269,12 +305,12 @@ const DEFERRED_ACTIONS: readonly string[] = [
                   </button>
                   <button type="button" (click)="requestActivationChange(user)" [class]="user.isActive ? 'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-danger/30 px-3 text-sm font-bold text-danger hover:bg-danger/10 focus:outline-none focus:ring-2 focus:ring-danger/25' : 'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-success/30 px-3 text-sm font-bold text-success hover:bg-success/10 focus:outline-none focus:ring-2 focus:ring-success/25'">
                     <ui-icon [name]="user.isActive ? 'lock' : 'check-circle'" [size]="17"></ui-icon>
-                    {{ user.isActive ? 'غیرفعال‌سازی' : 'فعال‌سازی' }}
+                    {{ user.isActive ? 'غیرفعال کردن' : 'فعال کردن' }}
                   </button>
-                  @if (canApproveEmployer(user)) {
-                    <button type="button" (click)="requestEmployerApproval(user)" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-sm font-bold text-white hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary/30 sm:col-span-2">
-                      <ui-icon name="check-circle" [size]="17"></ui-icon>
-                      تأیید کارفرما
+                  @if (hasEmployerCapability(user)) {
+                    <button type="button" (click)="requestEmployerApprovalChange(user)" [class]="user.employerApproval === 'pending' ? 'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-sm font-bold text-white hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary/30 sm:col-span-2' : 'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-warning/40 px-3 text-sm font-bold text-warning hover:bg-warning/10 focus:outline-none focus:ring-2 focus:ring-warning/25 sm:col-span-2'">
+                      <ui-icon [name]="user.employerApproval === 'pending' ? 'check-circle' : 'x'" [size]="17"></ui-icon>
+                      {{ user.employerApproval === 'pending' ? 'تأیید کارفرما' : 'عدم تأیید کارفرما' }}
                     </button>
                   }
                 </div>
@@ -282,9 +318,9 @@ const DEFERRED_ACTIONS: readonly string[] = [
                 <div class="mt-4 border-t border-border pt-4 dark:border-slate-700">
                   <p class="mb-2 text-xs font-bold text-muted">عملیات مراحل بعد</p>
                   <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                    @for (action of deferredActions; track action) {
-                      <button type="button" disabled aria-disabled="true" class="flex min-h-14 cursor-not-allowed flex-col items-center justify-center gap-1 rounded-xl border border-border bg-background/60 px-2 text-xs font-bold text-muted opacity-75 dark:border-slate-700 dark:bg-slate-900/40">
-                        <span>{{ action }}</span>
+                    @for (action of visibleDeferredActions(user); track action.label) {
+                      <button type="button" disabled aria-disabled="true" [attr.title]="action.label + ' نیازمند تعریف جریان تجاری است'" class="flex min-h-14 cursor-not-allowed flex-col items-center justify-center gap-1 rounded-xl border border-border bg-background/60 px-2 text-xs font-bold text-muted opacity-75 dark:border-slate-700 dark:bg-slate-900/40">
+                        <span>{{ action.label }}</span>
                         <span class="text-[9px] text-primary">در مرحله بعد</span>
                       </button>
                     }
@@ -390,8 +426,10 @@ export class InternalUsersComponent {
     {
       id: 1001,
       mobile: '09121234567',
+      joinedAt: '۱۴۰۳/۰۲/۱۸',
       fullName: 'مریم احمدی',
       nationalId: '0012345678',
+      companyName: 'مجموعه نمونه سپهر',
       roles: ['employer', 'employee'],
       isActive: true,
       employerApproval: 'approved'
@@ -399,8 +437,10 @@ export class InternalUsersComponent {
     {
       id: 1002,
       mobile: '09129876543',
+      joinedAt: '۱۴۰۳/۰۵/۰۹',
       fullName: 'رضا کریمی',
       nationalId: '1234567890',
+      companyName: 'شرکت راهکار نوین',
       roles: ['employer'],
       isActive: true,
       employerApproval: 'pending'
@@ -408,39 +448,62 @@ export class InternalUsersComponent {
     {
       id: 1003,
       mobile: '09350000001',
+      joinedAt: '۱۴۰۳/۰۶/۲۱',
       fullName: null,
       nationalId: null,
+      companyName: '',
       roles: ['employee'],
       isActive: true
     },
     {
       id: 1004,
       mobile: '09910000002',
+      joinedAt: '۱۴۰۲/۱۱/۰۳',
       fullName: 'سارا محمدی',
       nationalId: '0456789123',
+      companyName: '',
       roles: ['support-expert'],
       isActive: true
     },
     {
       id: 1005,
       mobile: '09210000003',
+      joinedAt: '۱۴۰۲/۱۰/۱۴',
       fullName: 'علی مرادی',
       nationalId: '0789456123',
+      companyName: '',
       roles: ['sales-expert'],
       isActive: false
     },
     {
       id: 1006,
       mobile: '09190000004',
+      joinedAt: '۱۴۰۲/۰۸/۲۶',
       fullName: 'نگار رضایی',
       nationalId: '0567891234',
+      companyName: '',
       roles: ['super-admin'],
       isActive: true
+    },
+    {
+      id: 1007,
+      mobile: '09123334455',
+      joinedAt: '۱۴۰۳/۰۷/۱۲',
+      fullName: 'حامد اکبری',
+      nationalId: '0098765432',
+      companyName: 'کارگاه توسعه پارس',
+      roles: ['employer'],
+      isActive: false,
+      employerApproval: 'approved'
     }
   ]);
 
-  readonly searchDraft = signal('');
-  readonly searchQuery = signal('');
+  readonly nameDraft = signal('');
+  readonly mobileDraft = signal('');
+  readonly companyDraft = signal('');
+  readonly nameQuery = signal('');
+  readonly mobileQuery = signal('');
+  readonly companyQuery = signal('');
   readonly roleFilter = signal<RoleFilter>('all');
   readonly activeFilter = signal<ActiveFilter>('all');
   readonly operationsUserId = signal<number | null>(null);
@@ -459,31 +522,47 @@ export class InternalUsersComponent {
       && this.permissionService.hasPermission(roles, FISH24_PERMISSIONS.userManagement);
   });
 
+  readonly isSuperAdminView = computed(() => this.activeRoles().includes('super-admin'));
+  readonly isSupportView = computed(() => !this.isSuperAdminView() && this.activeRoles().includes('support-expert'));
+
   readonly filteredUsers = computed(() => {
-    const query = this.normalizeSearchValue(this.searchQuery().trim());
+    const name = this.normalizeSearchValue(this.nameQuery().trim());
+    const mobile = this.normalizeSearchValue(this.mobileQuery().trim());
+    const company = this.normalizeSearchValue(this.companyQuery().trim());
     const role = this.roleFilter();
     const active = this.activeFilter();
 
     return this.users().filter(user => {
-      const matchesSearch = !query || [user.mobile, user.fullName ?? '', user.nationalId ?? '']
-        .some(value => this.normalizeSearchValue(value).includes(query));
+      const canViewUser = this.isSuperAdminView() || !user.roles.some(userRole => INTERNAL_ROLE_IDS.includes(userRole));
+      const matchesName = !name || this.normalizeSearchValue(user.fullName ?? '').includes(name);
+      const matchesMobile = !mobile || this.normalizeSearchValue(user.mobile).includes(mobile);
+      const matchesCompany = !company || this.normalizeSearchValue(user.companyName).includes(company);
       const matchesRole = role === 'all' || user.roles.includes(role);
       const matchesActive = active === 'all'
         || (active === 'active' ? user.isActive : !user.isActive);
-      return matchesSearch && matchesRole && matchesActive;
+      return canViewUser && matchesName && matchesMobile && matchesCompany && matchesRole && matchesActive;
     });
   });
 
   readonly operationsUser = computed(() => this.findUser(this.operationsUserId()));
   readonly editingUser = computed(() => this.findUser(this.editingUserId()));
 
-  onSearchDraftInput(event: Event): void {
-    this.searchDraft.set((event.target as HTMLInputElement).value);
+  onTextFilterInput(event: Event, field: 'name' | 'mobile' | 'company'): void {
+    const value = (event.target as HTMLInputElement).value;
+    if (field === 'name') {
+      this.nameDraft.set(value);
+    } else if (field === 'mobile') {
+      this.mobileDraft.set(value);
+    } else {
+      this.companyDraft.set(value);
+    }
   }
 
   applySearch(event: Event): void {
     event.preventDefault();
-    this.searchQuery.set(this.searchDraft().trim());
+    this.nameQuery.set(this.nameDraft().trim());
+    this.mobileQuery.set(this.mobileDraft().trim());
+    this.companyQuery.set(this.companyDraft().trim());
   }
 
   onRoleFilterChange(event: Event): void {
@@ -495,8 +574,12 @@ export class InternalUsersComponent {
   }
 
   showAll(): void {
-    this.searchDraft.set('');
-    this.searchQuery.set('');
+    this.nameDraft.set('');
+    this.mobileDraft.set('');
+    this.companyDraft.set('');
+    this.nameQuery.set('');
+    this.mobileQuery.set('');
+    this.companyQuery.set('');
     this.roleFilter.set('all');
     this.activeFilter.set('all');
   }
@@ -584,18 +667,23 @@ export class InternalUsersComponent {
     });
   }
 
-  requestEmployerApproval(user: InternalUserRecord): void {
-    if (!this.canApproveEmployer(user)) {
+  requestEmployerApprovalChange(user: InternalUserRecord): void {
+    if (!this.hasEmployerCapability(user)) {
       return;
     }
 
+    const targetEmployerApproval: EmployerApprovalState = user.employerApproval === 'pending' ? 'approved' : 'pending';
+    const isApproval = targetEmployerApproval === 'approved';
     this.closeOperations();
     this.pendingConfirmation.set({
       type: 'employer-approval',
       userId: user.id,
-      title: 'تأیید کارفرما',
-      message: 'آیا از تأیید قابلیت کارفرما برای این کاربر اطمینان دارید؟ وضعیت فعال یا غیرفعال کاربر تغییر نخواهد کرد.',
-      confirmLabel: 'تأیید کارفرما'
+      title: isApproval ? 'تأیید کارفرما' : 'عدم تأیید کارفرما',
+      message: isApproval
+        ? 'آیا از تأیید قابلیت کارفرما برای این کاربر اطمینان دارید؟ وضعیت فعال یا غیرفعال کاربر تغییر نخواهد کرد.'
+        : 'آیا از بازگرداندن وضعیت کارفرما به حالت در انتظار تأیید اطمینان دارید؟ وضعیت فعال یا غیرفعال کاربر تغییر نخواهد کرد.',
+      confirmLabel: isApproval ? 'تأیید کارفرما' : 'عدم تأیید کارفرما',
+      targetEmployerApproval
     });
   }
 
@@ -614,20 +702,31 @@ export class InternalUsersComponent {
     if (confirmation.type === 'activation') {
       this.updateUser(user.id, current => ({ ...current, isActive: !current.isActive }));
       this.toastService.show('وضعیت فعالیت کاربر در پیش‌نمایش تغییر کرد.', 'success');
-    } else if (this.canApproveEmployer(user)) {
-      this.updateUser(user.id, current => ({ ...current, employerApproval: 'approved' }));
+    } else if (this.hasEmployerCapability(user) && confirmation.targetEmployerApproval) {
+      this.updateUser(user.id, current => ({
+        ...current,
+        employerApproval: confirmation.targetEmployerApproval
+      }));
       this.toastService.show('وضعیت تأیید کارفرما در پیش‌نمایش تغییر کرد.', 'success');
     }
 
     this.cancelConfirmation();
   }
 
-  canApproveEmployer(user: InternalUserRecord): boolean {
+  hasEmployerCapability(user: InternalUserRecord): boolean {
+    return user.roles.includes('employer');
+  }
+
+  isEmployerApprovalPending(user: InternalUserRecord): boolean {
     return this.hasEmployerCapability(user) && user.employerApproval === 'pending';
   }
 
-  hasEmployerCapability(user: InternalUserRecord): boolean {
-    return user.roles.includes('employer');
+  visibleDeferredActions(user: InternalUserRecord): readonly DeferredAction[] {
+    return this.deferredActions.filter(action => {
+      const allowedForRole = !action.hiddenForSupport || !this.isSupportView();
+      const applicableToUser = !action.employerOnly || this.hasEmployerCapability(user);
+      return allowedForRole && applicableToUser;
+    });
   }
 
   roleLabel(role: UserCapability): string {
