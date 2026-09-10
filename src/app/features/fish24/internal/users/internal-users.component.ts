@@ -20,6 +20,9 @@ interface InternalUserRecord {
   readonly fullName: string | null;
   readonly nationalId: string | null;
   readonly companyName: string;
+  readonly email?: string;
+  readonly birthDate?: string;
+  readonly description?: string;
   readonly roles: readonly UserCapability[];
   readonly isActive: boolean;
   readonly employerApproval?: EmployerApprovalState;
@@ -44,6 +47,8 @@ interface DeferredAction {
   readonly hiddenForSupport?: boolean;
   readonly employerOnly?: boolean;
 }
+
+type GroupSmsAudience = 'search-results' | 'all';
 
 const INTERNAL_ROLE_IDS: readonly Fish24RoleId[] = [
   'super-admin',
@@ -160,10 +165,10 @@ const DEFERRED_ACTIONS: readonly DeferredAction[] = [
               <p class="mt-0.5 text-xs leading-5 text-muted">هر موبایل فقط یک هویت سراسری دارد؛ نقش‌های هم‌زمان در همان ردیف نمایش داده می‌شوند.</p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
-              <button type="button" disabled aria-disabled="true" title="نیازمند تعیین قواعد ایجاد کاربر" class="inline-flex min-h-10 cursor-not-allowed items-center gap-1.5 rounded-xl border border-border px-3 text-xs font-bold text-muted opacity-70 dark:border-slate-600">
+              <button type="button" (click)="openCreateUser()" class="inline-flex min-h-10 items-center gap-1.5 rounded-xl bg-success px-3 text-xs font-bold text-white transition-colors hover:bg-success/90 focus:outline-none focus:ring-2 focus:ring-success/25">
                 <ui-icon name="plus" [size]="16"></ui-icon>کارمند جدید
               </button>
-              <button type="button" disabled aria-disabled="true" title="نیازمند تعیین قواعد ارسال پیامک گروهی" class="inline-flex min-h-10 cursor-not-allowed items-center gap-1.5 rounded-xl border border-border px-3 text-xs font-bold text-muted opacity-70 dark:border-slate-600">
+              <button type="button" (click)="openGroupSms()" class="inline-flex min-h-10 items-center gap-1.5 rounded-xl bg-primary px-3 text-xs font-bold text-white transition-colors hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary/25">
                 <ui-icon name="message-square" [size]="16"></ui-icon>ارسال پیامک گروهی
               </button>
             </div>
@@ -285,6 +290,85 @@ const DEFERRED_ACTIONS: readonly DeferredAction[] = [
             </div>
           }
         </section>
+
+        @if (isCreateUserOpen()) {
+          <div appEscToClose (escPressed)="closeCreateUser()" class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 p-3 pt-5 backdrop-blur-sm sm:items-center sm:pt-3" (click)="closeCreateUser()">
+            <section role="dialog" aria-modal="true" aria-labelledby="internal-create-user-title" class="my-auto w-full max-w-3xl rounded-2xl border border-border bg-surface shadow-2xl dark:border-slate-700 dark:bg-slate-800" (click)="$event.stopPropagation()">
+              <div class="flex items-center justify-between border-b border-border p-4 dark:border-slate-700">
+                <h2 id="internal-create-user-title" class="text-lg font-extrabold text-foreground dark:text-slate-100">ایجاد کاربر</h2>
+                <button type="button" (click)="closeCreateUser()" aria-label="بستن ایجاد کاربر" class="rounded-lg p-2 text-muted hover:bg-background focus:outline-none focus:ring-2 focus:ring-primary/25 dark:hover:bg-slate-700"><ui-icon name="x" [size]="19"></ui-icon></button>
+              </div>
+
+              <form class="p-4 sm:p-5" (submit)="createEmployee($event)" novalidate>
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <label for="new-employee-full-name" class="mb-1.5 block text-sm font-bold text-foreground dark:text-slate-200">نام کامل</label>
+                    <input id="new-employee-full-name" type="text" autocomplete="name" [value]="newEmployeeName()" (input)="newEmployeeName.set(inputValue($event))" class="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+                  </div>
+                  <div>
+                    <label for="new-employee-mobile" class="mb-1.5 block text-sm font-bold text-foreground dark:text-slate-200">موبایل</label>
+                    <input id="new-employee-mobile" type="text" inputmode="numeric" maxlength="11" autocomplete="tel" dir="ltr" [value]="newEmployeeMobile()" (input)="onNewEmployeeNumericInput($event, 'mobile')" [attr.aria-invalid]="createUserAttempted() && !isNewEmployeeMobileValid()" class="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-bold text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+                    @if (createUserAttempted() && !isNewEmployeeMobileValid()) {<p role="alert" class="mt-1.5 text-xs font-semibold text-danger">{{ newEmployeeMobileError() }}</p>}
+                  </div>
+                  <div>
+                    <label for="new-employee-national-id" class="mb-1.5 block text-sm font-bold text-foreground dark:text-slate-200">کد ملی</label>
+                    <input id="new-employee-national-id" type="text" inputmode="numeric" maxlength="10" autocomplete="off" dir="ltr" [value]="newEmployeeNationalId()" (input)="onNewEmployeeNumericInput($event, 'nationalId')" [attr.aria-invalid]="createUserAttempted() && !isNewEmployeeNationalIdValid()" class="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-bold text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+                    @if (createUserAttempted() && !isNewEmployeeNationalIdValid()) {<p role="alert" class="mt-1.5 text-xs font-semibold text-danger">کد ملی باید دقیقاً ۱۰ رقم باشد.</p>}
+                  </div>
+                  <div>
+                    <label for="new-employee-email" class="mb-1.5 block text-sm font-bold text-foreground dark:text-slate-200">ایمیل</label>
+                    <input id="new-employee-email" type="email" autocomplete="email" dir="ltr" [value]="newEmployeeEmail()" (input)="newEmployeeEmail.set(inputValue($event))" [attr.aria-invalid]="createUserAttempted() && !isNewEmployeeEmailValid()" class="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+                    @if (createUserAttempted() && !isNewEmployeeEmailValid()) {<p role="alert" class="mt-1.5 text-xs font-semibold text-danger">ایمیل واردشده معتبر نیست.</p>}
+                  </div>
+                  <div>
+                    <label for="new-employee-birth-date" class="mb-1.5 block text-sm font-bold text-foreground dark:text-slate-200">تاریخ تولد</label>
+                    <input id="new-employee-birth-date" type="text" autocomplete="off" dir="ltr" [value]="newEmployeeBirthDate()" (input)="newEmployeeBirthDate.set(inputValue($event))" class="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+                  </div>
+                  <div class="sm:col-span-2">
+                    <label for="new-employee-description" class="mb-1.5 block text-sm font-bold text-foreground dark:text-slate-200">توضیحات</label>
+                    <textarea id="new-employee-description" rows="3" [value]="newEmployeeDescription()" (input)="newEmployeeDescription.set(inputValue($event))" class="w-full resize-y rounded-xl border border-border bg-background px-3 py-2.5 text-sm leading-6 text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"></textarea>
+                  </div>
+                </div>
+
+                <div class="mt-5 flex border-t border-border pt-4 dark:border-slate-700">
+                  <button type="submit" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-success px-5 text-sm font-bold text-white hover:bg-success/90 focus:outline-none focus:ring-2 focus:ring-success/25"><ui-icon name="check" [size]="17"></ui-icon>ثبت کاربر</button>
+                </div>
+              </form>
+            </section>
+          </div>
+        }
+
+        @if (isGroupSmsOpen()) {
+          <div appEscToClose (escPressed)="closeGroupSms()" class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 p-3 pt-5 backdrop-blur-sm sm:items-center sm:pt-3" (click)="closeGroupSms()">
+            <section role="dialog" aria-modal="true" aria-labelledby="internal-group-sms-title" class="my-auto w-full max-w-3xl rounded-2xl border border-border bg-surface shadow-2xl dark:border-slate-700 dark:bg-slate-800" (click)="$event.stopPropagation()">
+              <div class="flex items-center justify-between border-b border-border p-4 dark:border-slate-700">
+                <h2 id="internal-group-sms-title" class="text-lg font-extrabold text-foreground dark:text-slate-100">ارسال پیامک به کارفرما</h2>
+                <button type="button" (click)="closeGroupSms()" aria-label="بستن ارسال پیامک گروهی" class="rounded-lg p-2 text-muted hover:bg-background focus:outline-none focus:ring-2 focus:ring-primary/25 dark:hover:bg-slate-700"><ui-icon name="x" [size]="19"></ui-icon></button>
+              </div>
+
+              <form class="p-4 sm:p-5" (submit)="submitGroupSms($event)" novalidate>
+                <label for="group-sms-message" class="mb-1.5 block text-sm font-bold text-foreground dark:text-slate-200">متن</label>
+                <textarea id="group-sms-message" rows="3" [value]="groupSmsMessage()" (input)="groupSmsMessage.set(inputValue($event))" [attr.aria-invalid]="groupSmsAttempted() && !groupSmsMessage().trim()" class="w-full resize-y rounded-xl border border-border bg-background px-3 py-2.5 text-sm leading-6 text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"></textarea>
+                @if (groupSmsAttempted() && !groupSmsMessage().trim()) {<p role="alert" class="mt-1.5 text-xs font-semibold text-danger">متن پیامک را وارد کنید.</p>}
+
+                <fieldset class="mt-4 space-y-2 border-b border-border pb-4 dark:border-slate-700">
+                  <label class="flex cursor-pointer items-center gap-2 text-sm font-bold text-foreground dark:text-slate-200">
+                    <input type="radio" name="group-sms-audience" value="search-results" [checked]="groupSmsAudience() === 'search-results'" (change)="groupSmsAudience.set('search-results')" class="h-4 w-4 accent-primary">
+                    ارسال به نتایج جستجو
+                  </label>
+                  <label class="flex cursor-pointer items-center gap-2 text-sm font-bold text-foreground dark:text-slate-200">
+                    <input type="radio" name="group-sms-audience" value="all" [checked]="groupSmsAudience() === 'all'" (change)="groupSmsAudience.set('all')" class="h-4 w-4 accent-primary">
+                    ارسال به همه
+                  </label>
+                </fieldset>
+
+                <div class="mt-4 flex">
+                  <button type="submit" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-white hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary/25"><ui-icon name="check" [size]="17"></ui-icon>ارسال</button>
+                </div>
+              </form>
+            </section>
+          </div>
+        }
 
         @if (operationsUser(); as user) {
           <div appEscToClose (escPressed)="closeOperations()" class="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto bg-black/60 p-3 backdrop-blur-sm sm:items-center" (click)="closeOperations()">
@@ -506,6 +590,18 @@ export class InternalUsersComponent {
   readonly companyQuery = signal('');
   readonly roleFilter = signal<RoleFilter>('all');
   readonly activeFilter = signal<ActiveFilter>('all');
+  readonly isCreateUserOpen = signal(false);
+  readonly createUserAttempted = signal(false);
+  readonly newEmployeeName = signal('');
+  readonly newEmployeeMobile = signal('');
+  readonly newEmployeeNationalId = signal('');
+  readonly newEmployeeEmail = signal('');
+  readonly newEmployeeBirthDate = signal('');
+  readonly newEmployeeDescription = signal('');
+  readonly isGroupSmsOpen = signal(false);
+  readonly groupSmsAttempted = signal(false);
+  readonly groupSmsMessage = signal('');
+  readonly groupSmsAudience = signal<GroupSmsAudience>('search-results');
   readonly operationsUserId = signal<number | null>(null);
   readonly editingUserId = signal<number | null>(null);
   readonly editName = signal('');
@@ -582,6 +678,108 @@ export class InternalUsersComponent {
     this.companyQuery.set('');
     this.roleFilter.set('all');
     this.activeFilter.set('all');
+  }
+
+  inputValue(event: Event): string {
+    return (event.target as HTMLInputElement | HTMLTextAreaElement).value;
+  }
+
+  openCreateUser(): void {
+    this.resetNewEmployeeForm();
+    this.isCreateUserOpen.set(true);
+  }
+
+  closeCreateUser(): void {
+    this.isCreateUserOpen.set(false);
+    this.createUserAttempted.set(false);
+  }
+
+  onNewEmployeeNumericInput(event: Event, field: 'mobile' | 'nationalId'): void {
+    const input = event.target as HTMLInputElement;
+    const maximumLength = field === 'mobile' ? 11 : 10;
+    const value = this.normalizeDigits(input.value).slice(0, maximumLength);
+    input.value = value;
+    if (field === 'mobile') {
+      this.newEmployeeMobile.set(value);
+    } else {
+      this.newEmployeeNationalId.set(value);
+    }
+  }
+
+  isNewEmployeeMobileValid(): boolean {
+    const mobile = this.newEmployeeMobile();
+    return /^09\d{9}$/.test(mobile) && !this.users().some(user => user.mobile === mobile);
+  }
+
+  newEmployeeMobileError(): string {
+    const mobile = this.newEmployeeMobile();
+    if (!/^09\d{9}$/.test(mobile)) {
+      return 'موبایل باید ۱۱ رقم و با ۰۹ شروع شود.';
+    }
+    return 'این موبایل قبلاً به‌عنوان هویت کاربر ثبت شده است.';
+  }
+
+  isNewEmployeeNationalIdValid(): boolean {
+    const nationalId = this.newEmployeeNationalId();
+    return !nationalId || /^\d{10}$/.test(nationalId);
+  }
+
+  isNewEmployeeEmailValid(): boolean {
+    const email = this.newEmployeeEmail().trim();
+    return !email || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  }
+
+  createEmployee(event: Event): void {
+    event.preventDefault();
+    this.createUserAttempted.set(true);
+
+    if (!this.isNewEmployeeMobileValid() || !this.isNewEmployeeNationalIdValid() || !this.isNewEmployeeEmailValid()) {
+      return;
+    }
+
+    const nextId = Math.max(...this.users().map(user => user.id)) + 1;
+    const fullName = this.newEmployeeName().trim();
+    this.users.update(users => [
+      ...users,
+      {
+        id: nextId,
+        mobile: this.newEmployeeMobile(),
+        joinedAt: this.currentJalaliDate(),
+        fullName: fullName || null,
+        nationalId: this.newEmployeeNationalId() || null,
+        companyName: '',
+        email: this.newEmployeeEmail().trim() || undefined,
+        birthDate: this.newEmployeeBirthDate().trim() || undefined,
+        description: this.newEmployeeDescription().trim() || undefined,
+        roles: ['employee'],
+        isActive: true
+      }
+    ]);
+    this.closeCreateUser();
+    this.toastService.show('کارمند جدید فقط در پیش‌نمایش فعلی ثبت شد.', 'success');
+  }
+
+  openGroupSms(): void {
+    this.groupSmsMessage.set('');
+    this.groupSmsAudience.set('search-results');
+    this.groupSmsAttempted.set(false);
+    this.isGroupSmsOpen.set(true);
+  }
+
+  closeGroupSms(): void {
+    this.isGroupSmsOpen.set(false);
+    this.groupSmsAttempted.set(false);
+  }
+
+  submitGroupSms(event: Event): void {
+    event.preventDefault();
+    this.groupSmsAttempted.set(true);
+    if (!this.groupSmsMessage().trim()) {
+      return;
+    }
+
+    this.closeGroupSms();
+    this.toastService.show('ارسال واقعی انجام نشد؛ پیامک فقط در پیش‌نمایش بررسی شد.');
   }
 
   openOperations(user: InternalUserRecord): void {
@@ -762,6 +960,24 @@ export class InternalUsersComponent {
 
   private updateUser(userId: number, update: (user: InternalUserRecord) => InternalUserRecord): void {
     this.users.update(users => users.map(user => user.id === userId ? update(user) : user));
+  }
+
+  private resetNewEmployeeForm(): void {
+    this.newEmployeeName.set('');
+    this.newEmployeeMobile.set('');
+    this.newEmployeeNationalId.set('');
+    this.newEmployeeEmail.set('');
+    this.newEmployeeBirthDate.set('');
+    this.newEmployeeDescription.set('');
+    this.createUserAttempted.set(false);
+  }
+
+  private currentJalaliDate(): string {
+    return new Intl.DateTimeFormat('fa-IR-u-ca-persian', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(new Date());
   }
 
   private normalizeSearchValue(value: string): string {
