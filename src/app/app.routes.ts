@@ -11,6 +11,7 @@ export const routes: Routes = [
 
   { path: 'dashboard', loadComponent: () => import('./features/fish24/internal/dashboard/internal-dashboard.component').then(m => m.InternalDashboardComponent), canActivate: [authGuard] },
   { path: 'fish24/internal/users', loadComponent: () => import('./features/fish24/internal/users/internal-users.component').then(m => m.InternalUsersComponent), canActivate: [authGuard] },
+  { path: 'fish24/internal/users/:id/edit', loadComponent: () => import('./features/fish24/internal/users/business-user-edit.component').then(m => m.BusinessUserEditComponent), canActivate: [authGuard] },
   { path: 'fish24/internal/staff', loadComponent: () => import('./features/fish24/internal/staff/internal-staff.component').then(m => m.InternalStaffComponent), canActivate: [authGuard, internalUserManagementGuard] },
   { path: 'fish24/employer/dashboard', loadComponent: () => import('./features/fish24/employer/dashboard/employer-dashboard.component').then(m => m.EmployerDashboardComponent), canActivate: [authGuard] },
   { path: 'fish24/employer/profile', loadComponent: () => import('./features/fish24/employer/profile/employer-profile.component').then(m => m.EmployerProfileComponent), canActivate: [authGuard] },

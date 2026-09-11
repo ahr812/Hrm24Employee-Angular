@@ -1,4 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { EscToCloseDirective } from '../../../../shared/directives/esc-to-close.directive';
 import { IconComponent } from '../../../../shared/ui/icon/icon.component';
 import { ToastService } from '../../../../shared/ui/toast/toast.service';
@@ -6,39 +7,16 @@ import { Fish24RolePreviewService } from '../../../../core/fish24/dev/fish24-rol
 import { Fish24RoleId } from '../../../../core/fish24/models/fish24-role.model';
 import { Fish24PermissionService } from '../../../../core/fish24/permissions/fish24-permission.service';
 import { FISH24_PERMISSIONS } from '../../../../core/fish24/permissions/fish24-permissions';
+import { BusinessUserPreviewService, BusinessUserRecord, BusinessUserRole, EmployerApprovalState, UserRank } from './business-user-preview.service';
 
 type UserCapability = Fish24RoleId;
-type RoleFilter = 'all' | UserCapability;
+type RoleFilter = 'all' | BusinessUserRole;
 type ActiveFilter = 'all' | 'active' | 'inactive';
-type Rank = 1 | 2 | 3 | 4 | 5;
+type Rank = UserRank;
 type RankFilter = 'all' | Rank;
 type EmployerApprovalFilter = 'all' | EmployerApprovalState;
 type DocumentActivityFilter = 'all' | 'sent' | 'not-sent';
-type UserType = 'حقیقی' | 'حقوقی';
-type EmployerApprovalState = 'pending' | 'approved' | 'rejected';
 type ConfirmationActionType = 'activation' | 'employer-approval' | 'enter-user-account';
-
-interface BusinessUserRecord {
-  readonly id: number;
-  readonly mobile: string;
-  readonly joinedAt: string;
-  readonly fullName: string | null;
-  readonly nationalId: string | null;
-  readonly companyName: string;
-  readonly email?: string;
-  readonly birthDate?: string;
-  readonly description?: string;
-  readonly roles: readonly UserCapability[];
-  readonly userType: UserType;
-  readonly hasFreeCredit: boolean;
-  readonly freeCreditExpiresAt: string | null;
-  readonly rank: Rank;
-  readonly lastOtpAt: string | null;
-  readonly otpCount: number;
-  readonly hasSentDocuments: boolean;
-  readonly isActive: boolean;
-  readonly employerApproval?: EmployerApprovalState;
-}
 
 interface RoleFilterOption {
   readonly id: RoleFilter;
@@ -234,10 +212,10 @@ const DEFERRED_ACTIONS: readonly DeferredAction[] = [
                 <tbody class="divide-y divide-border dark:divide-slate-700">
                   @for (user of filteredUsers(); track user.id) {
                     <tr class="transition-colors hover:bg-primary/5 dark:hover:bg-primary/10">
-                      <td class="px-1.5 py-2.5 align-top"><p class="font-bold text-foreground dark:text-slate-200" dir="ltr">{{ user.id }}</p><p class="mt-1 font-semibold text-muted">{{ user.joinedAt }}</p></td>
-                      <td class="break-words px-1.5 py-2.5 align-top"><div class="flex flex-wrap gap-1">@for (role of user.roles; track role) {<span class="rounded-full bg-primary/10 px-1.5 py-0.5 font-bold text-primary">{{ roleLabel(role) }}</span>}</div></td>
+                      <td class="px-1.5 py-2.5 align-top"><div class="min-w-0 space-y-1 text-right leading-5"><p class="font-bold text-foreground dark:text-slate-200"><bdi dir="ltr">{{ user.id }}</bdi></p><p class="font-semibold text-muted"><bdi dir="ltr">{{ user.joinedAt }}</bdi></p></div></td>
+                      <td class="break-words px-1.5 py-2.5 align-top"><div class="flex min-w-0 flex-wrap justify-start gap-1 text-right">@for (role of user.roles; track role) {<span class="rounded-full bg-primary/10 px-1.5 py-0.5 font-bold text-primary">{{ roleLabel(role) }}</span>}</div></td>
                       <td class="break-words px-1.5 py-2.5 align-top">
-                        <div class="flex items-start gap-1">
+                        <div class="min-w-0 space-y-1 text-right leading-5"><div class="flex min-w-0 items-start justify-start gap-1">
                           @if (isEmployerApprovalPending(user)) {
                             <span title="در انتظار تأیید کارفرما" aria-label="در انتظار تأیید کارفرما" class="inline-flex shrink-0 text-warning"><ui-icon name="alert-triangle" [size]="14"></ui-icon></span>
                           }
@@ -247,12 +225,12 @@ const DEFERRED_ACTIONS: readonly DeferredAction[] = [
                           <span class="text-xs font-bold leading-5 text-danger">کاربر پروفایلش را تکمیل نکرده</span>
                         }
                         </div>
-                        <p class="mt-1 break-all font-semibold text-muted" dir="ltr">{{ user.mobile }}</p>
+                        <p class="break-all font-semibold text-muted"><bdi dir="ltr">{{ user.mobile }}</bdi></p></div>
                       </td>
-                      <td class="break-words px-1.5 py-2.5 align-top font-semibold text-foreground dark:text-slate-200">{{ user.companyName }}</td>
-                      <td class="px-1.5 py-2.5 align-top"><p class="font-semibold text-foreground dark:text-slate-200">{{ user.userType }}</p><p class="mt-1 text-muted">رتبه: <strong class="text-foreground dark:text-slate-100">{{ formatNumber(user.rank) }}</strong></p></td>
-                      <td class="px-1.5 py-2.5 align-top"><p><span class="text-muted">اعتباری:</span> <strong [class]="user.hasFreeCredit ? 'text-success' : 'text-muted'">{{ user.hasFreeCredit ? 'بله' : 'خیر' }}</strong></p><p class="mt-1 break-words text-foreground dark:text-slate-200"><span class="text-muted">انقضاء:</span> {{ user.freeCreditExpiresAt || '' }}</p></td>
-                      <td class="px-1.5 py-2.5 align-top"><span [class]="statusClass(user.isActive)">{{ user.isActive ? 'فعال' : 'غیرفعال' }}</span><p class="mt-1 break-words text-foreground dark:text-slate-200"><span class="text-muted">آخرین OTP:</span> {{ user.lastOtpAt || '' }}</p><p class="mt-1 text-foreground dark:text-slate-200"><span class="text-muted">تعداد OTP:</span> {{ formatNumber(user.otpCount) }}</p></td>
+                      <td class="break-words px-1.5 py-2.5 align-top"><div class="min-w-0 text-right font-semibold leading-5 text-foreground dark:text-slate-200">{{ user.companyName }}</div></td>
+                      <td class="px-1.5 py-2.5 align-top"><div class="min-w-0 space-y-1 text-right leading-5"><p class="font-semibold text-foreground dark:text-slate-200">{{ user.userType }}</p><p class="text-muted">رتبه: <strong class="text-foreground dark:text-slate-100">{{ formatNumber(user.rank) }}</strong></p></div></td>
+                      <td class="px-1.5 py-2.5 align-top"><div class="min-w-0 space-y-1 text-right leading-5"><p><span class="text-muted">اعتباری:</span> <strong [class]="user.hasFreeCredit ? 'text-success' : 'text-muted'">{{ user.hasFreeCredit ? 'بله' : 'خیر' }}</strong></p><p class="break-words text-foreground dark:text-slate-200"><span class="text-muted">انقضاء:</span> <bdi dir="ltr">{{ user.freeCreditExpiresAt || '' }}</bdi></p></div></td>
+                      <td class="px-1.5 py-2.5 align-top"><div class="min-w-0 space-y-1 text-right leading-5"><span [class]="statusClass(user.isActive)">{{ user.isActive ? 'فعال' : 'غیرفعال' }}</span><p class="break-words text-foreground dark:text-slate-200"><span class="text-muted">آخرین OTP:</span> <bdi dir="ltr">{{ user.lastOtpAt || '' }}</bdi></p><p class="text-foreground dark:text-slate-200"><span class="text-muted">تعداد OTP:</span> <bdi dir="ltr">{{ formatNumber(user.otpCount) }}</bdi></p></div></td>
                       <td class="px-1 py-2.5 text-center align-top">
                         <button type="button" (click)="openOperations(user)" [attr.aria-label]="'عملیات کاربر ' + user.mobile" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-primary/30 text-primary transition-colors hover:bg-primary/10 focus:outline-none focus:ring-2 focus:ring-primary/25">
                           <ui-icon name="sliders" [size]="15"></ui-icon>
@@ -498,55 +476,6 @@ const DEFERRED_ACTIONS: readonly DeferredAction[] = [
           </div>
         }
 
-        @if (editingUser(); as user) {
-          <div appEscToClose (escPressed)="closeEdit()" class="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto bg-black/60 p-3 pt-6 backdrop-blur-sm sm:items-center sm:pt-3" (click)="closeEdit()">
-            <section role="dialog" aria-modal="true" aria-labelledby="internal-user-edit-title" class="my-auto w-full max-w-lg rounded-2xl border border-border bg-surface shadow-2xl dark:border-slate-700 dark:bg-slate-800" (click)="$event.stopPropagation()">
-              <div class="flex items-start justify-between gap-3 border-b border-border p-4 dark:border-slate-700">
-                <div>
-                  <h2 id="internal-user-edit-title" class="text-lg font-extrabold text-foreground dark:text-slate-100">ویرایش اطلاعات کاربر</h2>
-                  <p class="mt-1 text-xs leading-5 text-muted">موبایل و نقش‌ها در این مرحله قابل تغییر نیستند.</p>
-                </div>
-                <button type="button" (click)="closeEdit()" aria-label="بستن ویرایش" class="rounded-lg p-2 text-muted hover:bg-background focus:outline-none focus:ring-2 focus:ring-primary/25 dark:hover:bg-slate-700"><ui-icon name="x" [size]="19"></ui-icon></button>
-              </div>
-
-              <form class="space-y-4 p-4" (submit)="saveEdit($event)" novalidate>
-                <div>
-                  <label for="internal-edit-mobile" class="mb-1.5 block text-sm font-bold text-foreground dark:text-slate-200">شماره موبایل</label>
-                  <input id="internal-edit-mobile" type="text" [value]="user.mobile" readonly aria-readonly="true" dir="ltr" class="h-11 w-full cursor-not-allowed rounded-xl border border-border bg-background/60 px-3 text-sm font-bold text-muted outline-none dark:border-slate-600 dark:bg-slate-900/60">
-                </div>
-
-                <div>
-                  <label for="internal-edit-name" class="mb-1.5 block text-sm font-bold text-foreground dark:text-slate-200">نام و نام خانوادگی</label>
-                  <input id="internal-edit-name" type="text" [value]="editName()" (input)="onEditNameInput($event)" [attr.aria-invalid]="editAttempted() && !isEditNameValid()" class="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
-                  @if (editAttempted() && !isEditNameValid()) {
-                    <p role="alert" class="mt-1.5 text-xs font-semibold text-danger">نام و نام خانوادگی را وارد کنید.</p>
-                  }
-                </div>
-
-                <div>
-                  <label for="internal-edit-national-id" class="mb-1.5 block text-sm font-bold text-foreground dark:text-slate-200">کد ملی</label>
-                  <input id="internal-edit-national-id" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="10" autocomplete="off" dir="ltr" [value]="editNationalId()" (input)="onEditNationalIdInput($event)" [attr.aria-invalid]="editAttempted() && !isEditNationalIdValid()" class="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-bold text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
-                  @if (editAttempted() && !isEditNationalIdValid()) {
-                    <p role="alert" class="mt-1.5 text-xs font-semibold text-danger">{{ editNationalIdError() }}</p>
-                  }
-                </div>
-
-                <div>
-                  <p class="mb-1.5 text-sm font-bold text-foreground dark:text-slate-200">نقش‌ها</p>
-                  <div class="flex min-h-11 flex-wrap items-center gap-1.5 rounded-xl border border-border bg-background/60 px-3 py-2 dark:border-slate-600 dark:bg-slate-900/60">
-                    @for (role of user.roles; track role) {<span class="rounded-full bg-primary/10 px-2 py-1 text-xs font-bold text-primary">{{ roleLabel(role) }}</span>}
-                  </div>
-                </div>
-
-                <div class="flex flex-col-reverse gap-2 border-t border-border pt-4 dark:border-slate-700 sm:flex-row sm:justify-end">
-                  <button type="button" (click)="closeEdit()" class="inline-flex min-h-11 items-center justify-center rounded-xl border border-border px-4 text-sm font-bold text-foreground hover:bg-background dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700">انصراف</button>
-                  <button type="submit" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-white hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary/30"><ui-icon name="save" [size]="17"></ui-icon>ذخیره تغییرات</button>
-                </div>
-              </form>
-            </section>
-          </div>
-        }
-
         @if (pendingConfirmation(); as confirmation) {
           <div appEscToClose (escPressed)="cancelConfirmation()" class="fixed inset-0 z-[70] flex items-center justify-center overflow-y-auto bg-black/60 p-3 backdrop-blur-sm" (click)="cancelConfirmation()">
             <section role="alertdialog" aria-modal="true" aria-labelledby="internal-user-confirm-title" aria-describedby="internal-user-confirm-message" class="w-full max-w-md rounded-2xl border border-border bg-surface p-4 shadow-2xl dark:border-slate-700 dark:bg-slate-800" (click)="$event.stopPropagation()">
@@ -578,6 +507,8 @@ export class InternalUsersComponent {
   private readonly permissionService = inject(Fish24PermissionService);
   private readonly previewRoleService = inject(Fish24RolePreviewService);
   private readonly toastService = inject(ToastService);
+  private readonly router = inject(Router);
+  private readonly businessUserService = inject(BusinessUserPreviewService);
 
   readonly deferredActions = DEFERRED_ACTIONS;
   readonly rankOptions: readonly Rank[] = [1, 2, 3, 4, 5];
@@ -587,79 +518,7 @@ export class InternalUsersComponent {
     { id: 'employee', label: 'کارمند' }
   ];
 
-  readonly users = signal<readonly BusinessUserRecord[]>([
-    {
-      id: 1001,
-      mobile: '09121234567',
-      joinedAt: '۱۴۰۳/۰۲/۱۸',
-      fullName: 'مریم احمدی',
-      nationalId: '0012345678',
-      companyName: 'مجموعه نمونه سپهر',
-      roles: ['employer', 'employee'],
-      userType: 'حقوقی',
-      hasFreeCredit: false,
-      freeCreditExpiresAt: null,
-      rank: 1,
-      lastOtpAt: '۱۴۰۵/۰۶/۱۹ - ۱۰:۳۵',
-      otpCount: 1,
-      hasSentDocuments: true,
-      isActive: true,
-      employerApproval: 'approved'
-    },
-    {
-      id: 1002,
-      mobile: '09129876543',
-      joinedAt: '۱۴۰۳/۰۵/۰۹',
-      fullName: 'رضا کریمی',
-      nationalId: '1234567890',
-      companyName: 'شرکت راهکار نوین',
-      roles: ['employer'],
-      userType: 'حقوقی',
-      hasFreeCredit: true,
-      freeCreditExpiresAt: '۱۴۰۵/۱۲/۲۹',
-      rank: 2,
-      lastOtpAt: '۱۴۰۵/۰۶/۱۸ - ۰۹:۲۰',
-      otpCount: 4,
-      hasSentDocuments: true,
-      isActive: true,
-      employerApproval: 'pending'
-    },
-    {
-      id: 1003,
-      mobile: '09350000001',
-      joinedAt: '۱۴۰۳/۰۶/۲۱',
-      fullName: null,
-      nationalId: null,
-      companyName: '',
-      roles: ['employee'],
-      userType: 'حقیقی',
-      hasFreeCredit: false,
-      freeCreditExpiresAt: null,
-      rank: 3,
-      lastOtpAt: null,
-      otpCount: 0,
-      hasSentDocuments: false,
-      isActive: true
-    },
-    {
-      id: 1007,
-      mobile: '09123334455',
-      joinedAt: '۱۴۰۳/۰۷/۱۲',
-      fullName: 'حامد اکبری',
-      nationalId: '0098765432',
-      companyName: 'کارگاه توسعه پارس',
-      roles: ['employer'],
-      userType: 'حقوقی',
-      hasFreeCredit: true,
-      freeCreditExpiresAt: '۱۴۰۶/۰۱/۳۱',
-      rank: 4,
-      lastOtpAt: null,
-      otpCount: 0,
-      hasSentDocuments: false,
-      isActive: false,
-      employerApproval: 'rejected'
-    }
-  ]);
+  readonly users = this.businessUserService.users;
 
   readonly nameDraft = signal('');
   readonly mobileDraft = signal('');
@@ -688,11 +547,6 @@ export class InternalUsersComponent {
   readonly directSmsMessage = signal('');
   readonly directSmsAttempted = signal(false);
   readonly operationsUserId = signal<number | null>(null);
-  readonly editingUserId = signal<number | null>(null);
-  readonly editName = signal('');
-  readonly editNationalId = signal('');
-  readonly editNationalIdHadNonDigit = signal(false);
-  readonly editAttempted = signal(false);
   readonly pendingConfirmation = signal<PendingConfirmation | null>(null);
 
   readonly activeRoles = computed(() => this.previewRoleService.getPreviewRoles());
@@ -734,7 +588,6 @@ export class InternalUsersComponent {
   });
 
   readonly operationsUser = computed(() => this.findUser(this.operationsUserId()));
-  readonly editingUser = computed(() => this.findUser(this.editingUserId()));
   readonly directSmsUser = computed(() => this.findUser(this.directSmsUserId()));
 
   onTextFilterInput(event: Event, field: 'name' | 'mobile' | 'company'): void {
@@ -884,31 +737,16 @@ export class InternalUsersComponent {
       return;
     }
 
-    const nextId = Math.max(...this.users().map(user => user.id)) + 1;
     const fullName = this.newEmployeeName().trim();
-    this.users.update(users => [
-      ...users,
-      {
-        id: nextId,
-        mobile: this.newEmployeeMobile(),
-        joinedAt: this.currentJalaliDate(),
-        fullName: fullName || null,
-        nationalId: this.newEmployeeNationalId() || null,
-        companyName: '',
-        email: this.newEmployeeEmail().trim() || undefined,
-        birthDate: this.newEmployeeBirthDate().trim() || undefined,
-        description: this.newEmployeeDescription().trim() || undefined,
-        roles: ['employee'],
-        userType: 'حقیقی',
-        hasFreeCredit: false,
-        freeCreditExpiresAt: null,
-        rank: 1,
-        lastOtpAt: null,
-        otpCount: 0,
-        hasSentDocuments: false,
-        isActive: true
-      }
-    ]);
+    this.businessUserService.addEmployee({
+      mobile: this.newEmployeeMobile(),
+      joinedAt: this.currentJalaliDate(),
+      fullName: fullName || null,
+      nationalId: this.newEmployeeNationalId() || null,
+      email: this.newEmployeeEmail().trim(),
+      birthDate: this.newEmployeeBirthDate().trim() || undefined,
+      description: this.newEmployeeDescription().trim() || undefined
+    });
     this.closeCreateUser();
     this.toastService.show('کارمند جدید فقط در پیش‌نمایش فعلی ثبت شد.', 'success');
   }
@@ -982,64 +820,7 @@ export class InternalUsersComponent {
 
   openEdit(user: BusinessUserRecord): void {
     this.closeOperations();
-    this.editingUserId.set(user.id);
-    this.editName.set(user.fullName ?? '');
-    this.editNationalId.set(user.nationalId ?? '');
-    this.editNationalIdHadNonDigit.set(false);
-    this.editAttempted.set(false);
-  }
-
-  closeEdit(): void {
-    this.editingUserId.set(null);
-    this.editAttempted.set(false);
-    this.editNationalIdHadNonDigit.set(false);
-  }
-
-  onEditNameInput(event: Event): void {
-    this.editName.set((event.target as HTMLInputElement).value);
-  }
-
-  onEditNationalIdInput(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const rawValue = input.value;
-    const normalizedValue = this.normalizeDigits(rawValue).slice(0, 10);
-    this.editNationalIdHadNonDigit.set(/[^0-9۰-۹٠-٩]/.test(rawValue));
-    this.editNationalId.set(normalizedValue);
-    input.value = normalizedValue;
-  }
-
-  isEditNameValid(): boolean {
-    return this.editName().trim().length > 0;
-  }
-
-  isEditNationalIdValid(): boolean {
-    return !this.editNationalIdHadNonDigit() && /^\d{10}$/.test(this.editNationalId());
-  }
-
-  editNationalIdError(): string {
-    return this.editNationalIdHadNonDigit()
-      ? 'کد ملی فقط باید شامل اعداد باشد.'
-      : 'کد ملی باید دقیقاً ۱۰ رقم باشد.';
-  }
-
-  saveEdit(event: Event): void {
-    event.preventDefault();
-    this.editAttempted.set(true);
-    const user = this.editingUser();
-    const trimmedName = this.editName().trim();
-    this.editName.set(trimmedName);
-
-    if (!user || !this.isEditNameValid() || !this.isEditNationalIdValid()) {
-      return;
-    }
-
-    this.updateUser(user.id, current => ({
-      ...current,
-      fullName: trimmedName,
-      nationalId: this.editNationalId()
-    }));
-    this.closeEdit();
-    this.toastService.show('اطلاعات کاربر در پیش‌نمایش به‌روزرسانی شد.', 'success');
+    void this.router.navigate(['/fish24/internal/users', user.id, 'edit']);
   }
 
   requestActivationChange(user: BusinessUserRecord): void {
@@ -1152,11 +933,12 @@ export class InternalUsersComponent {
     if (userId === null) {
       return null;
     }
-    return this.users().find(user => user.id === userId) ?? null;
+    return this.businessUserService.findUser(userId);
   }
 
   private updateUser(userId: number, update: (user: BusinessUserRecord) => BusinessUserRecord): void {
-    this.users.update(users => users.map(user => user.id === userId ? update(user) : user));
+    const user = this.businessUserService.findUser(userId);
+    if (user) this.businessUserService.updateUser(userId, update(user));
   }
 
   private resetNewEmployeeForm(): void {
