@@ -10,8 +10,13 @@ import { FISH24_PERMISSIONS } from '../../../../core/fish24/permissions/fish24-p
 type UserCapability = Fish24RoleId;
 type RoleFilter = 'all' | UserCapability;
 type ActiveFilter = 'all' | 'active' | 'inactive';
-type EmployerApprovalState = 'pending' | 'approved';
-type ConfirmationActionType = 'activation' | 'employer-approval';
+type Rank = 1 | 2 | 3 | 4 | 5;
+type RankFilter = 'all' | Rank;
+type EmployerApprovalFilter = 'all' | EmployerApprovalState;
+type DocumentActivityFilter = 'all' | 'sent' | 'not-sent';
+type UserType = 'حقیقی' | 'حقوقی';
+type EmployerApprovalState = 'pending' | 'approved' | 'rejected';
+type ConfirmationActionType = 'activation' | 'employer-approval' | 'enter-user-account';
 
 interface InternalUserRecord {
   readonly id: number;
@@ -24,6 +29,13 @@ interface InternalUserRecord {
   readonly birthDate?: string;
   readonly description?: string;
   readonly roles: readonly UserCapability[];
+  readonly userType: UserType;
+  readonly hasFreeCredit: boolean;
+  readonly freeCreditExpiresAt: string | null;
+  readonly rank: Rank;
+  readonly lastOtpAt: string | null;
+  readonly otpCount: number;
+  readonly hasSentDocuments: boolean;
   readonly isActive: boolean;
   readonly employerApproval?: EmployerApprovalState;
 }
@@ -65,13 +77,11 @@ const ROLE_LABELS: Readonly<Record<UserCapability, string>> = {
 };
 
 const DEFERRED_ACTIONS: readonly DeferredAction[] = [
-  { label: 'ارسال پیامک' },
   { label: 'لیست ارسال‌ها', hiddenForSupport: true },
   { label: 'لیست تراکنش‌ها', hiddenForSupport: true },
   { label: 'تخصیص کوپن', hiddenForSupport: true },
   { label: 'لیست کوپن‌ها', hiddenForSupport: true },
-  { label: 'ثبت نظر کارفرما', employerOnly: true },
-  { label: 'ورود به حساب کاربری' }
+  { label: 'ثبت نظر کارفرما', employerOnly: true }
 ];
 
 @Component({
@@ -102,22 +112,7 @@ const DEFERRED_ACTIONS: readonly DeferredAction[] = [
             </div>
           </div>
 
-          <form class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-6" (submit)="applySearch($event)">
-            <div>
-              <label for="internal-user-name-filter" class="mb-1.5 block text-sm font-bold text-foreground dark:text-slate-200">نام</label>
-              <input id="internal-user-name-filter" type="search" autocomplete="off" [value]="nameDraft()" (input)="onTextFilterInput($event, 'name')" class="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100" placeholder="نام و نام خانوادگی">
-            </div>
-
-            <div>
-              <label for="internal-user-mobile-filter" class="mb-1.5 block text-sm font-bold text-foreground dark:text-slate-200">موبایل</label>
-              <input id="internal-user-mobile-filter" type="search" inputmode="numeric" autocomplete="off" dir="ltr" [value]="mobileDraft()" (input)="onTextFilterInput($event, 'mobile')" class="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100" placeholder="09xxxxxxxxx">
-            </div>
-
-            <div>
-              <label for="internal-user-company-filter" class="mb-1.5 block text-sm font-bold text-foreground dark:text-slate-200">نام شرکت</label>
-              <input id="internal-user-company-filter" type="search" autocomplete="off" [value]="companyDraft()" (input)="onTextFilterInput($event, 'company')" class="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100" placeholder="نام شرکت">
-            </div>
-
+          <form class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4" (submit)="applySearch($event)">
             <div>
               <label for="internal-user-role-filter" class="mb-1.5 block text-sm font-bold text-foreground dark:text-slate-200">نقش</label>
               <select
@@ -132,19 +127,61 @@ const DEFERRED_ACTIONS: readonly DeferredAction[] = [
             </div>
 
             <div>
+              <label for="internal-user-rank-filter" class="mb-1.5 block text-sm font-bold text-foreground dark:text-slate-200">رتبه</label>
+              <select id="internal-user-rank-filter" [value]="rankFilter()" (change)="onRankFilterChange($event)" class="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-semibold text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+                <option value="all">لطفا رتبه را انتخاب کنید</option>
+                @for (rank of rankOptions; track rank) {<option [value]="rank">{{ formatNumber(rank) }}</option>}
+              </select>
+            </div>
+
+            <div>
+              <label for="internal-user-name-filter" class="mb-1.5 block text-sm font-bold text-foreground dark:text-slate-200">نام</label>
+              <input id="internal-user-name-filter" type="search" autocomplete="off" [value]="nameDraft()" (input)="onTextFilterInput($event, 'name')" class="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100" placeholder="نام">
+            </div>
+
+            <div>
+              <label for="internal-user-mobile-filter" class="mb-1.5 block text-sm font-bold text-foreground dark:text-slate-200">موبایل</label>
+              <input id="internal-user-mobile-filter" type="search" inputmode="numeric" autocomplete="off" dir="ltr" [value]="mobileDraft()" (input)="onTextFilterInput($event, 'mobile')" class="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100" placeholder="موبایل">
+            </div>
+
+            <div>
+              <label for="internal-user-company-filter" class="mb-1.5 block text-sm font-bold text-foreground dark:text-slate-200">نام شرکت</label>
+              <input id="internal-user-company-filter" type="search" autocomplete="off" [value]="companyDraft()" (input)="onTextFilterInput($event, 'company')" class="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100" placeholder="نام شرکت">
+            </div>
+
+            <div>
+              <label for="internal-user-approval-filter" class="mb-1.5 block text-sm font-bold text-foreground dark:text-slate-200">تأیید کارفرما</label>
+              <select id="internal-user-approval-filter" [value]="employerApprovalFilter()" (change)="onEmployerApprovalFilterChange($event)" class="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-semibold text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+                <option value="all">مشاهده همه</option>
+                <option value="approved">تایید شده</option>
+                <option value="rejected">تایید نشده</option>
+                <option value="pending">در انتظار تایید</option>
+              </select>
+            </div>
+
+            <div>
               <label for="internal-user-active-filter" class="mb-1.5 block text-sm font-bold text-foreground dark:text-slate-200">وضعیت کاربر</label>
               <select
                 id="internal-user-active-filter"
                 [value]="activeFilter()"
                 (change)="onActiveFilterChange($event)"
                 class="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-semibold text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
-                <option value="all">همه وضعیت‌ها</option>
-                <option value="active">فعال</option>
-                <option value="inactive">غیرفعال</option>
+                <option value="all">مشاهده همه</option>
+                <option value="active">فقط کاربران فعال</option>
+                <option value="inactive">فقط کاربران غیر فعال</option>
               </select>
             </div>
 
-            <div class="grid grid-cols-2 gap-2 sm:col-span-2 xl:col-span-1 xl:self-end">
+            <div>
+              <label for="internal-user-document-filter" class="mb-1.5 block text-sm font-bold text-foreground dark:text-slate-200">وضعیت ارسال سند</label>
+              <select id="internal-user-document-filter" [value]="documentActivityFilter()" (change)="onDocumentActivityFilterChange($event)" class="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-semibold text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+                <option value="all">مشاهده همه</option>
+                <option value="sent">فقط سند ارسال کرده ها</option>
+                <option value="not-sent">فقط بدون سند ها</option>
+              </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 sm:col-span-2 xl:col-span-4 xl:justify-self-end">
               <button type="submit" class="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-white transition-colors hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary/30">
                 <ui-icon name="search" [size]="17"></ui-icon>
                 جستجو
@@ -176,7 +213,7 @@ const DEFERRED_ACTIONS: readonly DeferredAction[] = [
 
           @if (filteredUsers().length > 0) {
             <div class="mt-3 hidden overflow-x-auto rounded-xl border border-border dark:border-slate-700 lg:block">
-              <table class="min-w-[1260px] w-full text-sm">
+              <table class="min-w-[1740px] w-full text-sm">
                 <thead class="bg-background/80 dark:bg-slate-900/60">
                   <tr>
                     <th class="whitespace-nowrap px-3 py-3 text-right text-xs font-bold text-muted">شناسه</th>
@@ -185,9 +222,13 @@ const DEFERRED_ACTIONS: readonly DeferredAction[] = [
                     <th class="min-w-48 px-3 py-3 text-right text-xs font-bold text-muted">نام و نام خانوادگی</th>
                     <th class="min-w-44 px-3 py-3 text-right text-xs font-bold text-muted">نام شرکت</th>
                     <th class="whitespace-nowrap px-3 py-3 text-right text-xs font-bold text-muted">موبایل</th>
-                    <th class="whitespace-nowrap px-3 py-3 text-right text-xs font-bold text-muted">کد ملی</th>
+                    <th class="whitespace-nowrap px-3 py-3 text-right text-xs font-bold text-muted">نوع</th>
+                    <th class="whitespace-nowrap px-3 py-3 text-right text-xs font-bold text-muted">اعتباری</th>
+                    <th class="whitespace-nowrap px-3 py-3 text-right text-xs font-bold text-muted">رتبه</th>
                     <th class="whitespace-nowrap px-3 py-3 text-right text-xs font-bold text-muted">وضعیت</th>
-                    <th class="whitespace-nowrap px-3 py-3 text-right text-xs font-bold text-muted">تأیید کارفرما</th>
+                    <th class="whitespace-nowrap px-3 py-3 text-right text-xs font-bold text-muted">انقضاء</th>
+                    <th class="whitespace-nowrap px-3 py-3 text-right text-xs font-bold text-muted">آخرین OTP</th>
+                    <th class="whitespace-nowrap px-3 py-3 text-right text-xs font-bold text-muted">تعداد OTP</th>
                     <th class="whitespace-nowrap px-3 py-3 text-center text-xs font-bold text-muted">عملیات</th>
                   </tr>
                 </thead>
@@ -211,15 +252,13 @@ const DEFERRED_ACTIONS: readonly DeferredAction[] = [
                       </td>
                       <td class="px-3 py-3 font-semibold text-foreground dark:text-slate-200">{{ user.companyName }}</td>
                       <td class="whitespace-nowrap px-3 py-3 font-semibold text-foreground dark:text-slate-200" dir="ltr">{{ user.mobile }}</td>
-                      <td class="whitespace-nowrap px-3 py-3 font-semibold text-foreground dark:text-slate-200" dir="ltr">{{ user.nationalId || '—' }}</td>
+                      <td class="whitespace-nowrap px-3 py-3 font-semibold text-foreground dark:text-slate-200">{{ user.userType }}</td>
+                      <td class="px-3 py-3"><span [class]="user.hasFreeCredit ? 'font-bold text-success' : 'font-bold text-muted'">{{ user.hasFreeCredit ? 'بله' : 'خیر' }}</span></td>
+                      <td class="px-3 py-3 font-extrabold text-foreground dark:text-slate-100">{{ formatNumber(user.rank) }}</td>
                       <td class="px-3 py-3"><span [class]="statusClass(user.isActive)">{{ user.isActive ? 'فعال' : 'غیرفعال' }}</span></td>
-                      <td class="px-3 py-3">
-                        @if (hasEmployerCapability(user)) {
-                          <span [class]="approvalClass(user.employerApproval)">{{ employerApprovalLabel(user.employerApproval) }}</span>
-                        } @else {
-                          <span class="text-muted">—</span>
-                        }
-                      </td>
+                      <td class="whitespace-nowrap px-3 py-3 font-semibold text-foreground dark:text-slate-200">{{ user.freeCreditExpiresAt || '' }}</td>
+                      <td class="whitespace-nowrap px-3 py-3 font-semibold text-foreground dark:text-slate-200">{{ user.lastOtpAt || '' }}</td>
+                      <td class="px-3 py-3 font-bold text-foreground dark:text-slate-200">{{ formatNumber(user.otpCount) }}</td>
                       <td class="px-3 py-3 text-center">
                         <button type="button" (click)="openOperations(user)" [attr.aria-label]="'عملیات کاربر ' + user.mobile" class="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-primary/30 px-3 text-xs font-bold text-primary transition-colors hover:bg-primary/10 focus:outline-none focus:ring-2 focus:ring-primary/25">
                           <ui-icon name="sliders" [size]="15"></ui-icon>
@@ -258,8 +297,16 @@ const DEFERRED_ACTIONS: readonly DeferredAction[] = [
                       <dd class="mt-1 min-h-4 font-bold text-foreground dark:text-slate-200">{{ user.companyName }}</dd>
                     </div>
                     <div>
-                      <dt class="text-muted">کد ملی</dt>
-                      <dd class="mt-1 font-bold text-foreground dark:text-slate-200" dir="ltr">{{ user.nationalId || '—' }}</dd>
+                      <dt class="text-muted">نوع</dt>
+                      <dd class="mt-1 font-bold text-foreground dark:text-slate-200">{{ user.userType }}</dd>
+                    </div>
+                    <div>
+                      <dt class="text-muted">رتبه</dt>
+                      <dd class="mt-1 font-bold text-foreground dark:text-slate-200">{{ formatNumber(user.rank) }}</dd>
+                    </div>
+                    <div>
+                      <dt class="text-muted">اعتباری</dt>
+                      <dd class="mt-1 font-bold" [class.text-success]="user.hasFreeCredit" [class.text-muted]="!user.hasFreeCredit">{{ user.hasFreeCredit ? 'بله' : 'خیر' }}</dd>
                     </div>
                     <div>
                       <dt class="text-muted">وضعیت کارفرما</dt>
@@ -272,6 +319,16 @@ const DEFERRED_ACTIONS: readonly DeferredAction[] = [
                       </dd>
                     </div>
                   </dl>
+
+                  <details class="border-b border-border py-2.5 text-xs dark:border-slate-700">
+                    <summary class="cursor-pointer font-bold text-primary">جزئیات عملیاتی</summary>
+                    <dl class="mt-2 grid grid-cols-2 gap-2">
+                      <div><dt class="text-muted">کد ملی</dt><dd class="mt-1 font-bold text-foreground dark:text-slate-200" dir="ltr">{{ user.nationalId || '—' }}</dd></div>
+                      <div><dt class="text-muted">انقضاء اعتبار</dt><dd class="mt-1 min-h-4 font-bold text-foreground dark:text-slate-200">{{ user.freeCreditExpiresAt || '' }}</dd></div>
+                      <div><dt class="text-muted">آخرین OTP</dt><dd class="mt-1 min-h-4 font-bold text-foreground dark:text-slate-200">{{ user.lastOtpAt || '' }}</dd></div>
+                      <div><dt class="text-muted">تعداد OTP</dt><dd class="mt-1 font-bold text-foreground dark:text-slate-200">{{ formatNumber(user.otpCount) }}</dd></div>
+                    </dl>
+                  </details>
 
                   <div class="mt-3 flex flex-wrap items-center justify-between gap-2">
                     <div class="flex flex-wrap gap-1">@for (role of user.roles; track role) {<span class="rounded-full bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary">{{ roleLabel(role) }}</span>}</div>
@@ -382,6 +439,13 @@ const DEFERRED_ACTIONS: readonly DeferredAction[] = [
               </div>
 
               <div class="p-4">
+                <div class="mb-4 rounded-xl border border-border bg-background/50 p-3 dark:border-slate-700 dark:bg-slate-900/30">
+                  <label for="internal-user-rank-edit" class="mb-1.5 block text-sm font-bold text-foreground dark:text-slate-200">رتبه</label>
+                  <select id="internal-user-rank-edit" [value]="user.rank" (change)="updateRank(user, $event)" class="h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm font-bold text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
+                    @for (rank of rankOptions; track rank) {<option [value]="rank">{{ formatNumber(rank) }}</option>}
+                  </select>
+                </div>
+
                 <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   <button type="button" (click)="openEdit(user)" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-primary/30 px-3 text-sm font-bold text-primary hover:bg-primary/10 focus:outline-none focus:ring-2 focus:ring-primary/25">
                     <ui-icon name="edit" [size]="17"></ui-icon>
@@ -392,11 +456,19 @@ const DEFERRED_ACTIONS: readonly DeferredAction[] = [
                     {{ user.isActive ? 'غیرفعال کردن' : 'فعال کردن' }}
                   </button>
                   @if (hasEmployerCapability(user)) {
-                    <button type="button" (click)="requestEmployerApprovalChange(user)" [class]="user.employerApproval === 'pending' ? 'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-sm font-bold text-white hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary/30 sm:col-span-2' : 'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-warning/40 px-3 text-sm font-bold text-warning hover:bg-warning/10 focus:outline-none focus:ring-2 focus:ring-warning/25 sm:col-span-2'">
-                      <ui-icon [name]="user.employerApproval === 'pending' ? 'check-circle' : 'x'" [size]="17"></ui-icon>
-                      {{ user.employerApproval === 'pending' ? 'تأیید کارفرما' : 'عدم تأیید کارفرما' }}
+                    <button type="button" (click)="requestEmployerApprovalChange(user)" [class]="user.employerApproval !== 'approved' ? 'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-sm font-bold text-white hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary/30 sm:col-span-2' : 'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-warning/40 px-3 text-sm font-bold text-warning hover:bg-warning/10 focus:outline-none focus:ring-2 focus:ring-warning/25 sm:col-span-2'">
+                      <ui-icon [name]="user.employerApproval !== 'approved' ? 'check-circle' : 'x'" [size]="17"></ui-icon>
+                      {{ user.employerApproval !== 'approved' ? 'تأیید کارفرما' : 'عدم تأیید کارفرما' }}
                     </button>
                   }
+                  <button type="button" (click)="openDirectSms(user)" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-primary/30 px-3 text-sm font-bold text-primary hover:bg-primary/10 focus:outline-none focus:ring-2 focus:ring-primary/25">
+                    <ui-icon name="message-square" [size]="17"></ui-icon>
+                    ارسال پیامک
+                  </button>
+                  <button type="button" (click)="requestEnterUserAccount(user)" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-success/30 px-3 text-sm font-bold text-success hover:bg-success/10 focus:outline-none focus:ring-2 focus:ring-success/25">
+                    <ui-icon name="login" [size]="17"></ui-icon>
+                    ورود به حساب کاربری
+                  </button>
                 </div>
 
                 <div class="mt-4 border-t border-border pt-4 dark:border-slate-700">
@@ -411,6 +483,30 @@ const DEFERRED_ACTIONS: readonly DeferredAction[] = [
                   </div>
                 </div>
               </div>
+            </section>
+          </div>
+        }
+
+        @if (directSmsUser(); as user) {
+          <div appEscToClose (escPressed)="closeDirectSms()" class="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto bg-black/60 p-3 backdrop-blur-sm" (click)="closeDirectSms()">
+            <section role="dialog" aria-modal="true" aria-labelledby="internal-direct-sms-title" class="w-full max-w-lg rounded-2xl border border-border bg-surface shadow-2xl dark:border-slate-700 dark:bg-slate-800" (click)="$event.stopPropagation()">
+              <div class="flex items-start justify-between gap-3 border-b border-border p-4 dark:border-slate-700">
+                <div>
+                  <h2 id="internal-direct-sms-title" class="text-lg font-extrabold text-foreground dark:text-slate-100">ارسال پیامک</h2>
+                  <p class="mt-1 text-xs leading-5 text-muted">گیرنده: {{ user.fullName || 'کاربر پروفایلش را تکمیل نکرده' }}</p>
+                  <p class="text-sm font-bold text-foreground dark:text-slate-200" dir="ltr">{{ user.mobile }}</p>
+                </div>
+                <button type="button" (click)="closeDirectSms()" aria-label="بستن ارسال پیامک" class="rounded-lg p-2 text-muted hover:bg-background focus:outline-none focus:ring-2 focus:ring-primary/25 dark:hover:bg-slate-700"><ui-icon name="x" [size]="19"></ui-icon></button>
+              </div>
+              <form class="p-4" (submit)="submitDirectSms($event)" novalidate>
+                <label for="internal-direct-sms-message" class="mb-1.5 block text-sm font-bold text-foreground dark:text-slate-200">متن</label>
+                <textarea id="internal-direct-sms-message" rows="4" [value]="directSmsMessage()" (input)="directSmsMessage.set(inputValue($event))" [attr.aria-invalid]="directSmsAttempted() && !directSmsMessage().trim()" class="w-full resize-y rounded-xl border border-border bg-background px-3 py-2.5 text-sm leading-6 text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"></textarea>
+                @if (directSmsAttempted() && !directSmsMessage().trim()) {<p role="alert" class="mt-1.5 text-xs font-semibold text-danger">متن پیامک را وارد کنید.</p>}
+                <div class="mt-4 flex flex-col-reverse gap-2 border-t border-border pt-4 dark:border-slate-700 sm:flex-row sm:justify-end">
+                  <button type="button" (click)="closeDirectSms()" class="inline-flex min-h-11 items-center justify-center rounded-xl border border-border px-4 text-sm font-bold text-foreground hover:bg-background dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700">انصراف</button>
+                  <button type="submit" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-white hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary/25"><ui-icon name="check" [size]="17"></ui-icon>ارسال</button>
+                </div>
+              </form>
             </section>
           </div>
         }
@@ -497,8 +593,9 @@ export class InternalUsersComponent {
   private readonly toastService = inject(ToastService);
 
   readonly deferredActions = DEFERRED_ACTIONS;
+  readonly rankOptions: readonly Rank[] = [1, 2, 3, 4, 5];
   readonly roleOptions: readonly RoleFilterOption[] = [
-    { id: 'all', label: 'همه نقش‌ها' },
+    { id: 'all', label: 'لطفا نقش را انتخاب کنید' },
     { id: 'employer', label: 'کارفرما' },
     { id: 'employee', label: 'کارمند' },
     { id: 'super-admin', label: 'مدیر سامانه' },
@@ -515,6 +612,13 @@ export class InternalUsersComponent {
       nationalId: '0012345678',
       companyName: 'مجموعه نمونه سپهر',
       roles: ['employer', 'employee'],
+      userType: 'حقوقی',
+      hasFreeCredit: false,
+      freeCreditExpiresAt: null,
+      rank: 1,
+      lastOtpAt: '۱۴۰۵/۰۶/۱۹ - ۱۰:۳۵',
+      otpCount: 1,
+      hasSentDocuments: true,
       isActive: true,
       employerApproval: 'approved'
     },
@@ -526,6 +630,13 @@ export class InternalUsersComponent {
       nationalId: '1234567890',
       companyName: 'شرکت راهکار نوین',
       roles: ['employer'],
+      userType: 'حقوقی',
+      hasFreeCredit: true,
+      freeCreditExpiresAt: '۱۴۰۵/۱۲/۲۹',
+      rank: 2,
+      lastOtpAt: '۱۴۰۵/۰۶/۱۸ - ۰۹:۲۰',
+      otpCount: 4,
+      hasSentDocuments: true,
       isActive: true,
       employerApproval: 'pending'
     },
@@ -537,6 +648,13 @@ export class InternalUsersComponent {
       nationalId: null,
       companyName: '',
       roles: ['employee'],
+      userType: 'حقیقی',
+      hasFreeCredit: false,
+      freeCreditExpiresAt: null,
+      rank: 3,
+      lastOtpAt: null,
+      otpCount: 0,
+      hasSentDocuments: false,
       isActive: true
     },
     {
@@ -547,6 +665,13 @@ export class InternalUsersComponent {
       nationalId: '0456789123',
       companyName: '',
       roles: ['support-expert'],
+      userType: 'حقیقی',
+      hasFreeCredit: false,
+      freeCreditExpiresAt: null,
+      rank: 4,
+      lastOtpAt: '۱۴۰۵/۰۶/۱۷ - ۱۶:۱۰',
+      otpCount: 12,
+      hasSentDocuments: false,
       isActive: true
     },
     {
@@ -557,6 +682,13 @@ export class InternalUsersComponent {
       nationalId: '0789456123',
       companyName: '',
       roles: ['sales-expert'],
+      userType: 'حقیقی',
+      hasFreeCredit: true,
+      freeCreditExpiresAt: '۱۴۰۵/۱۰/۰۱',
+      rank: 5,
+      lastOtpAt: '۱۴۰۵/۰۶/۱۶ - ۱۲:۴۵',
+      otpCount: 8,
+      hasSentDocuments: true,
       isActive: false
     },
     {
@@ -567,6 +699,13 @@ export class InternalUsersComponent {
       nationalId: '0567891234',
       companyName: '',
       roles: ['super-admin'],
+      userType: 'حقیقی',
+      hasFreeCredit: false,
+      freeCreditExpiresAt: null,
+      rank: 5,
+      lastOtpAt: '۱۴۰۵/۰۶/۱۹ - ۰۸:۰۰',
+      otpCount: 16,
+      hasSentDocuments: true,
       isActive: true
     },
     {
@@ -577,8 +716,15 @@ export class InternalUsersComponent {
       nationalId: '0098765432',
       companyName: 'کارگاه توسعه پارس',
       roles: ['employer'],
+      userType: 'حقوقی',
+      hasFreeCredit: true,
+      freeCreditExpiresAt: '۱۴۰۶/۰۱/۳۱',
+      rank: 4,
+      lastOtpAt: null,
+      otpCount: 0,
+      hasSentDocuments: false,
       isActive: false,
-      employerApproval: 'approved'
+      employerApproval: 'rejected'
     }
   ]);
 
@@ -589,7 +735,10 @@ export class InternalUsersComponent {
   readonly mobileQuery = signal('');
   readonly companyQuery = signal('');
   readonly roleFilter = signal<RoleFilter>('all');
+  readonly rankFilter = signal<RankFilter>('all');
   readonly activeFilter = signal<ActiveFilter>('all');
+  readonly employerApprovalFilter = signal<EmployerApprovalFilter>('all');
+  readonly documentActivityFilter = signal<DocumentActivityFilter>('all');
   readonly isCreateUserOpen = signal(false);
   readonly createUserAttempted = signal(false);
   readonly newEmployeeName = signal('');
@@ -602,6 +751,9 @@ export class InternalUsersComponent {
   readonly groupSmsAttempted = signal(false);
   readonly groupSmsMessage = signal('');
   readonly groupSmsAudience = signal<GroupSmsAudience>('search-results');
+  readonly directSmsUserId = signal<number | null>(null);
+  readonly directSmsMessage = signal('');
+  readonly directSmsAttempted = signal(false);
   readonly operationsUserId = signal<number | null>(null);
   readonly editingUserId = signal<number | null>(null);
   readonly editName = signal('');
@@ -626,7 +778,10 @@ export class InternalUsersComponent {
     const mobile = this.normalizeSearchValue(this.mobileQuery().trim());
     const company = this.normalizeSearchValue(this.companyQuery().trim());
     const role = this.roleFilter();
+    const rank = this.rankFilter();
     const active = this.activeFilter();
+    const approval = this.employerApprovalFilter();
+    const documentActivity = this.documentActivityFilter();
 
     return this.users().filter(user => {
       const canViewUser = this.isSuperAdminView() || !user.roles.some(userRole => INTERNAL_ROLE_IDS.includes(userRole));
@@ -634,14 +789,20 @@ export class InternalUsersComponent {
       const matchesMobile = !mobile || this.normalizeSearchValue(user.mobile).includes(mobile);
       const matchesCompany = !company || this.normalizeSearchValue(user.companyName).includes(company);
       const matchesRole = role === 'all' || user.roles.includes(role);
+      const matchesRank = rank === 'all' || user.rank === rank;
       const matchesActive = active === 'all'
         || (active === 'active' ? user.isActive : !user.isActive);
-      return canViewUser && matchesName && matchesMobile && matchesCompany && matchesRole && matchesActive;
+      const matchesApproval = approval === 'all' || user.employerApproval === approval;
+      const matchesDocumentActivity = documentActivity === 'all'
+        || (documentActivity === 'sent' ? user.hasSentDocuments : !user.hasSentDocuments);
+      return canViewUser && matchesName && matchesMobile && matchesCompany && matchesRole
+        && matchesRank && matchesActive && matchesApproval && matchesDocumentActivity;
     });
   });
 
   readonly operationsUser = computed(() => this.findUser(this.operationsUserId()));
   readonly editingUser = computed(() => this.findUser(this.editingUserId()));
+  readonly directSmsUser = computed(() => this.findUser(this.directSmsUserId()));
 
   onTextFilterInput(event: Event, field: 'name' | 'mobile' | 'company'): void {
     const value = (event.target as HTMLInputElement).value;
@@ -669,6 +830,19 @@ export class InternalUsersComponent {
     this.activeFilter.set((event.target as HTMLSelectElement).value as ActiveFilter);
   }
 
+  onRankFilterChange(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    this.rankFilter.set(value === 'all' ? 'all' : Number(value) as Rank);
+  }
+
+  onEmployerApprovalFilterChange(event: Event): void {
+    this.employerApprovalFilter.set((event.target as HTMLSelectElement).value as EmployerApprovalFilter);
+  }
+
+  onDocumentActivityFilterChange(event: Event): void {
+    this.documentActivityFilter.set((event.target as HTMLSelectElement).value as DocumentActivityFilter);
+  }
+
   showAll(): void {
     this.nameDraft.set('');
     this.mobileDraft.set('');
@@ -677,7 +851,10 @@ export class InternalUsersComponent {
     this.mobileQuery.set('');
     this.companyQuery.set('');
     this.roleFilter.set('all');
+    this.rankFilter.set('all');
     this.activeFilter.set('all');
+    this.employerApprovalFilter.set('all');
+    this.documentActivityFilter.set('all');
   }
 
   inputValue(event: Event): string {
@@ -752,6 +929,13 @@ export class InternalUsersComponent {
         birthDate: this.newEmployeeBirthDate().trim() || undefined,
         description: this.newEmployeeDescription().trim() || undefined,
         roles: ['employee'],
+        userType: 'حقیقی',
+        hasFreeCredit: false,
+        freeCreditExpiresAt: null,
+        rank: 1,
+        lastOtpAt: null,
+        otpCount: 0,
+        hasSentDocuments: false,
         isActive: true
       }
     ]);
@@ -788,6 +972,51 @@ export class InternalUsersComponent {
 
   closeOperations(): void {
     this.operationsUserId.set(null);
+  }
+
+  updateRank(user: InternalUserRecord, event: Event): void {
+    const rank = Number((event.target as HTMLSelectElement).value) as Rank;
+    if (!this.rankOptions.includes(rank)) {
+      return;
+    }
+    this.updateUser(user.id, current => ({ ...current, rank }));
+    this.toastService.show('رتبه کاربر در پیش‌نمایش به‌روزرسانی شد.', 'success');
+  }
+
+  openDirectSms(user: InternalUserRecord): void {
+    this.closeOperations();
+    this.directSmsUserId.set(user.id);
+    this.directSmsMessage.set('');
+    this.directSmsAttempted.set(false);
+  }
+
+  closeDirectSms(): void {
+    this.directSmsUserId.set(null);
+    this.directSmsAttempted.set(false);
+  }
+
+  submitDirectSms(event: Event): void {
+    event.preventDefault();
+    this.directSmsAttempted.set(true);
+    const message = this.directSmsMessage().trim();
+    this.directSmsMessage.set(message);
+    if (!this.directSmsUser() || !message) {
+      return;
+    }
+
+    this.closeDirectSms();
+    this.toastService.show('ارسال واقعی انجام نشد؛ پیامک مستقیم فقط در پیش‌نمایش بررسی شد.');
+  }
+
+  requestEnterUserAccount(user: InternalUserRecord): void {
+    this.closeOperations();
+    this.pendingConfirmation.set({
+      type: 'enter-user-account',
+      userId: user.id,
+      title: 'ورود به حساب کاربری',
+      message: `ورود بدون رمز به حساب ${user.fullName || user.mobile} به قرارداد امن سمت سرور، ثبت رویداد و امکان بازگشت به حساب مدیریتی نیاز دارد. در این نسخه هیچ نشست یا توکنی تغییر نمی‌کند.`,
+      confirmLabel: 'تأیید پیش‌نمایش'
+    });
   }
 
   openEdit(user: InternalUserRecord): void {
@@ -870,7 +1099,7 @@ export class InternalUsersComponent {
       return;
     }
 
-    const targetEmployerApproval: EmployerApprovalState = user.employerApproval === 'pending' ? 'approved' : 'pending';
+    const targetEmployerApproval: EmployerApprovalState = user.employerApproval === 'approved' ? 'rejected' : 'approved';
     const isApproval = targetEmployerApproval === 'approved';
     this.closeOperations();
     this.pendingConfirmation.set({
@@ -879,7 +1108,7 @@ export class InternalUsersComponent {
       title: isApproval ? 'تأیید کارفرما' : 'عدم تأیید کارفرما',
       message: isApproval
         ? 'آیا از تأیید قابلیت کارفرما برای این کاربر اطمینان دارید؟ وضعیت فعال یا غیرفعال کاربر تغییر نخواهد کرد.'
-        : 'آیا از بازگرداندن وضعیت کارفرما به حالت در انتظار تأیید اطمینان دارید؟ وضعیت فعال یا غیرفعال کاربر تغییر نخواهد کرد.',
+        : 'آیا از عدم تأیید قابلیت کارفرما برای این کاربر اطمینان دارید؟ وضعیت فعال یا غیرفعال کاربر تغییر نخواهد کرد.',
       confirmLabel: isApproval ? 'تأیید کارفرما' : 'عدم تأیید کارفرما',
       targetEmployerApproval
     });
@@ -900,12 +1129,14 @@ export class InternalUsersComponent {
     if (confirmation.type === 'activation') {
       this.updateUser(user.id, current => ({ ...current, isActive: !current.isActive }));
       this.toastService.show('وضعیت فعالیت کاربر در پیش‌نمایش تغییر کرد.', 'success');
-    } else if (this.hasEmployerCapability(user) && confirmation.targetEmployerApproval) {
+    } else if (confirmation.type === 'employer-approval' && this.hasEmployerCapability(user) && confirmation.targetEmployerApproval) {
       this.updateUser(user.id, current => ({
         ...current,
         employerApproval: confirmation.targetEmployerApproval
       }));
       this.toastService.show('وضعیت تأیید کارفرما در پیش‌نمایش تغییر کرد.', 'success');
+    } else if (confirmation.type === 'enter-user-account') {
+      this.toastService.show('ورود واقعی انجام نشد و نشست مدیریتی بدون تغییر باقی ماند.');
     }
 
     this.cancelConfirmation();
@@ -932,7 +1163,9 @@ export class InternalUsersComponent {
   }
 
   employerApprovalLabel(state: EmployerApprovalState | undefined): string {
-    return state === 'approved' ? 'تأیید شده' : 'در انتظار تأیید';
+    if (state === 'approved') return 'تأیید شده';
+    if (state === 'rejected') return 'تأیید نشده';
+    return 'در انتظار تأیید';
   }
 
   statusClass(isActive: boolean): string {
@@ -942,8 +1175,11 @@ export class InternalUsersComponent {
   }
 
   approvalClass(state: EmployerApprovalState | undefined): string {
-    return state === 'approved'
-      ? 'inline-flex whitespace-nowrap rounded-full bg-success/15 px-2 py-1 text-[10px] font-bold text-success sm:text-xs'
+    if (state === 'approved') {
+      return 'inline-flex whitespace-nowrap rounded-full bg-success/15 px-2 py-1 text-[10px] font-bold text-success sm:text-xs';
+    }
+    return state === 'rejected'
+      ? 'inline-flex whitespace-nowrap rounded-full bg-danger/15 px-2 py-1 text-[10px] font-bold text-danger sm:text-xs'
       : 'inline-flex whitespace-nowrap rounded-full bg-warning/15 px-2 py-1 text-[10px] font-bold text-warning sm:text-xs';
   }
 
