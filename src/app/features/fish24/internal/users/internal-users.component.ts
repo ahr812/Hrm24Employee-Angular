@@ -18,7 +18,7 @@ type UserType = 'حقیقی' | 'حقوقی';
 type EmployerApprovalState = 'pending' | 'approved' | 'rejected';
 type ConfirmationActionType = 'activation' | 'employer-approval' | 'enter-user-account';
 
-interface InternalUserRecord {
+interface BusinessUserRecord {
   readonly id: number;
   readonly mobile: string;
   readonly joinedAt: string;
@@ -96,7 +96,7 @@ const DEFERRED_ACTIONS: readonly DeferredAction[] = [
             <ui-icon name="users" [size]="29" class="text-primary"></ui-icon>
           </div>
           <div class="min-w-0">
-            <h1 class="text-2xl font-bold text-primary sm:text-3xl">مدیریت کاربران</h1>
+            <h1 class="text-2xl font-bold text-primary sm:text-3xl">فهرست کاربران</h1>
             <p class="mt-0.5 text-sm leading-6 text-muted sm:mt-1 sm:text-base">مشاهده و مدیریت هویت‌های سراسری کاربران فیش۲۴</p>
           </div>
         </header>
@@ -202,6 +202,11 @@ const DEFERRED_ACTIONS: readonly DeferredAction[] = [
               <p class="mt-0.5 text-xs leading-5 text-muted">هر موبایل فقط یک هویت سراسری دارد؛ نقش‌های هم‌زمان در همان ردیف نمایش داده می‌شوند.</p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
+              @if (canExportUsers()) {
+                <button id="business-users-excel-export" type="button" (click)="exportFilteredUsers()" class="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-success/35 px-3 text-xs font-bold text-success transition-colors hover:bg-success/10 focus:outline-none focus:ring-2 focus:ring-success/25">
+                  <ui-icon name="download" [size]="16"></ui-icon>خروجی Excel
+                </button>
+              }
               <button type="button" (click)="openCreateUser()" class="inline-flex min-h-10 items-center gap-1.5 rounded-xl bg-success px-3 text-xs font-bold text-white transition-colors hover:bg-success/90 focus:outline-none focus:ring-2 focus:ring-success/25">
                 <ui-icon name="plus" [size]="16"></ui-icon>کارمند جدید
               </button>
@@ -212,36 +217,29 @@ const DEFERRED_ACTIONS: readonly DeferredAction[] = [
           </div>
 
           @if (filteredUsers().length > 0) {
-            <div class="mt-3 hidden overflow-x-auto rounded-xl border border-border dark:border-slate-700 lg:block">
-              <table class="min-w-[1740px] w-full text-sm">
+            <div class="mt-3 hidden rounded-xl border border-border dark:border-slate-700 lg:block">
+              <table class="w-full table-fixed text-[10px] xl:text-xs">
                 <thead class="bg-background/80 dark:bg-slate-900/60">
                   <tr>
-                    <th class="whitespace-nowrap px-3 py-3 text-right text-xs font-bold text-muted">شناسه</th>
-                    <th class="whitespace-nowrap px-3 py-3 text-right text-xs font-bold text-muted">عضویت</th>
-                    <th class="min-w-40 px-3 py-3 text-right text-xs font-bold text-muted">نقش</th>
-                    <th class="min-w-48 px-3 py-3 text-right text-xs font-bold text-muted">نام و نام خانوادگی</th>
-                    <th class="min-w-44 px-3 py-3 text-right text-xs font-bold text-muted">نام شرکت</th>
-                    <th class="whitespace-nowrap px-3 py-3 text-right text-xs font-bold text-muted">موبایل</th>
-                    <th class="whitespace-nowrap px-3 py-3 text-right text-xs font-bold text-muted">نوع</th>
-                    <th class="whitespace-nowrap px-3 py-3 text-right text-xs font-bold text-muted">اعتباری</th>
-                    <th class="whitespace-nowrap px-3 py-3 text-right text-xs font-bold text-muted">رتبه</th>
-                    <th class="whitespace-nowrap px-3 py-3 text-right text-xs font-bold text-muted">وضعیت</th>
-                    <th class="whitespace-nowrap px-3 py-3 text-right text-xs font-bold text-muted">انقضاء</th>
-                    <th class="whitespace-nowrap px-3 py-3 text-right text-xs font-bold text-muted">آخرین OTP</th>
-                    <th class="whitespace-nowrap px-3 py-3 text-right text-xs font-bold text-muted">تعداد OTP</th>
-                    <th class="whitespace-nowrap px-3 py-3 text-center text-xs font-bold text-muted">عملیات</th>
+                    <th class="w-[11%] px-1.5 py-2.5 text-right font-bold text-muted">شناسه / عضویت</th>
+                    <th class="w-[10%] px-1.5 py-2.5 text-right font-bold text-muted">نقش</th>
+                    <th class="w-[18%] px-1.5 py-2.5 text-right font-bold text-muted">نام و موبایل</th>
+                    <th class="w-[14%] px-1.5 py-2.5 text-right font-bold text-muted">نام شرکت</th>
+                    <th class="w-[9%] px-1.5 py-2.5 text-right font-bold text-muted">نوع / رتبه</th>
+                    <th class="w-[13%] px-1.5 py-2.5 text-right font-bold text-muted">اعتباری / انقضاء</th>
+                    <th class="w-[19%] px-1.5 py-2.5 text-right font-bold text-muted">وضعیت / OTP</th>
+                    <th class="w-[6%] px-1 py-2.5 text-center font-bold text-muted">عملیات</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-border dark:divide-slate-700">
                   @for (user of filteredUsers(); track user.id) {
                     <tr class="transition-colors hover:bg-primary/5 dark:hover:bg-primary/10">
-                      <td class="px-3 py-3 font-bold text-foreground dark:text-slate-200" dir="ltr">{{ user.id }}</td>
-                      <td class="whitespace-nowrap px-3 py-3 font-semibold text-foreground dark:text-slate-200">{{ user.joinedAt }}</td>
-                      <td class="px-3 py-3"><div class="flex flex-wrap gap-1">@for (role of user.roles; track role) {<span class="rounded-full bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary">{{ roleLabel(role) }}</span>}</div></td>
-                      <td class="px-3 py-3">
-                        <div class="flex items-start gap-1.5">
+                      <td class="px-1.5 py-2.5 align-top"><p class="font-bold text-foreground dark:text-slate-200" dir="ltr">{{ user.id }}</p><p class="mt-1 font-semibold text-muted">{{ user.joinedAt }}</p></td>
+                      <td class="break-words px-1.5 py-2.5 align-top"><div class="flex flex-wrap gap-1">@for (role of user.roles; track role) {<span class="rounded-full bg-primary/10 px-1.5 py-0.5 font-bold text-primary">{{ roleLabel(role) }}</span>}</div></td>
+                      <td class="break-words px-1.5 py-2.5 align-top">
+                        <div class="flex items-start gap-1">
                           @if (isEmployerApprovalPending(user)) {
-                            <span title="در انتظار تأیید کارفرما" aria-label="در انتظار تأیید کارفرما" class="mt-0.5 inline-flex shrink-0 text-warning"><ui-icon name="alert-triangle" [size]="16"></ui-icon></span>
+                            <span title="در انتظار تأیید کارفرما" aria-label="در انتظار تأیید کارفرما" class="inline-flex shrink-0 text-warning"><ui-icon name="alert-triangle" [size]="14"></ui-icon></span>
                           }
                         @if (user.fullName) {
                           <span class="font-bold text-foreground dark:text-slate-100">{{ user.fullName }}</span>
@@ -249,20 +247,16 @@ const DEFERRED_ACTIONS: readonly DeferredAction[] = [
                           <span class="text-xs font-bold leading-5 text-danger">کاربر پروفایلش را تکمیل نکرده</span>
                         }
                         </div>
+                        <p class="mt-1 break-all font-semibold text-muted" dir="ltr">{{ user.mobile }}</p>
                       </td>
-                      <td class="px-3 py-3 font-semibold text-foreground dark:text-slate-200">{{ user.companyName }}</td>
-                      <td class="whitespace-nowrap px-3 py-3 font-semibold text-foreground dark:text-slate-200" dir="ltr">{{ user.mobile }}</td>
-                      <td class="whitespace-nowrap px-3 py-3 font-semibold text-foreground dark:text-slate-200">{{ user.userType }}</td>
-                      <td class="px-3 py-3"><span [class]="user.hasFreeCredit ? 'font-bold text-success' : 'font-bold text-muted'">{{ user.hasFreeCredit ? 'بله' : 'خیر' }}</span></td>
-                      <td class="px-3 py-3 font-extrabold text-foreground dark:text-slate-100">{{ formatNumber(user.rank) }}</td>
-                      <td class="px-3 py-3"><span [class]="statusClass(user.isActive)">{{ user.isActive ? 'فعال' : 'غیرفعال' }}</span></td>
-                      <td class="whitespace-nowrap px-3 py-3 font-semibold text-foreground dark:text-slate-200">{{ user.freeCreditExpiresAt || '' }}</td>
-                      <td class="whitespace-nowrap px-3 py-3 font-semibold text-foreground dark:text-slate-200">{{ user.lastOtpAt || '' }}</td>
-                      <td class="px-3 py-3 font-bold text-foreground dark:text-slate-200">{{ formatNumber(user.otpCount) }}</td>
-                      <td class="px-3 py-3 text-center">
-                        <button type="button" (click)="openOperations(user)" [attr.aria-label]="'عملیات کاربر ' + user.mobile" class="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-primary/30 px-3 text-xs font-bold text-primary transition-colors hover:bg-primary/10 focus:outline-none focus:ring-2 focus:ring-primary/25">
+                      <td class="break-words px-1.5 py-2.5 align-top font-semibold text-foreground dark:text-slate-200">{{ user.companyName }}</td>
+                      <td class="px-1.5 py-2.5 align-top"><p class="font-semibold text-foreground dark:text-slate-200">{{ user.userType }}</p><p class="mt-1 text-muted">رتبه: <strong class="text-foreground dark:text-slate-100">{{ formatNumber(user.rank) }}</strong></p></td>
+                      <td class="px-1.5 py-2.5 align-top"><p><span class="text-muted">اعتباری:</span> <strong [class]="user.hasFreeCredit ? 'text-success' : 'text-muted'">{{ user.hasFreeCredit ? 'بله' : 'خیر' }}</strong></p><p class="mt-1 break-words text-foreground dark:text-slate-200"><span class="text-muted">انقضاء:</span> {{ user.freeCreditExpiresAt || '' }}</p></td>
+                      <td class="px-1.5 py-2.5 align-top"><span [class]="statusClass(user.isActive)">{{ user.isActive ? 'فعال' : 'غیرفعال' }}</span><p class="mt-1 break-words text-foreground dark:text-slate-200"><span class="text-muted">آخرین OTP:</span> {{ user.lastOtpAt || '' }}</p><p class="mt-1 text-foreground dark:text-slate-200"><span class="text-muted">تعداد OTP:</span> {{ formatNumber(user.otpCount) }}</p></td>
+                      <td class="px-1 py-2.5 text-center align-top">
+                        <button type="button" (click)="openOperations(user)" [attr.aria-label]="'عملیات کاربر ' + user.mobile" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-primary/30 text-primary transition-colors hover:bg-primary/10 focus:outline-none focus:ring-2 focus:ring-primary/25">
                           <ui-icon name="sliders" [size]="15"></ui-icon>
-                          عملیات
+                          <span class="sr-only">عملیات</span>
                         </button>
                       </td>
                     </tr>
@@ -439,13 +433,6 @@ const DEFERRED_ACTIONS: readonly DeferredAction[] = [
               </div>
 
               <div class="p-4">
-                <div class="mb-4 rounded-xl border border-border bg-background/50 p-3 dark:border-slate-700 dark:bg-slate-900/30">
-                  <label for="internal-user-rank-edit" class="mb-1.5 block text-sm font-bold text-foreground dark:text-slate-200">رتبه</label>
-                  <select id="internal-user-rank-edit" [value]="user.rank" (change)="updateRank(user, $event)" class="h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm font-bold text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
-                    @for (rank of rankOptions; track rank) {<option [value]="rank">{{ formatNumber(rank) }}</option>}
-                  </select>
-                </div>
-
                 <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   <button type="button" (click)="openEdit(user)" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-primary/30 px-3 text-sm font-bold text-primary hover:bg-primary/10 focus:outline-none focus:ring-2 focus:ring-primary/25">
                     <ui-icon name="edit" [size]="17"></ui-icon>
@@ -597,13 +584,10 @@ export class InternalUsersComponent {
   readonly roleOptions: readonly RoleFilterOption[] = [
     { id: 'all', label: 'لطفا نقش را انتخاب کنید' },
     { id: 'employer', label: 'کارفرما' },
-    { id: 'employee', label: 'کارمند' },
-    { id: 'super-admin', label: 'مدیر سامانه' },
-    { id: 'sales-expert', label: 'کارشناس فروش' },
-    { id: 'support-expert', label: 'کارشناس پشتیبانی' }
+    { id: 'employee', label: 'کارمند' }
   ];
 
-  readonly users = signal<readonly InternalUserRecord[]>([
+  readonly users = signal<readonly BusinessUserRecord[]>([
     {
       id: 1001,
       mobile: '09121234567',
@@ -655,57 +639,6 @@ export class InternalUsersComponent {
       lastOtpAt: null,
       otpCount: 0,
       hasSentDocuments: false,
-      isActive: true
-    },
-    {
-      id: 1004,
-      mobile: '09910000002',
-      joinedAt: '۱۴۰۲/۱۱/۰۳',
-      fullName: 'سارا محمدی',
-      nationalId: '0456789123',
-      companyName: '',
-      roles: ['support-expert'],
-      userType: 'حقیقی',
-      hasFreeCredit: false,
-      freeCreditExpiresAt: null,
-      rank: 4,
-      lastOtpAt: '۱۴۰۵/۰۶/۱۷ - ۱۶:۱۰',
-      otpCount: 12,
-      hasSentDocuments: false,
-      isActive: true
-    },
-    {
-      id: 1005,
-      mobile: '09210000003',
-      joinedAt: '۱۴۰۲/۱۰/۱۴',
-      fullName: 'علی مرادی',
-      nationalId: '0789456123',
-      companyName: '',
-      roles: ['sales-expert'],
-      userType: 'حقیقی',
-      hasFreeCredit: true,
-      freeCreditExpiresAt: '۱۴۰۵/۱۰/۰۱',
-      rank: 5,
-      lastOtpAt: '۱۴۰۵/۰۶/۱۶ - ۱۲:۴۵',
-      otpCount: 8,
-      hasSentDocuments: true,
-      isActive: false
-    },
-    {
-      id: 1006,
-      mobile: '09190000004',
-      joinedAt: '۱۴۰۲/۰۸/۲۶',
-      fullName: 'نگار رضایی',
-      nationalId: '0567891234',
-      companyName: '',
-      roles: ['super-admin'],
-      userType: 'حقیقی',
-      hasFreeCredit: false,
-      freeCreditExpiresAt: null,
-      rank: 5,
-      lastOtpAt: '۱۴۰۵/۰۶/۱۹ - ۰۸:۰۰',
-      otpCount: 16,
-      hasSentDocuments: true,
       isActive: true
     },
     {
@@ -772,6 +705,7 @@ export class InternalUsersComponent {
 
   readonly isSuperAdminView = computed(() => this.activeRoles().includes('super-admin'));
   readonly isSupportView = computed(() => !this.isSuperAdminView() && this.activeRoles().includes('support-expert'));
+  readonly canExportUsers = computed(() => this.isSuperAdminView() || this.activeRoles().includes('sales-expert'));
 
   readonly filteredUsers = computed(() => {
     const name = this.normalizeSearchValue(this.nameQuery().trim());
@@ -784,7 +718,6 @@ export class InternalUsersComponent {
     const documentActivity = this.documentActivityFilter();
 
     return this.users().filter(user => {
-      const canViewUser = this.isSuperAdminView() || !user.roles.some(userRole => INTERNAL_ROLE_IDS.includes(userRole));
       const matchesName = !name || this.normalizeSearchValue(user.fullName ?? '').includes(name);
       const matchesMobile = !mobile || this.normalizeSearchValue(user.mobile).includes(mobile);
       const matchesCompany = !company || this.normalizeSearchValue(user.companyName).includes(company);
@@ -795,7 +728,7 @@ export class InternalUsersComponent {
       const matchesApproval = approval === 'all' || user.employerApproval === approval;
       const matchesDocumentActivity = documentActivity === 'all'
         || (documentActivity === 'sent' ? user.hasSentDocuments : !user.hasSentDocuments);
-      return canViewUser && matchesName && matchesMobile && matchesCompany && matchesRole
+      return matchesName && matchesMobile && matchesCompany && matchesRole
         && matchesRank && matchesActive && matchesApproval && matchesDocumentActivity;
     });
   });
@@ -855,6 +788,43 @@ export class InternalUsersComponent {
     this.activeFilter.set('all');
     this.employerApprovalFilter.set('all');
     this.documentActivityFilter.set('all');
+  }
+
+  exportFilteredUsers(): void {
+    if (!this.canExportUsers()) {
+      return;
+    }
+
+    const headers = [
+      'شناسه', 'عضویت', 'نقش', 'نام و نام خانوادگی', 'نام شرکت', 'موبایل',
+      'نوع', 'اعتباری', 'رتبه', 'وضعیت', 'انقضاء', 'آخرین OTP', 'تعداد OTP'
+    ];
+    const rows = this.filteredUsers().map(user => [
+      String(user.id),
+      user.joinedAt,
+      user.roles.map(role => this.roleLabel(role)).join('، '),
+      user.fullName ?? '',
+      user.companyName,
+      user.mobile,
+      user.userType,
+      user.hasFreeCredit ? 'بله' : 'خیر',
+      String(user.rank),
+      user.isActive ? 'فعال' : 'غیرفعال',
+      user.freeCreditExpiresAt ?? '',
+      user.lastOtpAt ?? '',
+      String(user.otpCount)
+    ]);
+    const tableHeader = headers.map(header => `<th>${this.escapeSpreadsheetHtml(header)}</th>`).join('');
+    const tableRows = rows.map(row => `<tr>${row.map(value => `<td style="mso-number-format:'\\@'">${this.escapeSpreadsheetHtml(value)}</td>`).join('')}</tr>`).join('');
+    const workbook = `<!doctype html><html dir="rtl"><head><meta charset="utf-8"></head><body><table><thead><tr>${tableHeader}</tr></thead><tbody>${tableRows}</tbody></table></body></html>`;
+    const blob = new Blob([`\uFEFF${workbook}`], { type: 'application/vnd.ms-excel;charset=utf-8' });
+    const downloadUrl = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = downloadUrl;
+    anchor.download = 'fish24-business-users.xls';
+    anchor.click();
+    setTimeout(() => URL.revokeObjectURL(downloadUrl), 0);
+    this.toastService.show(`${this.formatNumber(rows.length)} رکورد فیلترشده برای Excel آماده شد.`, 'success');
   }
 
   inputValue(event: Event): string {
@@ -966,7 +936,7 @@ export class InternalUsersComponent {
     this.toastService.show('ارسال واقعی انجام نشد؛ پیامک فقط در پیش‌نمایش بررسی شد.');
   }
 
-  openOperations(user: InternalUserRecord): void {
+  openOperations(user: BusinessUserRecord): void {
     this.operationsUserId.set(user.id);
   }
 
@@ -974,16 +944,7 @@ export class InternalUsersComponent {
     this.operationsUserId.set(null);
   }
 
-  updateRank(user: InternalUserRecord, event: Event): void {
-    const rank = Number((event.target as HTMLSelectElement).value) as Rank;
-    if (!this.rankOptions.includes(rank)) {
-      return;
-    }
-    this.updateUser(user.id, current => ({ ...current, rank }));
-    this.toastService.show('رتبه کاربر در پیش‌نمایش به‌روزرسانی شد.', 'success');
-  }
-
-  openDirectSms(user: InternalUserRecord): void {
+  openDirectSms(user: BusinessUserRecord): void {
     this.closeOperations();
     this.directSmsUserId.set(user.id);
     this.directSmsMessage.set('');
@@ -1008,7 +969,7 @@ export class InternalUsersComponent {
     this.toastService.show('ارسال واقعی انجام نشد؛ پیامک مستقیم فقط در پیش‌نمایش بررسی شد.');
   }
 
-  requestEnterUserAccount(user: InternalUserRecord): void {
+  requestEnterUserAccount(user: BusinessUserRecord): void {
     this.closeOperations();
     this.pendingConfirmation.set({
       type: 'enter-user-account',
@@ -1019,7 +980,7 @@ export class InternalUsersComponent {
     });
   }
 
-  openEdit(user: InternalUserRecord): void {
+  openEdit(user: BusinessUserRecord): void {
     this.closeOperations();
     this.editingUserId.set(user.id);
     this.editName.set(user.fullName ?? '');
@@ -1081,7 +1042,7 @@ export class InternalUsersComponent {
     this.toastService.show('اطلاعات کاربر در پیش‌نمایش به‌روزرسانی شد.', 'success');
   }
 
-  requestActivationChange(user: InternalUserRecord): void {
+  requestActivationChange(user: BusinessUserRecord): void {
     this.closeOperations();
     this.pendingConfirmation.set({
       type: 'activation',
@@ -1094,7 +1055,7 @@ export class InternalUsersComponent {
     });
   }
 
-  requestEmployerApprovalChange(user: InternalUserRecord): void {
+  requestEmployerApprovalChange(user: BusinessUserRecord): void {
     if (!this.hasEmployerCapability(user)) {
       return;
     }
@@ -1142,15 +1103,15 @@ export class InternalUsersComponent {
     this.cancelConfirmation();
   }
 
-  hasEmployerCapability(user: InternalUserRecord): boolean {
+  hasEmployerCapability(user: BusinessUserRecord): boolean {
     return user.roles.includes('employer');
   }
 
-  isEmployerApprovalPending(user: InternalUserRecord): boolean {
+  isEmployerApprovalPending(user: BusinessUserRecord): boolean {
     return this.hasEmployerCapability(user) && user.employerApproval === 'pending';
   }
 
-  visibleDeferredActions(user: InternalUserRecord): readonly DeferredAction[] {
+  visibleDeferredActions(user: BusinessUserRecord): readonly DeferredAction[] {
     return this.deferredActions.filter(action => {
       const allowedForRole = !action.hiddenForSupport || !this.isSupportView();
       const applicableToUser = !action.employerOnly || this.hasEmployerCapability(user);
@@ -1187,14 +1148,14 @@ export class InternalUsersComponent {
     return new Intl.NumberFormat('fa-IR').format(value);
   }
 
-  private findUser(userId: number | null): InternalUserRecord | null {
+  private findUser(userId: number | null): BusinessUserRecord | null {
     if (userId === null) {
       return null;
     }
     return this.users().find(user => user.id === userId) ?? null;
   }
 
-  private updateUser(userId: number, update: (user: InternalUserRecord) => InternalUserRecord): void {
+  private updateUser(userId: number, update: (user: BusinessUserRecord) => BusinessUserRecord): void {
     this.users.update(users => users.map(user => user.id === userId ? update(user) : user));
   }
 
@@ -1225,5 +1186,9 @@ export class InternalUsersComponent {
 
   private normalizeDigits(value: string): string {
     return this.normalizeSearchValue(value).replace(/\D/g, '');
+  }
+
+  private escapeSpreadsheetHtml(value: string): string {
+    return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 }

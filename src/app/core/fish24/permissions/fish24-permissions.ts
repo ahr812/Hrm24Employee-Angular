@@ -5,6 +5,7 @@ export const FISH24_PERMISSIONS = {
   ticketReports: 'ticket-reports',
   financialReports: 'financial-reports',
   userManagement: 'user-management',
+  internalUserManagement: 'internal-user-management',
   financialManagement: 'financial-management',
   discountManagement: 'discount-management',
   pricingManagement: 'pricing-management',

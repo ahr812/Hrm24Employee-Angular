@@ -9,6 +9,7 @@ export const ROLE_CAPABILITIES: Record<Fish24RoleId, readonly Fish24Permission[]
     FISH24_PERMISSIONS.ticketReports,
     FISH24_PERMISSIONS.financialReports,
     FISH24_PERMISSIONS.userManagement,
+    FISH24_PERMISSIONS.internalUserManagement,
     FISH24_PERMISSIONS.financialManagement,
     FISH24_PERMISSIONS.discountManagement,
     FISH24_PERMISSIONS.pricingManagement,

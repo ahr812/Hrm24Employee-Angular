@@ -62,7 +62,20 @@ export const FISH24_ADMIN_NAV_CONFIG: readonly Fish24NavItem[] = [
     label: 'مدیریت کاربران',
     icon: 'users',
     permission: 'user-management',
-    route: '/fish24/internal/users'
+    children: [
+      {
+        id: 'fish24-admin-business-users',
+        label: 'فهرست کاربران',
+        permission: 'user-management',
+        route: '/fish24/internal/users'
+      },
+      {
+        id: 'fish24-admin-internal-users',
+        label: 'فهرست کاربران داخلی',
+        permission: 'internal-user-management',
+        route: '/fish24/internal/staff'
+      }
+    ]
   },
   {
     id: 'fish24-admin-financial',
