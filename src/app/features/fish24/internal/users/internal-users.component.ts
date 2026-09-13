@@ -8,6 +8,9 @@ import { Fish24RoleId } from '../../../../core/fish24/models/fish24-role.model';
 import { Fish24PermissionService } from '../../../../core/fish24/permissions/fish24-permission.service';
 import { FISH24_PERMISSIONS } from '../../../../core/fish24/permissions/fish24-permissions';
 import { BusinessUserPreviewService, BusinessUserRecord, BusinessUserRole, EmployerApprovalState, UserRank } from './business-user-preview.service';
+import { InternalListColumn, InternalListColumnSearches, InternalListSort, filterByInternalListColumns, nextInternalListSort, sortInternalListRows } from '../../../../shared/ui/data-list/internal-list.model';
+import { InternalListPreferencesService } from '../../../../shared/ui/data-list/internal-list-preferences.service';
+import { PlainXlsxService } from '../../../../shared/ui/data-list/plain-xlsx.service';
 
 type UserCapability = Fish24RoleId;
 type RoleFilter = 'all' | BusinessUserRole;
@@ -53,6 +56,26 @@ const ROLE_LABELS: Readonly<Record<UserCapability, string>> = {
   employer: 'کارفرما',
   employee: 'کارمند'
 };
+
+const BUSINESS_USER_COLUMNS: readonly InternalListColumn<BusinessUserRecord>[] = [
+  { id: 'id', label: 'شناسه', value: user => user.id, exportValue: user => String(user.id), minWidth: '7rem', ltr: true },
+  { id: 'joinedAt', label: 'عضویت', value: user => user.joinedAt, minWidth: '9rem', ltr: true },
+  { id: 'roles', label: 'نقش', value: user => user.roles.map(role => ROLE_LABELS[role]).join('، '), exportValue: user => user.roles.map(role => ROLE_LABELS[role]).join('، '), minWidth: '10rem' },
+  { id: 'fullName', label: 'نام و نام خانوادگی', value: user => user.fullName ?? '', minWidth: '13rem' },
+  { id: 'mobile', label: 'موبایل', value: user => user.mobile, exportValue: user => user.mobile, minWidth: '10rem', ltr: true },
+  { id: 'companyName', label: 'نام شرکت', value: user => user.companyName, minWidth: '13rem' },
+  { id: 'userType', label: 'نوع', value: user => user.userType, minWidth: '7rem' },
+  { id: 'rank', label: 'رتبه', value: user => user.rank, exportValue: user => user.rank, minWidth: '6rem' },
+  { id: 'hasFreeCredit', label: 'اعتباری', value: user => user.hasFreeCredit ? 'بله' : 'خیر', minWidth: '7rem' },
+  { id: 'freeCreditExpiresAt', label: 'انقضای اعتبار', value: user => user.freeCreditExpiresAt ?? '', minWidth: '9rem', ltr: true },
+  { id: 'isActive', label: 'وضعیت', value: user => user.isActive ? 'فعال' : 'غیرفعال', minWidth: '7rem' },
+  { id: 'employerApproval', label: 'تأیید کارفرما', value: user => user.roles.includes('employer') ? ({ approved: 'تایید شده', rejected: 'تایید نشده', pending: 'در انتظار تایید' }[user.employerApproval ?? 'pending']) : '', exportValue: user => user.roles.includes('employer') ? ({ approved: 'تایید شده', rejected: 'تایید نشده', pending: 'در انتظار تایید' }[user.employerApproval ?? 'pending']) : '', minWidth: '10rem' },
+  { id: 'hasSentDocuments', label: 'ارسال سند', value: user => user.hasSentDocuments ? 'ارسال کرده' : 'بدون سند', minWidth: '8rem' },
+  { id: 'lastOtpAt', label: 'آخرین OTP', value: user => user.lastOtpAt ?? '', minWidth: '12rem', ltr: true },
+  { id: 'otpCount', label: 'تعداد OTP', value: user => user.otpCount, exportValue: user => user.otpCount, minWidth: '7rem' }
+];
+
+const BUSINESS_USER_LIST_ID = 'business-users';
 
 const DEFERRED_ACTIONS: readonly DeferredAction[] = [
   { label: 'لیست ارسال‌ها', hiddenForSupport: true },
@@ -175,11 +198,30 @@ const DEFERRED_ACTIONS: readonly DeferredAction[] = [
           <div class="flex flex-col gap-3 border-b border-border pb-3 dark:border-slate-700 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 id="internal-user-list-title" class="text-base font-extrabold text-foreground dark:text-slate-100 sm:text-lg" aria-live="polite">
-                فهرست کاربران ({{ formatNumber(filteredUsers().length) }} رکورد)
+                فهرست کاربران ({{ formatNumber(tableUsers().length) }} رکورد)
               </h2>
               <p class="mt-0.5 text-xs leading-5 text-muted">هر موبایل فقط یک هویت سراسری دارد؛ نقش‌های هم‌زمان در همان ردیف نمایش داده می‌شوند.</p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
+              <div class="relative">
+                <button id="business-users-columns-button" type="button" (click)="columnChooserOpen.set(!columnChooserOpen())" [attr.aria-expanded]="columnChooserOpen()" aria-controls="business-users-columns-panel" class="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-border px-3 text-xs font-bold text-foreground hover:bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700">
+                  <ui-icon name="sliders" [size]="16"></ui-icon>انتخاب ستون‌ها
+                </button>
+                @if (columnChooserOpen()) {
+                  <div id="business-users-columns-panel" class="absolute left-0 top-full z-30 mt-2 w-64 rounded-xl border border-border bg-surface p-3 shadow-xl dark:border-slate-600 dark:bg-slate-800">
+                    <p class="mb-2 text-xs font-extrabold text-foreground dark:text-slate-100">ستون‌های قابل نمایش</p>
+                    <div class="max-h-64 space-y-1 overflow-y-auto">
+                      @for (column of columns; track column.id) {
+                        <label class="flex min-h-9 cursor-pointer items-center gap-2 rounded-lg px-2 text-xs font-semibold text-foreground hover:bg-background dark:text-slate-200 dark:hover:bg-slate-700">
+                          <input type="checkbox" [attr.data-column-toggle]="column.id" [checked]="isColumnVisible(column.id)" [disabled]="isOnlyVisibleColumn(column.id)" (change)="toggleColumn(column.id, $event)" class="h-4 w-4 accent-primary">
+                          {{ column.label }}
+                        </label>
+                      }
+                    </div>
+                    <button type="button" (click)="restoreDefaultColumns()" class="mt-2 min-h-9 w-full rounded-lg border border-primary/30 px-2 text-xs font-bold text-primary hover:bg-primary/10">بازگردانی ستون‌های پیش‌فرض</button>
+                  </div>
+                }
+              </div>
               @if (canExportUsers()) {
                 <button id="business-users-excel-export" type="button" (click)="exportFilteredUsers()" class="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-success/35 px-3 text-xs font-bold text-success transition-colors hover:bg-success/10 focus:outline-none focus:ring-2 focus:ring-success/25">
                   <ui-icon name="download" [size]="16"></ui-icon>خروجی Excel
@@ -195,43 +237,36 @@ const DEFERRED_ACTIONS: readonly DeferredAction[] = [
           </div>
 
           @if (filteredUsers().length > 0) {
-            <div class="mt-3 hidden rounded-xl border border-border dark:border-slate-700 lg:block">
-              <table class="w-full table-fixed text-[10px] xl:text-xs">
+            <div id="business-users-table-scroll" class="mt-3 max-w-full overflow-x-auto rounded-xl border border-border dark:border-slate-700">
+              <table class="w-max min-w-full text-xs">
                 <thead class="bg-background/80 dark:bg-slate-900/60">
                   <tr>
-                    <th class="w-[11%] px-1.5 py-2.5 text-right font-bold text-muted">شناسه / عضویت</th>
-                    <th class="w-[10%] px-1.5 py-2.5 text-right font-bold text-muted">نقش</th>
-                    <th class="w-[18%] px-1.5 py-2.5 text-right font-bold text-muted">نام و موبایل</th>
-                    <th class="w-[14%] px-1.5 py-2.5 text-right font-bold text-muted">نام شرکت</th>
-                    <th class="w-[9%] px-1.5 py-2.5 text-right font-bold text-muted">نوع / رتبه</th>
-                    <th class="w-[13%] px-1.5 py-2.5 text-right font-bold text-muted">اعتباری / انقضاء</th>
-                    <th class="w-[19%] px-1.5 py-2.5 text-right font-bold text-muted">وضعیت / OTP</th>
-                    <th class="w-[6%] px-1 py-2.5 text-center font-bold text-muted">عملیات</th>
+                    @for (column of visibleColumns(); track column.id) {
+                      <th class="px-2 py-2 text-right align-top font-bold text-muted" [style.min-width]="column.minWidth">
+                        <button type="button" (click)="cycleSort(column.id)" [attr.aria-label]="sortAriaLabel(column)" class="flex min-h-7 w-full items-center justify-between gap-2 text-right font-bold hover:text-primary focus:outline-none focus:text-primary">
+                          <span>{{ column.label }}</span><span class="text-sm text-primary" aria-hidden="true">{{ sortIndicator(column.id) }}</span>
+                        </button>
+                        <input type="search" autocomplete="off" [attr.data-column-search]="column.id" [attr.aria-label]="'جستجو در ستون ' + column.label" [value]="columnSearches()[column.id] || ''" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()" (input)="setColumnSearch(column.id, inputValue($event))" class="mt-1.5 h-8 w-full rounded-lg border border-border bg-surface px-2 text-[11px] font-normal text-foreground outline-none placeholder:text-muted focus:border-primary focus:ring-1 focus:ring-primary/20 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" placeholder="جستجو">
+                      </th>
+                    }
+                    <th class="sticky left-0 z-10 min-w-20 bg-background/95 px-2 py-2 text-center font-bold text-muted dark:bg-slate-900">عملیات</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-border dark:divide-slate-700">
-                  @for (user of filteredUsers(); track user.id) {
+                  @for (user of tableUsers(); track user.id) {
                     <tr class="transition-colors hover:bg-primary/5 dark:hover:bg-primary/10">
-                      <td class="px-1.5 py-2.5 align-top"><div class="min-w-0 space-y-1 text-right leading-5"><p class="font-bold text-foreground dark:text-slate-200"><bdi dir="ltr">{{ user.id }}</bdi></p><p class="font-semibold text-muted"><bdi dir="ltr">{{ user.joinedAt }}</bdi></p></div></td>
-                      <td class="break-words px-1.5 py-2.5 align-top"><div class="flex min-w-0 flex-wrap justify-start gap-1 text-right">@for (role of user.roles; track role) {<span class="rounded-full bg-primary/10 px-1.5 py-0.5 font-bold text-primary">{{ roleLabel(role) }}</span>}</div></td>
-                      <td class="break-words px-1.5 py-2.5 align-top">
-                        <div class="min-w-0 space-y-1 text-right leading-5"><div class="flex min-w-0 items-start justify-start gap-1">
-                          @if (isEmployerApprovalPending(user)) {
-                            <span title="در انتظار تأیید کارفرما" aria-label="در انتظار تأیید کارفرما" class="inline-flex shrink-0 text-warning"><ui-icon name="alert-triangle" [size]="14"></ui-icon></span>
+                      @for (column of visibleColumns(); track column.id) {
+                        <td class="px-2 py-2.5 text-right align-top font-semibold text-foreground dark:text-slate-200" [attr.data-column-cell]="column.id" [style.min-width]="column.minWidth" [attr.dir]="column.ltr ? 'ltr' : null">
+                          @switch (column.id) {
+                            @case ('roles') { <div class="flex flex-wrap gap-1" dir="rtl">@for (role of user.roles; track role) {<span class="rounded-full bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary">{{ roleLabel(role) }}</span>}</div> }
+                            @case ('fullName') { <span class="flex items-start gap-1" dir="rtl">@if (isEmployerApprovalPending(user)) {<span title="در انتظار تأیید کارفرما" aria-label="در انتظار تأیید کارفرما" class="inline-flex shrink-0 text-warning"><ui-icon name="alert-triangle" [size]="14"></ui-icon></span>}<span [class.text-danger]="!user.fullName" class="font-bold">{{ user.fullName || 'کاربر پروفایلش را تکمیل نکرده' }}</span></span> }
+                            @case ('isActive') { <span [class]="statusClass(user.isActive)">{{ user.isActive ? 'فعال' : 'غیرفعال' }}</span> }
+                            @case ('employerApproval') { @if (hasEmployerCapability(user)) {<span [class]="approvalClass(user.employerApproval)">{{ employerApprovalLabel(user.employerApproval) }}</span>} @else {<span class="text-muted">—</span>} }
+                            @default { {{ displayColumnValue(column, user) }} }
                           }
-                        @if (user.fullName) {
-                          <span class="font-bold text-foreground dark:text-slate-100">{{ user.fullName }}</span>
-                        } @else {
-                          <span class="text-xs font-bold leading-5 text-danger">کاربر پروفایلش را تکمیل نکرده</span>
-                        }
-                        </div>
-                        <p class="break-all font-semibold text-muted"><bdi dir="ltr">{{ user.mobile }}</bdi></p></div>
-                      </td>
-                      <td class="break-words px-1.5 py-2.5 align-top"><div class="min-w-0 text-right font-semibold leading-5 text-foreground dark:text-slate-200">{{ user.companyName }}</div></td>
-                      <td class="px-1.5 py-2.5 align-top"><div class="min-w-0 space-y-1 text-right leading-5"><p class="font-semibold text-foreground dark:text-slate-200">{{ user.userType }}</p><p class="text-muted">رتبه: <strong class="text-foreground dark:text-slate-100">{{ formatNumber(user.rank) }}</strong></p></div></td>
-                      <td class="px-1.5 py-2.5 align-top"><div class="min-w-0 space-y-1 text-right leading-5"><p><span class="text-muted">اعتباری:</span> <strong [class]="user.hasFreeCredit ? 'text-success' : 'text-muted'">{{ user.hasFreeCredit ? 'بله' : 'خیر' }}</strong></p><p class="break-words text-foreground dark:text-slate-200"><span class="text-muted">انقضاء:</span> <bdi dir="ltr">{{ user.freeCreditExpiresAt || '' }}</bdi></p></div></td>
-                      <td class="px-1.5 py-2.5 align-top"><div class="min-w-0 space-y-1 text-right leading-5"><span [class]="statusClass(user.isActive)">{{ user.isActive ? 'فعال' : 'غیرفعال' }}</span><p class="break-words text-foreground dark:text-slate-200"><span class="text-muted">آخرین OTP:</span> <bdi dir="ltr">{{ user.lastOtpAt || '' }}</bdi></p><p class="text-foreground dark:text-slate-200"><span class="text-muted">تعداد OTP:</span> <bdi dir="ltr">{{ formatNumber(user.otpCount) }}</bdi></p></div></td>
-                      <td class="px-1 py-2.5 text-center align-top">
+                        </td>
+                      }
+                      <td class="sticky left-0 z-[1] bg-surface px-2 py-2.5 text-center align-top dark:bg-slate-800">
                         <button type="button" (click)="openOperations(user)" [attr.aria-label]="'عملیات کاربر ' + user.mobile" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-primary/30 text-primary transition-colors hover:bg-primary/10 focus:outline-none focus:ring-2 focus:ring-primary/25">
                           <ui-icon name="sliders" [size]="15"></ui-icon>
                           <span class="sr-only">عملیات</span>
@@ -239,11 +274,14 @@ const DEFERRED_ACTIONS: readonly DeferredAction[] = [
                       </td>
                     </tr>
                   }
+                  @if (!tableUsers().length) {
+                    <tr><td [attr.colspan]="visibleColumns().length + 1" class="px-4 py-8 text-center text-sm font-semibold text-muted">رکوردی مطابق جستجوی ستون‌ها یافت نشد.</td></tr>
+                  }
                 </tbody>
               </table>
             </div>
 
-            <div class="mt-3 space-y-2.5 lg:hidden">
+            <div class="hidden">
               @for (user of filteredUsers(); track user.id) {
                 <article class="rounded-xl border border-border bg-background/55 p-3 dark:border-slate-700 dark:bg-slate-900/40">
                   <div class="flex items-start justify-between gap-3">
@@ -509,6 +547,8 @@ export class InternalUsersComponent {
   private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
   private readonly businessUserService = inject(BusinessUserPreviewService);
+  private readonly listPreferences = inject(InternalListPreferencesService);
+  private readonly xlsxService = inject(PlainXlsxService);
 
   readonly deferredActions = DEFERRED_ACTIONS;
   readonly rankOptions: readonly Rank[] = [1, 2, 3, 4, 5];
@@ -519,6 +559,13 @@ export class InternalUsersComponent {
   ];
 
   readonly users = this.businessUserService.users;
+  readonly columns = BUSINESS_USER_COLUMNS;
+  readonly defaultColumnIds = BUSINESS_USER_COLUMNS.map(column => column.id);
+  readonly selectedColumnIds = signal<readonly string[]>(this.listPreferences.load(BUSINESS_USER_LIST_ID, this.defaultColumnIds, this.defaultColumnIds));
+  readonly columnSearches = signal<InternalListColumnSearches>({});
+  readonly tableSort = signal<InternalListSort>({ columnId: null, direction: null });
+  readonly columnChooserOpen = signal(false);
+  readonly visibleColumns = computed(() => this.columns.filter(column => this.selectedColumnIds().includes(column.id)));
 
   readonly nameDraft = signal('');
   readonly mobileDraft = signal('');
@@ -587,6 +634,19 @@ export class InternalUsersComponent {
     });
   });
 
+  readonly columnFilteredUsers = computed(() => filterByInternalListColumns(
+    this.filteredUsers(),
+    this.columns,
+    this.selectedColumnIds(),
+    this.columnSearches()
+  ));
+
+  readonly tableUsers = computed(() => sortInternalListRows(
+    this.columnFilteredUsers(),
+    this.columns,
+    this.tableSort()
+  ));
+
   readonly operationsUser = computed(() => this.findUser(this.operationsUserId()));
   readonly directSmsUser = computed(() => this.findUser(this.directSmsUserId()));
 
@@ -648,36 +708,60 @@ export class InternalUsersComponent {
       return;
     }
 
-    const headers = [
-      'شناسه', 'عضویت', 'نقش', 'نام و نام خانوادگی', 'نام شرکت', 'موبایل',
-      'نوع', 'اعتباری', 'رتبه', 'وضعیت', 'انقضاء', 'آخرین OTP', 'تعداد OTP'
-    ];
-    const rows = this.filteredUsers().map(user => [
-      String(user.id),
-      user.joinedAt,
-      user.roles.map(role => this.roleLabel(role)).join('، '),
-      user.fullName ?? '',
-      user.companyName,
-      user.mobile,
-      user.userType,
-      user.hasFreeCredit ? 'بله' : 'خیر',
-      String(user.rank),
-      user.isActive ? 'فعال' : 'غیرفعال',
-      user.freeCreditExpiresAt ?? '',
-      user.lastOtpAt ?? '',
-      String(user.otpCount)
-    ]);
-    const tableHeader = headers.map(header => `<th>${this.escapeSpreadsheetHtml(header)}</th>`).join('');
-    const tableRows = rows.map(row => `<tr>${row.map(value => `<td style="mso-number-format:'\\@'">${this.escapeSpreadsheetHtml(value)}</td>`).join('')}</tr>`).join('');
-    const workbook = `<!doctype html><html dir="rtl"><head><meta charset="utf-8"></head><body><table><thead><tr>${tableHeader}</tr></thead><tbody>${tableRows}</tbody></table></body></html>`;
-    const blob = new Blob([`\uFEFF${workbook}`], { type: 'application/vnd.ms-excel;charset=utf-8' });
-    const downloadUrl = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = downloadUrl;
-    anchor.download = 'fish24-business-users.xls';
-    anchor.click();
-    setTimeout(() => URL.revokeObjectURL(downloadUrl), 0);
+    const exportColumns = this.visibleColumns();
+    const headers = exportColumns.map(column => column.label);
+    const rows = this.filteredUsers().map(user => exportColumns.map(column =>
+      column.exportValue ? column.exportValue(user) : this.toExportCell(column.value(user))
+    ));
+    this.xlsxService.export('fish24-business-users.xlsx', headers, rows);
     this.toastService.show(`${this.formatNumber(rows.length)} رکورد فیلترشده برای Excel آماده شد.`, 'success');
+  }
+
+  setColumnSearch(columnId: string, value: string): void {
+    this.columnSearches.update(searches => ({ ...searches, [columnId]: value }));
+  }
+
+  cycleSort(columnId: string): void {
+    this.tableSort.update(current => nextInternalListSort(current, columnId));
+  }
+
+  sortIndicator(columnId: string): string {
+    const sort = this.tableSort();
+    if (sort.columnId !== columnId) return '↕';
+    return sort.direction === 'asc' ? '↑' : '↓';
+  }
+
+  sortAriaLabel(column: InternalListColumn<BusinessUserRecord>): string {
+    const sort = this.tableSort();
+    const state = sort.columnId !== column.id ? 'بدون مرتب‌سازی' : sort.direction === 'asc' ? 'صعودی' : 'نزولی';
+    return `${column.label}؛ وضعیت ${state}. تغییر مرتب‌سازی`;
+  }
+
+  isColumnVisible(columnId: string): boolean { return this.selectedColumnIds().includes(columnId); }
+  isOnlyVisibleColumn(columnId: string): boolean { return this.isColumnVisible(columnId) && this.selectedColumnIds().length === 1; }
+
+  toggleColumn(columnId: string, event: Event): void {
+    const checked = (event.target as HTMLInputElement).checked;
+    const current = this.selectedColumnIds();
+    const next = checked ? [...current, columnId] : current.filter(id => id !== columnId);
+    if (!next.length) return;
+    this.selectedColumnIds.set(this.listPreferences.save(BUSINESS_USER_LIST_ID, next, this.defaultColumnIds));
+    if (!checked) {
+      this.columnSearches.update(searches => ({ ...searches, [columnId]: '' }));
+      if (this.tableSort().columnId === columnId) this.tableSort.set({ columnId: null, direction: null });
+    }
+  }
+
+  restoreDefaultColumns(): void {
+    this.selectedColumnIds.set(this.listPreferences.reset(BUSINESS_USER_LIST_ID, this.defaultColumnIds, this.defaultColumnIds));
+    this.columnSearches.set({});
+    this.tableSort.set({ columnId: null, direction: null });
+  }
+
+  displayColumnValue(column: InternalListColumn<BusinessUserRecord>, user: BusinessUserRecord): string {
+    const value = column.value(user);
+    if (value === null || value === undefined || value === '') return '';
+    return typeof value === 'number' ? this.formatNumber(value) : String(value);
   }
 
   inputValue(event: Event): string {
@@ -970,7 +1054,8 @@ export class InternalUsersComponent {
     return this.normalizeSearchValue(value).replace(/\D/g, '');
   }
 
-  private escapeSpreadsheetHtml(value: string): string {
-    return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  private toExportCell(value: string | number | boolean | null | undefined): string | number | null {
+    if (value === null || value === undefined) return null;
+    return typeof value === 'number' ? value : String(value);
   }
 }

@@ -7,6 +7,9 @@ import { Fish24RoleId } from '../../../../core/fish24/models/fish24-role.model';
 import { Fish24RolePreviewService } from '../../../../core/fish24/dev/fish24-role-preview.service';
 import { Fish24PermissionService } from '../../../../core/fish24/permissions/fish24-permission.service';
 import { FISH24_PERMISSIONS } from '../../../../core/fish24/permissions/fish24-permissions';
+import { InternalListColumn, InternalListColumnSearches, InternalListSort, filterByInternalListColumns, nextInternalListSort, sortInternalListRows } from '../../../../shared/ui/data-list/internal-list.model';
+import { InternalListPreferencesService } from '../../../../shared/ui/data-list/internal-list-preferences.service';
+import { PlainXlsxService } from '../../../../shared/ui/data-list/plain-xlsx.service';
 
 type InternalRole = Extract<Fish24RoleId, 'super-admin' | 'sales-expert' | 'support-expert'>;
 type StatusFilter = 'all' | 'active' | 'inactive';
@@ -25,6 +28,15 @@ const ROLE_LABELS: Readonly<Record<InternalRole, string>> = {
   'sales-expert': 'کارشناس فروش',
   'support-expert': 'کارشناس پشتیبانی'
 };
+
+const INTERNAL_STAFF_COLUMNS: readonly InternalListColumn<InternalStaffRecord>[] = [
+  { id: 'fullName', label: 'نام و نام خانوادگی', value: user => user.fullName, minWidth: '13rem' },
+  { id: 'mobile', label: 'موبایل', value: user => user.mobile, exportValue: user => user.mobile, minWidth: '10rem', ltr: true },
+  { id: 'role', label: 'نقش داخلی', value: user => ROLE_LABELS[user.role], minWidth: '11rem' },
+  { id: 'isActive', label: 'وضعیت', value: user => user.isActive ? 'فعال' : 'غیرفعال', minWidth: '8rem' }
+];
+
+const INTERNAL_STAFF_LIST_ID = 'internal-staff';
 
 @Component({
   selector: 'app-internal-staff',
@@ -70,37 +82,56 @@ const ROLE_LABELS: Readonly<Record<InternalRole, string>> = {
       </section>
 
       <section class="rounded-2xl border border-border bg-surface p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:p-5" aria-labelledby="internal-staff-list-title">
-        <div class="border-b border-border pb-3 dark:border-slate-700">
-          <h2 id="internal-staff-list-title" class="text-base font-extrabold text-foreground dark:text-slate-100 sm:text-lg">فهرست کاربران داخلی ({{ formatNumber(filteredStaff().length) }} رکورد)</h2>
+        <div class="flex flex-col gap-3 border-b border-border pb-3 dark:border-slate-700 sm:flex-row sm:items-center sm:justify-between">
+          <h2 id="internal-staff-list-title" class="text-base font-extrabold text-foreground dark:text-slate-100 sm:text-lg">فهرست کاربران داخلی ({{ formatNumber(tableStaff().length) }} رکورد)</h2>
+          <div class="flex flex-wrap items-center gap-2">
+            <div class="relative">
+              <button id="internal-staff-columns-button" type="button" (click)="columnChooserOpen.set(!columnChooserOpen())" [attr.aria-expanded]="columnChooserOpen()" aria-controls="internal-staff-columns-panel" class="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-border px-3 text-xs font-bold text-foreground hover:bg-background dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700"><ui-icon name="sliders" [size]="16"></ui-icon>انتخاب ستون‌ها</button>
+              @if (columnChooserOpen()) {
+                <div id="internal-staff-columns-panel" class="absolute left-0 top-full z-30 mt-2 w-64 rounded-xl border border-border bg-surface p-3 shadow-xl dark:border-slate-600 dark:bg-slate-800">
+                  <p class="mb-2 text-xs font-extrabold text-foreground dark:text-slate-100">ستون‌های قابل نمایش</p>
+                  @for (column of columns; track column.id) {
+                    <label class="flex min-h-9 cursor-pointer items-center gap-2 rounded-lg px-2 text-xs font-semibold text-foreground hover:bg-background dark:text-slate-200 dark:hover:bg-slate-700"><input type="checkbox" [attr.data-column-toggle]="column.id" [checked]="isColumnVisible(column.id)" [disabled]="isOnlyVisibleColumn(column.id)" (change)="toggleColumn(column.id, $event)" class="h-4 w-4 accent-primary">{{ column.label }}</label>
+                  }
+                  <button type="button" (click)="restoreDefaultColumns()" class="mt-2 min-h-9 w-full rounded-lg border border-primary/30 px-2 text-xs font-bold text-primary hover:bg-primary/10">بازگردانی ستون‌های پیش‌فرض</button>
+                </div>
+              }
+            </div>
+            <button id="internal-staff-excel-export" type="button" (click)="exportStaff()" class="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-success/35 px-3 text-xs font-bold text-success hover:bg-success/10"><ui-icon name="download" [size]="16"></ui-icon>خروجی Excel</button>
+          </div>
         </div>
 
         @if (filteredStaff().length) {
-          <div class="mt-3 hidden rounded-xl border border-border dark:border-slate-700 md:block">
-            <table class="w-full table-fixed text-xs lg:text-sm">
+          <div id="internal-staff-table-scroll" class="mt-3 max-w-full overflow-x-auto rounded-xl border border-border dark:border-slate-700">
+            <table class="w-max min-w-full text-xs lg:text-sm">
               <thead class="bg-background/80 dark:bg-slate-900/60">
                 <tr>
-                  <th class="w-[28%] px-2 py-3 text-right font-bold text-muted">نام و نام خانوادگی</th>
-                  <th class="w-[22%] px-2 py-3 text-right font-bold text-muted">موبایل</th>
-                  <th class="w-[22%] px-2 py-3 text-right font-bold text-muted">نقش داخلی</th>
-                  <th class="w-[14%] px-2 py-3 text-right font-bold text-muted">وضعیت</th>
-                  <th class="w-[14%] px-2 py-3 text-center font-bold text-muted">عملیات</th>
+                  @for (column of visibleColumns(); track column.id) {
+                    <th class="px-2 py-2 text-right align-top font-bold text-muted" [style.min-width]="column.minWidth">
+                      <button type="button" (click)="cycleSort(column.id)" [attr.aria-label]="sortAriaLabel(column)" class="flex min-h-7 w-full items-center justify-between gap-2 text-right font-bold hover:text-primary focus:outline-none focus:text-primary"><span>{{ column.label }}</span><span class="text-sm text-primary" aria-hidden="true">{{ sortIndicator(column.id) }}</span></button>
+                      <input type="search" autocomplete="off" [attr.data-column-search]="column.id" [attr.aria-label]="'جستجو در ستون ' + column.label" [value]="columnSearches()[column.id] || ''" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()" (input)="setColumnSearch(column.id, inputValue($event))" class="mt-1.5 h-8 w-full rounded-lg border border-border bg-surface px-2 text-[11px] font-normal text-foreground outline-none focus:border-primary dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" placeholder="جستجو">
+                    </th>
+                  }
+                  <th class="sticky left-0 z-10 min-w-24 bg-background/95 px-2 py-2 text-center font-bold text-muted dark:bg-slate-900">عملیات</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-border dark:divide-slate-700">
-                @for (user of filteredStaff(); track user.id) {
+                @for (user of tableStaff(); track user.id) {
                   <tr class="hover:bg-primary/5 dark:hover:bg-primary/10">
-                    <td class="break-words px-2 py-3 font-bold text-foreground dark:text-slate-100">{{ user.fullName }}</td>
-                    <td class="break-all px-2 py-3 font-semibold text-foreground dark:text-slate-200" dir="ltr">{{ user.mobile }}</td>
-                    <td class="break-words px-2 py-3 font-semibold text-foreground dark:text-slate-200">{{ roleLabel(user.role) }}</td>
-                    <td class="px-2 py-3"><span [class]="statusClass(user.isActive)">{{ user.isActive ? 'فعال' : 'غیرفعال' }}</span></td>
-                    <td class="px-2 py-3 text-center"><button type="button" (click)="openOperations(user)" [attr.aria-label]="'عملیات کاربر داخلی ' + user.mobile" class="inline-flex min-h-9 items-center justify-center rounded-lg border border-primary/30 px-2 text-xs font-bold text-primary hover:bg-primary/10"><ui-icon name="sliders" [size]="15"></ui-icon><span class="sr-only">عملیات</span></button></td>
+                    @for (column of visibleColumns(); track column.id) {
+                      <td class="break-words px-2 py-3 font-semibold text-foreground dark:text-slate-200" [attr.data-column-cell]="column.id" [style.min-width]="column.minWidth" [attr.dir]="column.ltr ? 'ltr' : null">@if (column.id === 'isActive') {<span [class]="statusClass(user.isActive)">{{ user.isActive ? 'فعال' : 'غیرفعال' }}</span>} @else { {{ displayColumnValue(column, user) }} }</td>
+                    }
+                    <td class="sticky left-0 z-[1] bg-surface px-2 py-3 text-center dark:bg-slate-800"><button type="button" (click)="openOperations(user)" [attr.aria-label]="'عملیات کاربر داخلی ' + user.mobile" class="inline-flex min-h-9 items-center justify-center rounded-lg border border-primary/30 px-2 text-xs font-bold text-primary hover:bg-primary/10"><ui-icon name="sliders" [size]="15"></ui-icon><span class="sr-only">عملیات</span></button></td>
                   </tr>
+                }
+                @if (!tableStaff().length) {
+                  <tr><td [attr.colspan]="visibleColumns().length + 1" class="px-4 py-8 text-center text-sm font-semibold text-muted">رکوردی مطابق جستجوی ستون‌ها یافت نشد.</td></tr>
                 }
               </tbody>
             </table>
           </div>
 
-          <div class="mt-3 space-y-2.5 md:hidden">
+          <div class="hidden">
             @for (user of filteredStaff(); track user.id) {
               <article class="rounded-xl border border-border bg-background/55 p-3 dark:border-slate-700 dark:bg-slate-900/40">
                 <div class="flex items-start justify-between gap-3"><div><p class="font-bold text-foreground dark:text-slate-100">{{ user.fullName }}</p><p class="mt-1 text-sm font-semibold text-muted" dir="ltr">{{ user.mobile }}</p></div><span [class]="statusClass(user.isActive)">{{ user.isActive ? 'فعال' : 'غیرفعال' }}</span></div>
@@ -142,12 +173,21 @@ export class InternalStaffComponent {
   private readonly router = inject(Router);
   private readonly previewRoleService = inject(Fish24RolePreviewService);
   private readonly permissionService = inject(Fish24PermissionService);
+  private readonly listPreferences = inject(InternalListPreferencesService);
+  private readonly xlsxService = inject(PlainXlsxService);
 
   readonly staff = signal<readonly InternalStaffRecord[]>([
     { id: 2001, fullName: 'علی رضایی', mobile: '09190000004', role: 'super-admin', isActive: true },
     { id: 2002, fullName: 'سارا مرادی', mobile: '09210000003', role: 'sales-expert', isActive: false },
     { id: 2003, fullName: 'رضا کریمی', mobile: '09910000002', role: 'support-expert', isActive: true }
   ]);
+  readonly columns = INTERNAL_STAFF_COLUMNS;
+  readonly defaultColumnIds = INTERNAL_STAFF_COLUMNS.map(column => column.id);
+  readonly selectedColumnIds = signal<readonly string[]>(this.listPreferences.load(INTERNAL_STAFF_LIST_ID, this.defaultColumnIds, this.defaultColumnIds));
+  readonly columnSearches = signal<InternalListColumnSearches>({});
+  readonly tableSort = signal<InternalListSort>({ columnId: null, direction: null });
+  readonly columnChooserOpen = signal(false);
+  readonly visibleColumns = computed(() => this.columns.filter(column => this.selectedColumnIds().includes(column.id)));
   readonly searchQuery = signal('');
   readonly roleFilter = signal<RoleFilter>('all');
   readonly statusFilter = signal<StatusFilter>('all');
@@ -170,10 +210,48 @@ export class InternalStaffComponent {
       return matchesQuery && matchesRole && matchesStatus;
     });
   });
+  readonly columnFilteredStaff = computed(() => filterByInternalListColumns(this.filteredStaff(), this.columns, this.selectedColumnIds(), this.columnSearches()));
+  readonly tableStaff = computed(() => sortInternalListRows(this.columnFilteredStaff(), this.columns, this.tableSort()));
   readonly operationsUser = computed(() => this.findUser(this.operationsUserId()));
   readonly activationUser = computed(() => this.findUser(this.activationUserId()));
 
   inputValue(event: Event): string { return (event.target as HTMLInputElement).value; }
+  setColumnSearch(columnId: string, value: string): void { this.columnSearches.update(searches => ({ ...searches, [columnId]: value })); }
+  cycleSort(columnId: string): void { this.tableSort.update(current => nextInternalListSort(current, columnId)); }
+  sortIndicator(columnId: string): string { const sort = this.tableSort(); return sort.columnId !== columnId ? '↕' : sort.direction === 'asc' ? '↑' : '↓'; }
+  sortAriaLabel(column: InternalListColumn<InternalStaffRecord>): string {
+    const sort = this.tableSort();
+    const state = sort.columnId !== column.id ? 'بدون مرتب‌سازی' : sort.direction === 'asc' ? 'صعودی' : 'نزولی';
+    return `${column.label}؛ وضعیت ${state}. تغییر مرتب‌سازی`;
+  }
+  isColumnVisible(columnId: string): boolean { return this.selectedColumnIds().includes(columnId); }
+  isOnlyVisibleColumn(columnId: string): boolean { return this.isColumnVisible(columnId) && this.selectedColumnIds().length === 1; }
+  toggleColumn(columnId: string, event: Event): void {
+    const checked = (event.target as HTMLInputElement).checked;
+    const current = this.selectedColumnIds();
+    const next = checked ? [...current, columnId] : current.filter(id => id !== columnId);
+    if (!next.length) return;
+    this.selectedColumnIds.set(this.listPreferences.save(INTERNAL_STAFF_LIST_ID, next, this.defaultColumnIds));
+    if (!checked) {
+      this.columnSearches.update(searches => ({ ...searches, [columnId]: '' }));
+      if (this.tableSort().columnId === columnId) this.tableSort.set({ columnId: null, direction: null });
+    }
+  }
+  restoreDefaultColumns(): void {
+    this.selectedColumnIds.set(this.listPreferences.reset(INTERNAL_STAFF_LIST_ID, this.defaultColumnIds, this.defaultColumnIds));
+    this.columnSearches.set({});
+    this.tableSort.set({ columnId: null, direction: null });
+  }
+  displayColumnValue(column: InternalListColumn<InternalStaffRecord>, user: InternalStaffRecord): string {
+    const value = column.value(user);
+    return value === null || value === undefined ? '' : String(value);
+  }
+  exportStaff(): void {
+    const exportColumns = this.visibleColumns();
+    const rows = this.filteredStaff().map(user => exportColumns.map(column => column.exportValue ? column.exportValue(user) : this.toExportCell(column.value(user))));
+    this.xlsxService.export('fish24-internal-staff.xlsx', exportColumns.map(column => column.label), rows);
+    this.toastService.show(`${this.formatNumber(rows.length)} رکورد فیلترشده برای Excel آماده شد.`, 'success');
+  }
   onRoleFilterChange(event: Event): void { this.roleFilter.set((event.target as HTMLSelectElement).value as RoleFilter); }
   onStatusFilterChange(event: Event): void { this.statusFilter.set((event.target as HTMLSelectElement).value as StatusFilter); }
   roleLabel(role: InternalRole): string { return ROLE_LABELS[role]; }
@@ -193,4 +271,5 @@ export class InternalStaffComponent {
   }
   private findUser(id: number | null): InternalStaffRecord | null { return id === null ? null : this.staff().find(user => user.id === id) ?? null; }
   private normalizeSearchValue(value: string): string { return value.replace(/[۰-۹]/g, digit => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit))).replace(/[٠-٩]/g, digit => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit))).toLocaleLowerCase('fa-IR'); }
+  private toExportCell(value: string | number | boolean | null | undefined): string | number | null { return value === null || value === undefined ? null : typeof value === 'number' ? value : String(value); }
 }
