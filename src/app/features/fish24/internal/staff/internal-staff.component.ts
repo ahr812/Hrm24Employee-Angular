@@ -1,4 +1,5 @@
 import { Component, computed, effect, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { EscToCloseDirective } from '../../../../shared/directives/esc-to-close.directive';
 import { IconComponent } from '../../../../shared/ui/icon/icon.component';
@@ -23,6 +24,12 @@ interface InternalStaffRecord {
   readonly isActive: boolean;
 }
 
+interface InternalStaffMainFilters {
+  readonly query: string;
+  readonly role: RoleFilter;
+  readonly status: StatusFilter;
+}
+
 const ROLE_LABELS: Readonly<Record<InternalRole, string>> = {
   'super-admin': 'مدیر سامانه',
   'sales-expert': 'کارشناس فروش',
@@ -38,10 +45,28 @@ const INTERNAL_STAFF_COLUMNS: readonly InternalListColumn<InternalStaffRecord>[]
 
 const INTERNAL_STAFF_LIST_ID = 'internal-staff';
 
+const INTERNAL_STAFF_FILTER_DEFAULTS: InternalStaffMainFilters = {
+  query: '',
+  role: 'all',
+  status: 'all'
+};
+
+function validateInternalStaffFilters(value: unknown): InternalStaffMainFilters | null {
+  if (typeof value !== 'object' || value === null) return null;
+  const filters = value as Partial<Record<keyof InternalStaffMainFilters, unknown>>;
+  const roleValues: readonly RoleFilter[] = ['all', 'super-admin', 'sales-expert', 'support-expert'];
+  const statusValues: readonly StatusFilter[] = ['all', 'active', 'inactive'];
+  return {
+    query: typeof filters.query === 'string' ? filters.query : '',
+    role: roleValues.includes(filters.role as RoleFilter) ? filters.role as RoleFilter : 'all',
+    status: statusValues.includes(filters.status as StatusFilter) ? filters.status as StatusFilter : 'all'
+  };
+}
+
 @Component({
   selector: 'app-internal-staff',
   standalone: true,
-  imports: [EscToCloseDirective, IconComponent],
+  imports: [FormsModule, EscToCloseDirective, IconComponent],
   template: `
     <div class="mx-auto max-w-[95%] space-y-4 animate-fade-in-up sm:space-y-5" dir="rtl">
       <header class="flex min-w-0 items-center gap-3 sm:gap-4">
@@ -59,11 +84,11 @@ const INTERNAL_STAFF_LIST_ID = 'internal-staff';
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div>
             <label for="internal-staff-search" class="mb-1.5 block text-sm font-bold text-foreground dark:text-slate-200">نام یا موبایل</label>
-            <input id="internal-staff-search" type="search" autocomplete="off" [value]="searchQuery()" (input)="searchQuery.set(inputValue($event))" class="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+            <input id="internal-staff-search" type="search" autocomplete="off" [value]="searchQuery()" (input)="onSearchQueryInput($event)" class="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
           </div>
           <div>
             <label for="internal-staff-role" class="mb-1.5 block text-sm font-bold text-foreground dark:text-slate-200">نقش داخلی</label>
-            <select id="internal-staff-role" [value]="roleFilter()" (change)="onRoleFilterChange($event)" class="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-semibold text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+            <select id="internal-staff-role" [ngModel]="roleFilter()" (ngModelChange)="onRoleFilterChange($event)" class="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-semibold text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
               <option value="all">همه نقش‌ها</option>
               <option value="super-admin">مدیر سامانه</option>
               <option value="sales-expert">کارشناس فروش</option>
@@ -72,7 +97,7 @@ const INTERNAL_STAFF_LIST_ID = 'internal-staff';
           </div>
           <div>
             <label for="internal-staff-status" class="mb-1.5 block text-sm font-bold text-foreground dark:text-slate-200">وضعیت</label>
-            <select id="internal-staff-status" [value]="statusFilter()" (change)="onStatusFilterChange($event)" class="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-semibold text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+            <select id="internal-staff-status" [ngModel]="statusFilter()" (ngModelChange)="onStatusFilterChange($event)" class="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-semibold text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
               <option value="all">مشاهده همه</option>
               <option value="active">فقط کاربران فعال</option>
               <option value="inactive">فقط کاربران غیر فعال</option>
@@ -175,6 +200,11 @@ export class InternalStaffComponent {
   private readonly permissionService = inject(Fish24PermissionService);
   private readonly listPreferences = inject(InternalListPreferencesService);
   private readonly xlsxService = inject(PlainXlsxService);
+  private readonly restoredMainFilters = this.listPreferences.loadFilters(
+    INTERNAL_STAFF_LIST_ID,
+    INTERNAL_STAFF_FILTER_DEFAULTS,
+    validateInternalStaffFilters
+  );
 
   readonly staff = signal<readonly InternalStaffRecord[]>([
     { id: 2001, fullName: 'علی رضایی', mobile: '09190000004', role: 'super-admin', isActive: true },
@@ -188,9 +218,9 @@ export class InternalStaffComponent {
   readonly tableSort = signal<InternalListSort>({ columnId: null, direction: null });
   readonly columnChooserOpen = signal(false);
   readonly visibleColumns = computed(() => this.columns.filter(column => this.selectedColumnIds().includes(column.id)));
-  readonly searchQuery = signal('');
-  readonly roleFilter = signal<RoleFilter>('all');
-  readonly statusFilter = signal<StatusFilter>('all');
+  readonly searchQuery = signal(this.restoredMainFilters.query);
+  readonly roleFilter = signal<RoleFilter>(this.restoredMainFilters.role);
+  readonly statusFilter = signal<StatusFilter>(this.restoredMainFilters.status);
   readonly operationsUserId = signal<number | null>(null);
   readonly activationUserId = signal<number | null>(null);
   readonly hasAccess = computed(() => this.permissionService.hasPermission(this.previewRoleService.getPreviewRoles(), FISH24_PERMISSIONS.internalUserManagement));
@@ -252,8 +282,18 @@ export class InternalStaffComponent {
     this.xlsxService.export('fish24-internal-staff.xlsx', exportColumns.map(column => column.label), rows);
     this.toastService.show(`${this.formatNumber(rows.length)} رکورد فیلترشده برای Excel آماده شد.`, 'success');
   }
-  onRoleFilterChange(event: Event): void { this.roleFilter.set((event.target as HTMLSelectElement).value as RoleFilter); }
-  onStatusFilterChange(event: Event): void { this.statusFilter.set((event.target as HTMLSelectElement).value as StatusFilter); }
+  onSearchQueryInput(event: Event): void {
+    this.searchQuery.set(this.inputValue(event));
+    this.persistMainFilters();
+  }
+  onRoleFilterChange(value: RoleFilter): void {
+    this.roleFilter.set(value);
+    this.persistMainFilters();
+  }
+  onStatusFilterChange(value: StatusFilter): void {
+    this.statusFilter.set(value);
+    this.persistMainFilters();
+  }
   roleLabel(role: InternalRole): string { return ROLE_LABELS[role]; }
   formatNumber(value: number): string { return new Intl.NumberFormat('fa-IR').format(value); }
   statusClass(isActive: boolean): string { return isActive ? 'inline-flex rounded-full bg-success/15 px-2 py-1 text-[10px] font-bold text-success sm:text-xs' : 'inline-flex rounded-full bg-danger/15 px-2 py-1 text-[10px] font-bold text-danger sm:text-xs'; }
@@ -268,6 +308,21 @@ export class InternalStaffComponent {
     this.staff.update(items => items.map(item => item.id === user.id ? { ...item, isActive: !item.isActive } : item));
     this.cancelActivation();
     this.toastService.show('وضعیت کاربر داخلی در پیش‌نمایش تغییر کرد.', 'success');
+  }
+  private persistMainFilters(): void {
+    const filters: InternalStaffMainFilters = {
+      query: this.searchQuery(),
+      role: this.roleFilter(),
+      status: this.statusFilter()
+    };
+    const isDefault = Object.entries(filters).every(([key, value]) =>
+      value === INTERNAL_STAFF_FILTER_DEFAULTS[key as keyof InternalStaffMainFilters]
+    );
+    if (isDefault) {
+      this.listPreferences.resetFilters(INTERNAL_STAFF_LIST_ID);
+    } else {
+      this.listPreferences.saveFilters(INTERNAL_STAFF_LIST_ID, filters);
+    }
   }
   private findUser(id: number | null): InternalStaffRecord | null { return id === null ? null : this.staff().find(user => user.id === id) ?? null; }
   private normalizeSearchValue(value: string): string { return value.replace(/[۰-۹]/g, digit => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit))).replace(/[٠-٩]/g, digit => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit))).toLocaleLowerCase('fa-IR'); }

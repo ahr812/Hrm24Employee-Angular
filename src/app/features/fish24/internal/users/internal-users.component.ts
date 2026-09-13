@@ -1,4 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { EscToCloseDirective } from '../../../../shared/directives/esc-to-close.directive';
 import { IconComponent } from '../../../../shared/ui/icon/icon.component';
@@ -41,6 +42,17 @@ interface DeferredAction {
   readonly employerOnly?: boolean;
 }
 
+interface BusinessUserMainFilters {
+  readonly name: string;
+  readonly mobile: string;
+  readonly company: string;
+  readonly role: RoleFilter;
+  readonly rank: RankFilter;
+  readonly active: ActiveFilter;
+  readonly employerApproval: EmployerApprovalFilter;
+  readonly documentActivity: DocumentActivityFilter;
+}
+
 type GroupSmsAudience = 'search-results' | 'all';
 
 const INTERNAL_ROLE_IDS: readonly Fish24RoleId[] = [
@@ -77,6 +89,36 @@ const BUSINESS_USER_COLUMNS: readonly InternalListColumn<BusinessUserRecord>[] =
 
 const BUSINESS_USER_LIST_ID = 'business-users';
 
+const BUSINESS_USER_FILTER_DEFAULTS: BusinessUserMainFilters = {
+  name: '',
+  mobile: '',
+  company: '',
+  role: 'all',
+  rank: 'all',
+  active: 'all',
+  employerApproval: 'all',
+  documentActivity: 'all'
+};
+
+function validateBusinessUserFilters(value: unknown): BusinessUserMainFilters | null {
+  if (typeof value !== 'object' || value === null) return null;
+  const filters = value as Partial<Record<keyof BusinessUserMainFilters, unknown>>;
+  const roleValues: readonly RoleFilter[] = ['all', 'employer', 'employee'];
+  const activeValues: readonly ActiveFilter[] = ['all', 'active', 'inactive'];
+  const approvalValues: readonly EmployerApprovalFilter[] = ['all', 'approved', 'rejected', 'pending'];
+  const documentValues: readonly DocumentActivityFilter[] = ['all', 'sent', 'not-sent'];
+  return {
+    name: typeof filters.name === 'string' ? filters.name : '',
+    mobile: typeof filters.mobile === 'string' ? filters.mobile : '',
+    company: typeof filters.company === 'string' ? filters.company : '',
+    role: roleValues.includes(filters.role as RoleFilter) ? filters.role as RoleFilter : 'all',
+    rank: filters.rank === 'all' || [1, 2, 3, 4, 5].includes(filters.rank as number) ? filters.rank as RankFilter : 'all',
+    active: activeValues.includes(filters.active as ActiveFilter) ? filters.active as ActiveFilter : 'all',
+    employerApproval: approvalValues.includes(filters.employerApproval as EmployerApprovalFilter) ? filters.employerApproval as EmployerApprovalFilter : 'all',
+    documentActivity: documentValues.includes(filters.documentActivity as DocumentActivityFilter) ? filters.documentActivity as DocumentActivityFilter : 'all'
+  };
+}
+
 const DEFERRED_ACTIONS: readonly DeferredAction[] = [
   { label: 'لیست ارسال‌ها', hiddenForSupport: true },
   { label: 'لیست تراکنش‌ها', hiddenForSupport: true },
@@ -88,7 +130,7 @@ const DEFERRED_ACTIONS: readonly DeferredAction[] = [
 @Component({
   selector: 'app-internal-users',
   standalone: true,
-  imports: [EscToCloseDirective, IconComponent],
+  imports: [FormsModule, EscToCloseDirective, IconComponent],
   template: `
     <div class="mx-auto max-w-[95%] space-y-4 animate-fade-in-up sm:space-y-5" dir="rtl">
       @if (hasUserManagementAccess()) {
@@ -118,8 +160,9 @@ const DEFERRED_ACTIONS: readonly DeferredAction[] = [
               <label for="internal-user-role-filter" class="mb-1.5 block text-sm font-bold text-foreground dark:text-slate-200">نقش</label>
               <select
                 id="internal-user-role-filter"
-                [value]="roleFilter()"
-                (change)="onRoleFilterChange($event)"
+                [ngModel]="roleFilter()"
+                [ngModelOptions]="{ standalone: true }"
+                (ngModelChange)="onRoleFilterChange($event)"
                 class="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-semibold text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
                 @for (role of roleOptions; track role.id) {
                   <option [value]="role.id">{{ role.label }}</option>
@@ -129,9 +172,9 @@ const DEFERRED_ACTIONS: readonly DeferredAction[] = [
 
             <div>
               <label for="internal-user-rank-filter" class="mb-1.5 block text-sm font-bold text-foreground dark:text-slate-200">رتبه</label>
-              <select id="internal-user-rank-filter" [value]="rankFilter()" (change)="onRankFilterChange($event)" class="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-semibold text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
-                <option value="all">لطفا رتبه را انتخاب کنید</option>
-                @for (rank of rankOptions; track rank) {<option [value]="rank">{{ formatNumber(rank) }}</option>}
+              <select id="internal-user-rank-filter" [ngModel]="rankFilter()" [ngModelOptions]="{ standalone: true }" (ngModelChange)="onRankFilterChange($event)" class="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-semibold text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+                <option [ngValue]="'all'">لطفا رتبه را انتخاب کنید</option>
+                @for (rank of rankOptions; track rank) {<option [ngValue]="rank">{{ formatNumber(rank) }}</option>}
               </select>
             </div>
 
@@ -152,7 +195,7 @@ const DEFERRED_ACTIONS: readonly DeferredAction[] = [
 
             <div>
               <label for="internal-user-approval-filter" class="mb-1.5 block text-sm font-bold text-foreground dark:text-slate-200">تأیید کارفرما</label>
-              <select id="internal-user-approval-filter" [value]="employerApprovalFilter()" (change)="onEmployerApprovalFilterChange($event)" class="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-semibold text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+              <select id="internal-user-approval-filter" [ngModel]="employerApprovalFilter()" [ngModelOptions]="{ standalone: true }" (ngModelChange)="onEmployerApprovalFilterChange($event)" class="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-semibold text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
                 <option value="all">مشاهده همه</option>
                 <option value="approved">تایید شده</option>
                 <option value="rejected">تایید نشده</option>
@@ -164,8 +207,9 @@ const DEFERRED_ACTIONS: readonly DeferredAction[] = [
               <label for="internal-user-active-filter" class="mb-1.5 block text-sm font-bold text-foreground dark:text-slate-200">وضعیت کاربر</label>
               <select
                 id="internal-user-active-filter"
-                [value]="activeFilter()"
-                (change)="onActiveFilterChange($event)"
+                [ngModel]="activeFilter()"
+                [ngModelOptions]="{ standalone: true }"
+                (ngModelChange)="onActiveFilterChange($event)"
                 class="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-semibold text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
                 <option value="all">مشاهده همه</option>
                 <option value="active">فقط کاربران فعال</option>
@@ -175,7 +219,7 @@ const DEFERRED_ACTIONS: readonly DeferredAction[] = [
 
             <div>
               <label for="internal-user-document-filter" class="mb-1.5 block text-sm font-bold text-foreground dark:text-slate-200">وضعیت ارسال سند</label>
-              <select id="internal-user-document-filter" [value]="documentActivityFilter()" (change)="onDocumentActivityFilterChange($event)" class="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-semibold text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+              <select id="internal-user-document-filter" [ngModel]="documentActivityFilter()" [ngModelOptions]="{ standalone: true }" (ngModelChange)="onDocumentActivityFilterChange($event)" class="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-semibold text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
                 <option value="all">مشاهده همه</option>
                 <option value="sent">فقط سند ارسال کرده ها</option>
                 <option value="not-sent">فقط بدون سند ها</option>
@@ -549,6 +593,11 @@ export class InternalUsersComponent {
   private readonly businessUserService = inject(BusinessUserPreviewService);
   private readonly listPreferences = inject(InternalListPreferencesService);
   private readonly xlsxService = inject(PlainXlsxService);
+  private readonly restoredMainFilters = this.listPreferences.loadFilters(
+    BUSINESS_USER_LIST_ID,
+    BUSINESS_USER_FILTER_DEFAULTS,
+    validateBusinessUserFilters
+  );
 
   readonly deferredActions = DEFERRED_ACTIONS;
   readonly rankOptions: readonly Rank[] = [1, 2, 3, 4, 5];
@@ -567,17 +616,17 @@ export class InternalUsersComponent {
   readonly columnChooserOpen = signal(false);
   readonly visibleColumns = computed(() => this.columns.filter(column => this.selectedColumnIds().includes(column.id)));
 
-  readonly nameDraft = signal('');
-  readonly mobileDraft = signal('');
-  readonly companyDraft = signal('');
-  readonly nameQuery = signal('');
-  readonly mobileQuery = signal('');
-  readonly companyQuery = signal('');
-  readonly roleFilter = signal<RoleFilter>('all');
-  readonly rankFilter = signal<RankFilter>('all');
-  readonly activeFilter = signal<ActiveFilter>('all');
-  readonly employerApprovalFilter = signal<EmployerApprovalFilter>('all');
-  readonly documentActivityFilter = signal<DocumentActivityFilter>('all');
+  readonly nameDraft = signal(this.restoredMainFilters.name);
+  readonly mobileDraft = signal(this.restoredMainFilters.mobile);
+  readonly companyDraft = signal(this.restoredMainFilters.company);
+  readonly nameQuery = signal(this.restoredMainFilters.name);
+  readonly mobileQuery = signal(this.restoredMainFilters.mobile);
+  readonly companyQuery = signal(this.restoredMainFilters.company);
+  readonly roleFilter = signal<RoleFilter>(this.restoredMainFilters.role);
+  readonly rankFilter = signal<RankFilter>(this.restoredMainFilters.rank);
+  readonly activeFilter = signal<ActiveFilter>(this.restoredMainFilters.active);
+  readonly employerApprovalFilter = signal<EmployerApprovalFilter>(this.restoredMainFilters.employerApproval);
+  readonly documentActivityFilter = signal<DocumentActivityFilter>(this.restoredMainFilters.documentActivity);
   readonly isCreateUserOpen = signal(false);
   readonly createUserAttempted = signal(false);
   readonly newEmployeeName = signal('');
@@ -666,27 +715,32 @@ export class InternalUsersComponent {
     this.nameQuery.set(this.nameDraft().trim());
     this.mobileQuery.set(this.mobileDraft().trim());
     this.companyQuery.set(this.companyDraft().trim());
+    this.persistMainFilters();
   }
 
-  onRoleFilterChange(event: Event): void {
-    this.roleFilter.set((event.target as HTMLSelectElement).value as RoleFilter);
+  onRoleFilterChange(value: RoleFilter): void {
+    this.roleFilter.set(value);
+    this.persistMainFilters();
   }
 
-  onActiveFilterChange(event: Event): void {
-    this.activeFilter.set((event.target as HTMLSelectElement).value as ActiveFilter);
+  onActiveFilterChange(value: ActiveFilter): void {
+    this.activeFilter.set(value);
+    this.persistMainFilters();
   }
 
-  onRankFilterChange(event: Event): void {
-    const value = (event.target as HTMLSelectElement).value;
-    this.rankFilter.set(value === 'all' ? 'all' : Number(value) as Rank);
+  onRankFilterChange(value: RankFilter): void {
+    this.rankFilter.set(value);
+    this.persistMainFilters();
   }
 
-  onEmployerApprovalFilterChange(event: Event): void {
-    this.employerApprovalFilter.set((event.target as HTMLSelectElement).value as EmployerApprovalFilter);
+  onEmployerApprovalFilterChange(value: EmployerApprovalFilter): void {
+    this.employerApprovalFilter.set(value);
+    this.persistMainFilters();
   }
 
-  onDocumentActivityFilterChange(event: Event): void {
-    this.documentActivityFilter.set((event.target as HTMLSelectElement).value as DocumentActivityFilter);
+  onDocumentActivityFilterChange(value: DocumentActivityFilter): void {
+    this.documentActivityFilter.set(value);
+    this.persistMainFilters();
   }
 
   showAll(): void {
@@ -701,6 +755,7 @@ export class InternalUsersComponent {
     this.activeFilter.set('all');
     this.employerApprovalFilter.set('all');
     this.documentActivityFilter.set('all');
+    this.listPreferences.resetFilters(BUSINESS_USER_LIST_ID);
   }
 
   exportFilteredUsers(): void {
@@ -1052,6 +1107,27 @@ export class InternalUsersComponent {
 
   private normalizeDigits(value: string): string {
     return this.normalizeSearchValue(value).replace(/\D/g, '');
+  }
+
+  private persistMainFilters(): void {
+    const filters: BusinessUserMainFilters = {
+      name: this.nameQuery(),
+      mobile: this.mobileQuery(),
+      company: this.companyQuery(),
+      role: this.roleFilter(),
+      rank: this.rankFilter(),
+      active: this.activeFilter(),
+      employerApproval: this.employerApprovalFilter(),
+      documentActivity: this.documentActivityFilter()
+    };
+    const isDefault = Object.entries(filters).every(([key, value]) =>
+      value === BUSINESS_USER_FILTER_DEFAULTS[key as keyof BusinessUserMainFilters]
+    );
+    if (isDefault) {
+      this.listPreferences.resetFilters(BUSINESS_USER_LIST_ID);
+    } else {
+      this.listPreferences.saveFilters(BUSINESS_USER_LIST_ID, filters);
+    }
   }
 
   private toExportCell(value: string | number | boolean | null | undefined): string | number | null {
