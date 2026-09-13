@@ -1,8 +1,8 @@
-import { Component, computed, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { IconComponent } from '../../../../shared/ui/icon/icon.component';
-import { EMPLOYER_INVOICE_PREVIEWS } from './employer-invoice-preview.data';
+import { Fish24FinancialPreviewService } from '../../../../core/fish24/financial/fish24-financial-preview.service';
 
 @Component({
   selector: 'app-employer-invoices',
@@ -126,19 +126,20 @@ import { EMPLOYER_INVOICE_PREVIEWS } from './employer-invoice-preview.data';
   `
 })
 export class EmployerInvoicesComponent {
+  private readonly financial = inject(Fish24FinancialPreviewService);
   private readonly numberFormatter = new Intl.NumberFormat('fa-IR', { maximumFractionDigits: 0 });
 
-  readonly invoices = EMPLOYER_INVOICE_PREVIEWS;
+  readonly invoices = this.financial.invoices;
   readonly searchQuery = signal('');
 
   readonly filteredInvoices = computed(() => {
     const query = this.searchQuery().trim().toLocaleLowerCase('fa-IR');
 
     if (!query) {
-      return this.invoices;
+      return this.invoices();
     }
 
-    return this.invoices.filter((invoice) =>
+    return this.invoices().filter((invoice) =>
       invoice.title.toLocaleLowerCase('fa-IR').includes(query)
       || invoice.invoiceNumber.toLocaleLowerCase('fa-IR').includes(query)
     );

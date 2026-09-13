@@ -104,8 +104,8 @@ export const FISH24_ADMIN_NAV_CONFIG: readonly Fish24NavItem[] = [
       {
         id: 'fish24-admin-financial-vat',
         label: 'تنظیمات ارزش افزوده',
-        permission: 'financial-management'
-        // Future: route: '/fish24/admin/financial/vat-settings'
+        permission: 'financial-management',
+        route: '/fish24/internal/vat-settings'
       }
     ]
   },

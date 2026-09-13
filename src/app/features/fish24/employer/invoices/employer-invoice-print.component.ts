@@ -2,10 +2,10 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
   EMPLOYER_INVOICE_BUYER_PREVIEW,
-  EMPLOYER_INVOICE_PREVIEWS,
   EMPLOYER_INVOICE_SELLER_PREVIEW,
   EmployerInvoicePreview
 } from './employer-invoice-preview.data';
+import { Fish24FinancialPreviewService } from '../../../../core/fish24/financial/fish24-financial-preview.service';
 
 @Component({
   selector: 'app-employer-invoice-print',
@@ -352,6 +352,7 @@ import {
 export class EmployerInvoicePrintComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly financial = inject(Fish24FinancialPreviewService);
   private readonly amountFormatter = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
 
   readonly invoice = signal<EmployerInvoicePreview | null>(null);
@@ -360,7 +361,7 @@ export class EmployerInvoicePrintComponent implements OnInit {
 
   ngOnInit(): void {
     const invoiceId = Number(this.route.snapshot.paramMap.get('id'));
-    const invoice = EMPLOYER_INVOICE_PREVIEWS.find((candidate) => candidate.id === invoiceId);
+    const invoice = this.financial.findInvoice(invoiceId);
 
     if (!invoice) {
       void this.router.navigate(['/fish24/employer/invoices'], { replaceUrl: true });
