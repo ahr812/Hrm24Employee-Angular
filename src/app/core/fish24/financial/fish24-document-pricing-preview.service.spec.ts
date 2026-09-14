@@ -56,7 +56,7 @@ describe('Fish24DocumentPricingPreviewService', () => {
   });
 
   it('creates one internal receipt per operation and does not duplicate it', () => {
-    const input = { sourceOperationId: 'distribution-1', issueDate: '1405/06/01', pageCount: 3, durationMonths: 1 as const, smsEnabled: true };
+    const input = { sourceOperationId: 'distribution-1', issueDate: '1405/06/01', pageCount: 3, durationMonths: 1 as const, smsEnabled: false };
     const first = service.createInternalReceipt(input);
     const second = service.createInternalReceipt(input);
     expect(first.ok).toBeTrue();
@@ -64,6 +64,29 @@ describe('Fish24DocumentPricingPreviewService', () => {
     expect(second.existing).toBeTrue();
     expect(service.internalReceipts().length).toBe(1);
     expect(service.internalReceipts()[0].id).toBe('document-receipt-distribution-1');
+    expect(service.internalReceipts()[0].smsEnabled).toBeTrue();
+    expect(service.internalReceipts()[0].breakdown.smsChargeRial).toBe(30_000);
+  });
+
+  it('always includes mandatory SMS for new receipts when either page or SMS unit price is zero', () => {
+    const zeroPage = validDraft('1406/01/01', '1406/06/31');
+    expect(service.savePricing({ ...zeroPage, page1Rial: '0', smsUnitPriceRial: '100' }, null).ok).toBeTrue();
+    const pageFree = service.createInternalReceipt({ sourceOperationId: 'zero-page', issueDate: '1406/02/01', pageCount: 2, durationMonths: 1, smsEnabled: false }).receipt!;
+    expect(pageFree.breakdown).toEqual({ pageUnitPriceRial: 0, pageChargeRial: 0, smsUnitPriceRial: 100, smsChargeRial: 200, totalRial: 200 });
+
+    const zeroSms = validDraft('1406/07/01', '1406/12/29');
+    expect(service.savePricing({ ...zeroSms, page1Rial: '100', smsUnitPriceRial: '0' }, null).ok).toBeTrue();
+    const smsFree = service.createInternalReceipt({ sourceOperationId: 'zero-sms', issueDate: '1406/08/01', pageCount: 2, durationMonths: 1, smsEnabled: false }).receipt!;
+    expect(smsFree.breakdown).toEqual({ pageUnitPriceRial: 100, pageChargeRial: 200, smsUnitPriceRial: 0, smsChargeRial: 0, totalRial: 200 });
+  });
+
+  it('preserves the recorded SMS metadata of a historical fixture during recalculation', () => {
+    const historical = service.quote({ sourceOperationId: 'legacy-without-sms', issueDate: '1405/06/01', pageCount: 2, durationMonths: 1, smsEnabled: false }).receipt!;
+    service['receiptsState'].set([historical]);
+    const setting = service.pricingSettings().find(record => record.id === 12)!;
+    expect(service.savePricing(draftFrom(setting, { page1Rial: '210000' }), setting.id).ok).toBeTrue();
+    expect(service.internalReceipts()[0].smsEnabled).toBeFalse();
+    expect(service.internalReceipts()[0].breakdown.smsChargeRial).toBe(0);
   });
 
   it('recalculates historical test receipts from immutable metadata and remains idempotent', () => {

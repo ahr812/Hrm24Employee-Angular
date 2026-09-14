@@ -82,10 +82,9 @@ import {
             </div>
 
             <div class="rounded-xl border border-border bg-background/60 p-4 dark:border-slate-700 dark:bg-slate-900/40">
-              <p class="text-xs font-bold text-muted">مبلغ قابل پرداخت</p>
+              <p class="text-xs font-bold text-muted">مبلغ نهایی قابل پرداخت (ریال)</p>
               @if (pricingQuote().receipt; as receipt) {
                 <p class="mt-2 text-xl font-black text-foreground dark:text-slate-100">{{ formatAmount(receipt.breakdown.totalRial) }}</p>
-                <p class="mt-1 text-xs leading-5 text-muted">صفحات: {{ formatAmount(receipt.breakdown.pageChargeRial) }} · پیامک: {{ formatAmount(receipt.breakdown.smsChargeRial) }}</p>
               } @else {
                 <p class="mt-2 text-sm font-extrabold leading-6 text-danger">{{ pricingQuote().error }}</p>
               }
@@ -115,11 +114,6 @@ import {
 
         <section class="rounded-2xl border border-border bg-surface p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:p-6" aria-labelledby="document-final-confirmation-title">
           <h2 id="document-final-confirmation-title" class="text-lg font-bold text-foreground dark:text-slate-100 sm:text-xl">تأیید مسئولیت و اقدام نهایی</h2>
-
-          <label class="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm font-semibold leading-7 text-foreground dark:text-slate-200">
-            <input type="checkbox" [checked]="smsEnabled()" (change)="onSmsChange($event)" class="mt-1 h-5 w-5 shrink-0 rounded border-border text-primary focus:ring-primary/25 dark:border-slate-600 dark:bg-slate-900">
-            <span><strong class="block">ارسال پیامک به ازای هر صفحه</strong><span class="text-xs text-muted">در صورت انتخاب، هزینه هر SMS در تعداد صفحات ضرب می‌شود.</span></span>
-          </label>
 
           <label class="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-background/60 p-4 text-sm font-semibold leading-7 text-foreground transition-colors hover:border-primary/40 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-200">
             <input
@@ -222,7 +216,6 @@ export class EmployerDocumentReviewComponent implements OnInit {
   readonly acknowledgement = signal(false);
   readonly isMobileModalOpen = signal(false);
   readonly finalActionMessage = signal<string | null>(null);
-  readonly smsEnabled = signal(false);
 
   readonly validPageResults = computed(() =>
     (this.reviewState()?.pageResults ?? []).filter((page) => page.mobile && !page.error)
@@ -242,7 +235,7 @@ export class EmployerDocumentReviewComponent implements OnInit {
       issueDate: state.receiptIssueDate,
       pageCount: state.pageResults.length,
       durationMonths: this.durationMonths(state.hostingOptionId),
-      smsEnabled: this.smsEnabled()
+      smsEnabled: true
     });
   });
   readonly canUseFinalAction = computed(() =>
@@ -279,11 +272,6 @@ export class EmployerDocumentReviewComponent implements OnInit {
     this.finalActionMessage.set(null);
   }
 
-  onSmsChange(event: Event): void {
-    this.smsEnabled.set((event.target as HTMLInputElement).checked);
-    this.finalActionMessage.set(null);
-  }
-
   showFinalActionInformation(): void {
     if (!this.canUseFinalAction()) {
       return;
@@ -296,7 +284,7 @@ export class EmployerDocumentReviewComponent implements OnInit {
       issueDate: state.receiptIssueDate,
       pageCount: state.pageResults.length,
       durationMonths: this.durationMonths(state.hostingOptionId),
-      smsEnabled: this.smsEnabled()
+      smsEnabled: true
     });
     this.finalActionMessage.set(result.ok
       ? result.existing

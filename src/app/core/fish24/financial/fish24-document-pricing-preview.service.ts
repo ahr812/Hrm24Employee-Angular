@@ -114,7 +114,7 @@ export class Fish24DocumentPricingPreviewService {
   createInternalReceipt(input: InternalDocumentReceiptInput): ReceiptCreationResult {
     const existing = this.receiptsState().find(receipt => receipt.sourceOperationId === input.sourceOperationId);
     if (existing) return { ok: true, receipt: existing, existing: true };
-    const result = this.quote(input);
+    const result = this.quote({ ...input, smsEnabled: true });
     if (!result.ok || !result.receipt) return result;
     this.receiptsState.update(receipts => [result.receipt!, ...receipts]);
     return result;
