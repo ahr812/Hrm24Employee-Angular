@@ -12,6 +12,8 @@ export interface EmployerDocumentPageReview {
 }
 
 export interface EmployerDocumentReviewState {
+  readonly operationId: string;
+  readonly receiptIssueDate: string;
   readonly documentTitle: string;
   readonly companyId: number;
   readonly companyName: string;
@@ -41,6 +43,7 @@ export const DOCUMENT_PAGE_ERROR_LABELS: Readonly<Record<DocumentPageValidationE
 
 @Injectable({ providedIn: 'root' })
 export class EmployerDocumentWorkflowService {
+  private nextOperationSequence = 1;
   private readonly reviewStateSignal = signal<EmployerDocumentReviewState | null>(null);
 
   readonly reviewState = this.reviewStateSignal.asReadonly();
@@ -48,6 +51,8 @@ export class EmployerDocumentWorkflowService {
   prepareFrontendPreview(input: EmployerDocumentReviewInput): void {
     this.reviewStateSignal.set({
       ...input,
+      operationId: `document-distribution-preview-${this.nextOperationSequence++}`,
+      receiptIssueDate: this.currentJalaliDate(),
       processingMode: 'frontend-preview',
       pageResults: this.createValidFrontendPreview()
     });
@@ -63,5 +68,13 @@ export class EmployerDocumentWorkflowService {
       { pageNumber: 2, mobile: '09120000022' },
       { pageNumber: 3, mobile: '09120000033' }
     ];
+  }
+
+  private currentJalaliDate(): string {
+    const parts = new Intl.DateTimeFormat('fa-IR-u-ca-persian-nu-latn', {
+      year: 'numeric', month: '2-digit', day: '2-digit'
+    }).formatToParts(new Date());
+    const value = (type: Intl.DateTimeFormatPartTypes) => parts.find(part => part.type === type)?.value ?? '';
+    return `${value('year')}/${value('month')}/${value('day')}`;
   }
 }

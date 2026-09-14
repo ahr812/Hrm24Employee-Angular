@@ -11,7 +11,7 @@ interface DocumentCompanyOption {
 
 interface HostingPreviewOption {
   readonly id: string;
-  readonly label: '1 ماهه' | '12 ماهه';
+  readonly label: '1 ماهه' | '3 ماهه' | '6 ماهه' | '12 ماهه';
   readonly expirationPreview: string;
 }
 
@@ -213,6 +213,8 @@ export class EmployerDocumentCreateComponent {
 
   readonly hostingOptions: readonly HostingPreviewOption[] = [
     { id: 'one-month', label: '1 ماهه', expirationPreview: '1405/07/16' },
+    { id: 'three-months', label: '3 ماهه', expirationPreview: '1405/09/16' },
+    { id: 'six-months', label: '6 ماهه', expirationPreview: '1405/12/16' },
     { id: 'twelve-months', label: '12 ماهه', expirationPreview: '1406/06/16' }
   ];
 

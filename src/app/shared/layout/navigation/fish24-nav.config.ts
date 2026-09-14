@@ -146,8 +146,8 @@ export const FISH24_ADMIN_NAV_CONFIG: readonly Fish24NavItem[] = [
     id: 'fish24-admin-pricing',
     label: 'قیمت گذاری',
     icon: 'tag',
+    route: '/fish24/internal/pricing',
     permission: 'pricing-management'
-    // Future: route: '/fish24/admin/pricing'
   },
   {
     id: 'fish24-admin-news',
