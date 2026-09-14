@@ -35,6 +35,12 @@ export interface VatMutationResult {
   readonly conflict?: VatSettingRecord;
 }
 
+export interface ManualInvoiceMutationResult {
+  readonly ok: boolean;
+  readonly invoice?: EmployerInvoicePreview;
+  readonly existing: boolean;
+}
+
 export function normalizeFish24Digits(value: string): string {
   return value
     .replace(/[۰-۹]/g, digit => String(PERSIAN_DIGITS.indexOf(digit)))
@@ -99,6 +105,7 @@ export class Fish24FinancialPreviewService {
     line: { ...invoice.line }
   }));
   private readonly invoicesState = signal<readonly EmployerInvoicePreview[]>([]);
+  private readonly manualBaseInvoicesState = signal<readonly EmployerInvoicePreview[]>([]);
 
   readonly vatSettings = this.settingsState.asReadonly();
   readonly invoices = this.invoicesState.asReadonly();
@@ -110,6 +117,49 @@ export class Fish24FinancialPreviewService {
 
   findInvoice(id: number): EmployerInvoicePreview | null {
     return this.invoicesState().find(invoice => invoice.id === id) ?? null;
+  }
+
+  issueManualInvoice(sourceTransactionId: string, amountRial: number, issueDate: string): ManualInvoiceMutationResult {
+    const existing = this.invoicesState().find(invoice => invoice.sourceTransactionId === sourceTransactionId);
+    if (existing) return { ok: true, invoice: existing, existing: true };
+    const normalizedDate = normalizeJalaliDate(issueDate);
+    if (!sourceTransactionId.trim() || !Number.isSafeInteger(amountRial) || amountRial <= 0 || !normalizedDate) {
+      return { ok: false, existing: false };
+    }
+    const id = Math.max(0, ...this.invoicesState().map(invoice => invoice.id)) + 1;
+    const invoiceNumber = String(Math.max(22560, ...this.invoicesState().map(invoice => Number(invoice.invoiceNumber) || 0)) + 1);
+    const tax = this.calculateVat(amountRial, normalizedDate);
+    const invoice: EmployerInvoicePreview = {
+      id,
+      title: 'فاکتور تراکنش دستی',
+      invoiceNumber,
+      issuedAt: normalizedDate,
+      amountRial: tax.finalAmountRial,
+      sourceTransactionId,
+      line: {
+        code: `MAN-${id}`,
+        description: 'تراکنش دستی کیف پول',
+        quantity: '۱',
+        unit: 'خدمت',
+        unitAmountRial: amountRial,
+        totalAmountRial: amountRial,
+        discountAmountRial: 0,
+        afterDiscountAmountRial: amountRial,
+        taxAmountRial: tax.vatAmountRial,
+        finalAmountRial: tax.finalAmountRial
+      }
+    };
+    this.manualBaseInvoicesState.update(invoices => [invoice, ...invoices]);
+    this.recalculateInvoices(this.settingsState());
+    return { ok: true, invoice: this.findInvoice(id)!, existing: false };
+  }
+
+  deleteManualInvoice(sourceTransactionId: string): boolean {
+    const current = this.manualBaseInvoicesState();
+    if (!current.some(invoice => invoice.sourceTransactionId === sourceTransactionId)) return false;
+    this.manualBaseInvoicesState.set(current.filter(invoice => invoice.sourceTransactionId !== sourceTransactionId));
+    this.recalculateInvoices(this.settingsState());
+    return true;
   }
 
   saveVatSetting(draft: VatSettingDraft, editingId: number | null): VatMutationResult {
@@ -196,7 +246,7 @@ export class Fish24FinancialPreviewService {
   }
 
   private buildRecalculatedInvoices(settings: readonly VatSettingRecord[]): readonly EmployerInvoicePreview[] {
-    return this.baseInvoices.map(invoice => {
+    return [...this.manualBaseInvoicesState(), ...this.baseInvoices].map(invoice => {
       const result = this.calculateVat(invoice.line.afterDiscountAmountRial, invoice.issuedAt, settings);
       return {
         ...invoice,

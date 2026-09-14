@@ -26,11 +26,12 @@ export interface EmployerInvoiceLinePreview {
 
 export interface EmployerInvoicePreview {
   readonly id: number;
-  readonly title: 'فاکتور شارژ کیف پول';
+  readonly title: 'فاکتور شارژ کیف پول' | 'فاکتور تراکنش دستی';
   readonly invoiceNumber: string;
   readonly issuedAt: string;
   readonly amountRial: number;
   readonly line: EmployerInvoiceLinePreview;
+  readonly sourceTransactionId?: string;
 }
 
 export const EMPLOYER_INVOICE_SELLER_PREVIEW: EmployerInvoicePartyPreview = {

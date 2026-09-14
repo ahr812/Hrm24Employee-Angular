@@ -38,7 +38,7 @@ export interface Fish24DistributionResult {
   readonly send?: Fish24DocumentSend;
   readonly receipt?: InternalDocumentReceipt;
   readonly transaction?: Fish24WalletTransaction;
-  readonly error?: 'not-found' | 'forbidden' | 'already-paid' | 'invalid-distribution' | 'receipt-unavailable' | 'wallet-not-found' | 'insufficient-funds';
+  readonly error?: 'not-found' | 'forbidden' | 'already-paid' | 'invalid-distribution' | 'receipt-unavailable' | 'wallet-not-found' | 'insufficient-funds' | 'invalid-amount';
 }
 
 const SEEDS: readonly Fish24DocumentSendInput[] = [

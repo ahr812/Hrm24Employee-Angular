@@ -65,11 +65,12 @@ describe('Fish24DocumentDistributionPreviewService', () => {
   it('preserves Support financial restrictions at the service boundary', () => {
     TestBed.inject(Fish24RolePreviewService).setPreviewRole('support-expert');
     const balanceBefore = wallet.balance('user-1');
+    const transactionsBefore = wallet.transactions().length;
     expect(service.confirmPayment('2006').error).toBe('forbidden');
     expect(service.deleteUnpaid('2006')).toBeFalse();
     expect(service.setEmployeeAccess('2001', false)).toBeFalse();
     expect(wallet.balance('user-1')).toBe(balanceBefore);
-    expect(wallet.transactions().length).toBe(0);
+    expect(wallet.transactions().length).toBe(transactionsBefore);
   });
 
   it('blocks and restores employee access without another charge', () => {

@@ -92,8 +92,8 @@ export const FISH24_ADMIN_NAV_CONFIG: readonly Fish24NavItem[] = [
       {
         id: 'fish24-admin-financial-transactions',
         label: 'لیست تراکنش',
-        permission: 'financial-management'
-        // Future: route: '/fish24/admin/financial/transactions'
+        permission: 'financial-management',
+        route: '/fish24/internal/transactions'
       },
       {
         id: 'fish24-admin-financial-invoices',
