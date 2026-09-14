@@ -63,7 +63,7 @@ describe('Fish24DocumentPricingPreviewService', () => {
     expect(first.existing).toBeFalse();
     expect(second.existing).toBeTrue();
     expect(service.internalReceipts().length).toBe(1);
-    expect(service.internalReceipts()[0].id).toBe('document-receipt-distribution-1');
+    expect(service.internalReceipts()[0].id).toBe('distribution-1');
     expect(service.internalReceipts()[0].smsEnabled).toBeTrue();
     expect(service.internalReceipts()[0].breakdown.smsChargeRial).toBe(30_000);
   });

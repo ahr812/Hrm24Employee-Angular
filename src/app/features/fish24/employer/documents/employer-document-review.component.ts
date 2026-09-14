@@ -1,6 +1,8 @@
 import { Component, OnInit, computed, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { DocumentPricingDurationMonths, Fish24DocumentPricingPreviewService } from '../../../../core/fish24/financial/fish24-document-pricing-preview.service';
+import { Fish24DocumentDistributionPreviewService } from '../../../../core/fish24/financial/fish24-document-distribution-preview.service';
+import { AuthService } from '../../../../core/auth/auth.service';
 import { EscToCloseDirective } from '../../../../shared/directives/esc-to-close.directive';
 import { IconComponent } from '../../../../shared/ui/icon/icon.component';
 import {
@@ -245,7 +247,9 @@ export class EmployerDocumentReviewComponent implements OnInit {
   constructor(
     private readonly router: Router,
     private readonly workflow: EmployerDocumentWorkflowService,
-    private readonly pricing: Fish24DocumentPricingPreviewService
+    private readonly pricing: Fish24DocumentPricingPreviewService,
+    private readonly distribution: Fish24DocumentDistributionPreviewService,
+    private readonly auth: AuthService
   ) {}
 
   ngOnInit(): void {
@@ -279,18 +283,22 @@ export class EmployerDocumentReviewComponent implements OnInit {
 
     const state = this.reviewState();
     if (!state) return;
-    const result = this.pricing.createInternalReceipt({
-      sourceOperationId: state.operationId,
-      issueDate: state.receiptIssueDate,
-      pageCount: state.pageResults.length,
-      durationMonths: this.durationMonths(state.hostingOptionId),
-      smsEnabled: true
+    const user = this.auth.currentUser();
+    const registration = this.distribution.registerUnpaidSend({
+      id: state.operationId, createdAt: state.receiptIssueDate, employerId: user?.id ?? 'user-1',
+      employerName: user?.fullName ?? 'کارفرمای جاری', employerMobile: user?.mobile ?? '',
+      companyId: state.companyId, companyName: state.companyName, title: state.documentTitle,
+      expiresAt: state.expirationPreview, durationMonths: this.durationMonths(state.hostingOptionId),
+      userType: 'حقیقی', hasFreeCredit: false, pageCount: state.pageResults.length,
+      smsEnabled: true, recipientMobiles: state.pageResults.flatMap(page => page.mobile ? [page.mobile] : []),
+      sourceFileName: state.fileName, sourceFile: state.sourceFile
     });
+    const result = registration.ok ? this.distribution.confirmPayment(state.operationId) : registration;
     this.finalActionMessage.set(result.ok
       ? result.existing
-        ? 'رسید داخلی این عملیات قبلاً ثبت شده است؛ برداشت تکراری انجام نشد.'
-        : 'رسید داخلی پیش‌نمایش ثبت شد؛ اتصال برداشت از کیف پول و تراکنش هنوز فعال نیست.'
-      : result.error ?? 'قیمت‌گذاری معتبر برای این عملیات وجود ندارد.');
+        ? 'این ارسال قبلاً پرداخت و توزیع شده است؛ برداشت تکراری انجام نشد.'
+        : 'مبلغ از کیف پول کسر، تراکنش ثبت و سند برای کارکنان توزیع شد.'
+      : this.distributionError(result.error));
   }
 
   cancel(): void {
@@ -307,5 +315,12 @@ export class EmployerDocumentReviewComponent implements OnInit {
     if (hostingOptionId === 'six-months') return 6;
     if (hostingOptionId === 'twelve-months') return 12;
     return 1;
+  }
+
+  private distributionError(error: string | undefined): string {
+    if (error === 'insufficient-funds') return 'موجودی کیف پول برای پرداخت این ارسال کافی نیست؛ هیچ تغییری اعمال نشد.';
+    if (error === 'invalid-distribution') return 'اطلاعات توزیع کامل یا معتبر نیست؛ هیچ تغییری اعمال نشد.';
+    if (error === 'wallet-not-found') return 'کیف پول کارفرما در دسترس نیست؛ هیچ تغییری اعمال نشد.';
+    return 'پرداخت و توزیع انجام نشد.';
   }
 }

@@ -1,21 +1,18 @@
-import { Component, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { IconComponent } from '../../../../shared/ui/icon/icon.component';
+import { AuthService } from '../../../../core/auth/auth.service';
+import { Fish24DocumentDistributionPreviewService } from '../../../../core/fish24/financial/fish24-document-distribution-preview.service';
 
 interface PersonalDocument {
-  readonly id: number;
+  readonly id: string;
   readonly title: string;
   readonly documentDate: string;
   readonly senderDisplayName: string;
   readonly expirationDate: string;
   readonly downloadAvailable: boolean;
+  readonly sourceFile: Blob | null;
+  readonly sourceFileName: string;
 }
-
-const PERSONAL_DOCUMENTS: readonly PersonalDocument[] = [
-  { id: 1, title: 'فیش حقوق مرداد ۱۴۰۵', documentDate: '۱۴۰۵/۰۶/۰۵', senderDisplayName: 'مجموعه نمونه سپهر', expirationDate: '۱۴۰۵/۰۹/۰۵', downloadAvailable: false },
-  { id: 2, title: 'گواهی پرداخت پاداش', documentDate: '۱۴۰۵/۰۵/۲۸', senderDisplayName: 'کارگاه آزمایشی باران', expirationDate: '۱۴۰۵/۱۱/۲۸', downloadAvailable: false },
-  { id: 3, title: 'فیش حقوق تیر ۱۴۰۵', documentDate: '۱۴۰۵/۰۵/۰۳', senderDisplayName: 'مجموعه نمونه سپهر', expirationDate: '۱۴۰۵/۰۸/۰۳', downloadAvailable: false },
-  { id: 4, title: 'صورت‌حساب همکاری', documentDate: '۱۴۰۵/۰۴/۱۹', senderDisplayName: 'شرکت نمایشی نارنج', expirationDate: '۱۴۰۵/۱۰/۱۹', downloadAvailable: false }
-];
 
 @Component({
   selector: 'app-my-documents',
@@ -36,7 +33,7 @@ const PERSONAL_DOCUMENTS: readonly PersonalDocument[] = [
       <section aria-labelledby="my-documents-list-title">
         <div class="mb-2 flex items-center justify-between gap-3">
           <h2 id="my-documents-list-title" class="text-lg font-bold text-foreground dark:text-slate-100">فهرست اسناد</h2>
-          <span class="shrink-0 text-xs font-semibold text-muted">{{ documents.length }} سند</span>
+          <span class="shrink-0 text-xs font-semibold text-muted">{{ documents().length }} سند</span>
         </div>
         @if (downloadNotice(); as notice) {
           <p class="mb-3 flex items-start gap-2 rounded-xl border border-warning/25 bg-warning/10 p-3 text-sm font-semibold leading-6 text-warning" role="status" aria-live="polite">
@@ -45,7 +42,7 @@ const PERSONAL_DOCUMENTS: readonly PersonalDocument[] = [
           </p>
         }
         <div class="grid grid-cols-1 gap-2 xl:grid-cols-2">
-          @for (document of documents; track document.id) {
+          @for (document of documents(); track document.id) {
             <article class="min-w-0 rounded-xl border border-border bg-surface px-3 py-2.5 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:px-4 sm:py-3">
               <div class="flex items-center justify-between gap-3">
                 <div class="flex items-center gap-1.5 text-xs text-muted">
@@ -68,12 +65,31 @@ const PERSONAL_DOCUMENTS: readonly PersonalDocument[] = [
   `
 })
 export class MyDocumentsComponent {
-  readonly documents = PERSONAL_DOCUMENTS;
+  private readonly distribution = inject(Fish24DocumentDistributionPreviewService);
+  private readonly auth = inject(AuthService);
+  readonly documents = computed<readonly PersonalDocument[]>(() => this.distribution.accessibleForEmployee(this.auth.currentUser()?.mobile ?? '', this.currentJalaliDate()).map(send => ({
+    id: send.id, title: send.title, documentDate: send.createdAt, senderDisplayName: send.companyName,
+    expirationDate: send.expiresAt, downloadAvailable: send.sourceFile !== null,
+    sourceFile: send.sourceFile, sourceFileName: send.sourceFileName
+  })));
   readonly downloadNotice = signal('');
 
   requestDownload(document: PersonalDocument): void {
     if (!document.downloadAvailable) {
-      this.downloadNotice.set('فایل این سند هنوز به سرویس دانلود متصل نشده است.');
+      this.downloadNotice.set('فایل اصلی این سند در وضعیت نمایشی در دسترس نیست.');
+      return;
     }
+    const url = URL.createObjectURL(document.sourceFile!);
+    const anchor = window.document.createElement('a');
+    anchor.href = url;
+    anchor.download = document.sourceFileName;
+    anchor.click();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  }
+
+  private currentJalaliDate(): string {
+    const parts = new Intl.DateTimeFormat('fa-IR-u-ca-persian-nu-latn', { year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());
+    const value = (type: Intl.DateTimeFormatPartTypes) => parts.find(part => part.type === type)?.value ?? '';
+    return `${value('year')}/${value('month')}/${value('day')}`;
   }
 }

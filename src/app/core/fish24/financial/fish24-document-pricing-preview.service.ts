@@ -120,6 +120,17 @@ export class Fish24DocumentPricingPreviewService {
     return result;
   }
 
+  findInternalReceipt(sourceOperationId: string): InternalDocumentReceipt | null {
+    return this.receiptsState().find(receipt => receipt.sourceOperationId === sourceOperationId) ?? null;
+  }
+
+  removeInternalReceipt(sourceOperationId: string): boolean {
+    const current = this.receiptsState();
+    if (!current.some(receipt => receipt.sourceOperationId === sourceOperationId)) return false;
+    this.receiptsState.set(current.filter(receipt => receipt.sourceOperationId !== sourceOperationId));
+    return true;
+  }
+
   savePricing(draft: DocumentPricingDraft, editingId: number | null): PricingMutationResult {
     const validated = this.validateDraft(draft);
     if (!validated.ok || !validated.record) return { ok: false, fieldErrors: validated.fieldErrors };
@@ -170,7 +181,7 @@ export class Fish24DocumentPricingPreviewService {
     const smsUnitPriceRial = input.smsEnabled ? pricing.smsUnitPriceRial : 0;
     const smsChargeRial = smsUnitPriceRial * input.pageCount;
     return {
-      id: `document-receipt-${input.sourceOperationId}`,
+      id: input.sourceOperationId,
       sourceOperationId: input.sourceOperationId,
       issueDate,
       pageCount: input.pageCount,

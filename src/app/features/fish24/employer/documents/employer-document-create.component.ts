@@ -223,6 +223,7 @@ export class EmployerDocumentCreateComponent {
   selectedHostingId = '';
 
   readonly selectedFileName = signal('');
+  readonly selectedFile = signal<File | null>(null);
   readonly fileError = signal<string | null>(null);
   readonly submitted = signal(false);
 
@@ -259,6 +260,7 @@ export class EmployerDocumentCreateComponent {
 
     this.fileError.set(null);
     this.selectedFileName.set('');
+    this.selectedFile.set(null);
 
     if (!file) {
       return;
@@ -274,6 +276,7 @@ export class EmployerDocumentCreateComponent {
     }
 
     this.selectedFileName.set(file.name);
+    this.selectedFile.set(file);
   }
 
   continueToReview(): void {
@@ -287,6 +290,7 @@ export class EmployerDocumentCreateComponent {
       !company ||
       !hosting ||
       this.selectedFileName().length === 0 ||
+      !this.selectedFile() ||
       this.fileError() !== null
     ) {
       return;
@@ -297,6 +301,7 @@ export class EmployerDocumentCreateComponent {
       companyId: company.id,
       companyName: company.name,
       fileName: this.selectedFileName(),
+      sourceFile: this.selectedFile()!,
       hostingOptionId: hosting.id,
       hostingLabel: hosting.label,
       expirationPreview: hosting.expirationPreview

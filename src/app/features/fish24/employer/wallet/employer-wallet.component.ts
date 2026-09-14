@@ -1,6 +1,8 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { IconComponent } from '../../../../shared/ui/icon/icon.component';
 import { ToastService } from '../../../../shared/ui/toast/toast.service';
+import { Fish24WalletPreviewService } from '../../../../core/fish24/financial/fish24-wallet-preview.service';
+import { AuthService } from '../../../../core/auth/auth.service';
 
 type ChargeAmountSource = 'quick' | 'custom' | null;
 
@@ -30,7 +32,7 @@ type ChargeAmountSource = 'quick' | 'custom' | null;
             <div class="min-w-0">
               <h2 id="employer-wallet-balance-title" class="text-sm font-bold text-muted">موجودی کیف پول شما</h2>
               <p class="mt-2 flex flex-wrap items-baseline gap-1 text-2xl font-extrabold text-foreground dark:text-slate-100 sm:text-3xl" dir="ltr">
-                <span>{{ formatAmount(currentWalletBalance) }}</span>
+                <span>{{ formatAmount(currentWalletBalance()) }}</span>
                 <span class="text-sm font-bold text-muted sm:text-base" dir="rtl">ریال</span>
               </p>
             </div>
@@ -182,7 +184,9 @@ export class EmployerWalletComponent {
   private readonly persianAmountFormatter = new Intl.NumberFormat('fa-IR', { maximumFractionDigits: 0 });
 
   // Frontend-only presentation values pending backend/system configuration.
-  readonly currentWalletBalance = 32_750_000;
+  private readonly wallet = inject(Fish24WalletPreviewService);
+  private readonly auth = inject(AuthService);
+  readonly currentWalletBalance = computed(() => this.wallet.balance(this.auth.currentUser()?.id ?? 'user-1') ?? 0);
   readonly minimumChargeAmount = 5_000_000;
   readonly vatPreviewPercentage = 10;
   readonly quickChargeAmounts: readonly number[] = [50_000_000, 100_000_000, 150_000_000];

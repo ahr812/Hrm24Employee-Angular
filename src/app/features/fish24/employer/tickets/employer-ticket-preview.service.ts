@@ -1,9 +1,10 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { Fish24DocumentDistributionPreviewService } from '../../../../core/fish24/financial/fish24-document-distribution-preview.service';
 
 export type EmployerTicketStatus = 'درحال بررسی' | 'بسته شده';
 export type EmployerTicketOrigin = 'employerToSystem' | 'employeeToEmployer';
 export type EmployerDocumentDistributionStatus = 'توزیع‌شده' | 'توزیع‌نشده';
-export type EmployerDocumentHostingLabel = '1 ماهه' | '12 ماهه' | 'منقضی';
+export type EmployerDocumentHostingLabel = '1 ماهه' | '3 ماهه' | '6 ماهه' | '12 ماهه' | 'منقضی';
 
 export interface EmployerTicketMessage {
   readonly id: number;
@@ -41,17 +42,9 @@ export interface EmployerDocumentRecord {
 
 @Injectable({ providedIn: 'root' })
 export class EmployerTicketPreviewService {
+  private readonly distribution = inject(Fish24DocumentDistributionPreviewService);
   private nextTicketId = 3100;
   private nextMessageId = 100;
-
-  private readonly documentsSignal = signal<readonly EmployerDocumentRecord[]>([
-    { id: 2001, sentAt: '1405/01/21', title: 'گزارش پرداخت فروردین', companyId: 101, companyName: 'مجموعه نمونه سپهر', amountRial: 340_000, status: 'توزیع‌شده', hostingLabel: '1 ماهه', expiresAt: '1405/02/21', isLocked: false },
-    { id: 2002, sentAt: '1405/02/28', title: 'صورت‌حساب دوره‌ای کارکنان', companyId: 102, companyName: 'مجموعه آزمایشی باران', amountRial: 785_000, status: 'توزیع‌شده', hostingLabel: '12 ماهه', expiresAt: '1406/02/28', isLocked: true },
-    { id: 2003, sentAt: '1404/08/16', title: 'گزارش تسویه پاییز', companyId: 101, companyName: 'مجموعه نمونه سپهر', amountRial: 420_000, status: 'توزیع‌شده', hostingLabel: 'منقضی', expiresAt: '1404/09/16', isLocked: false },
-    { id: 2004, sentAt: '1405/04/01', title: 'خلاصه پرداخت خرداد', companyId: 103, companyName: 'مجموعه نمایشی نارنج', amountRial: 610_000, status: 'توزیع‌شده', hostingLabel: '1 ماهه', expiresAt: '1405/05/01', isLocked: false },
-    { id: 2005, sentAt: '1405/04/23', title: 'گزارش تجمیعی تابستان', companyId: 102, companyName: 'مجموعه آزمایشی باران', amountRial: 925_000, status: 'توزیع‌شده', hostingLabel: '12 ماهه', expiresAt: '1406/04/23', isLocked: true },
-    { id: 2006, sentAt: '1405/06/12', title: 'پیش‌نمایش پرداخت شهریور', companyId: 103, companyName: 'مجموعه نمایشی نارنج', amountRial: 515_000, status: 'توزیع‌نشده', hostingLabel: '1 ماهه', expiresAt: '1405/07/12', isLocked: false }
-  ]);
 
   private readonly ticketsSignal = signal<readonly EmployerTicketRecord[]>([
     {
@@ -115,11 +108,17 @@ export class EmployerTicketPreviewService {
     }
   ]);
 
-  readonly documents = this.documentsSignal.asReadonly();
+  readonly documents = computed<readonly EmployerDocumentRecord[]>(() => this.distribution.sends().map(send => ({
+    id: Number(send.id), sentAt: send.createdAt, title: send.title, companyId: send.companyId,
+    companyName: send.companyName, amountRial: this.distribution.receiptFor(send.id)?.breakdown.totalRial ?? 0,
+    status: send.isPaid ? 'توزیع‌شده' : 'توزیع‌نشده',
+    hostingLabel: send.expiresAt < '1405/06/23' ? 'منقضی' : `${send.durationMonths} ماهه` as EmployerDocumentHostingLabel,
+    expiresAt: send.expiresAt, isLocked: !send.employeeAccessActive
+  })));
   readonly tickets = this.ticketsSignal.asReadonly();
 
   findDocument(id: number): EmployerDocumentRecord | undefined {
-    return this.documentsSignal().find((document) => document.id === id);
+    return this.documents().find((document) => document.id === id);
   }
 
   findTicket(id: number): EmployerTicketRecord | undefined {
@@ -127,19 +126,16 @@ export class EmployerTicketPreviewService {
   }
 
   toggleDocumentLock(id: number): void {
-    this.documentsSignal.update((documents) => documents.map((document) => document.id === id
-      ? { ...document, isLocked: !document.isLocked }
-      : document));
+    const send = this.distribution.findSend(String(id));
+    if (send) this.distribution.setEmployeeAccess(send.id, !send.employeeAccessActive);
   }
 
   deleteUndistributedDocument(id: number): void {
-    this.documentsSignal.update((documents) => documents.filter((document) => document.id !== id || document.status === 'توزیع‌شده'));
+    this.distribution.deleteUnpaid(String(id));
   }
 
   previewDistributeDocument(id: number): void {
-    this.documentsSignal.update((documents) => documents.map((document) => document.id === id && document.status === 'توزیع‌نشده'
-      ? { ...document, status: 'توزیع‌شده' }
-      : document));
+    this.distribution.confirmPayment(String(id));
   }
 
   createTicketFromDocument(documentId: number, department: string, request: string): number | null {

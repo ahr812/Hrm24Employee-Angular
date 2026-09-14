@@ -5,6 +5,7 @@ import { EscToCloseDirective } from '../../../../shared/directives/esc-to-close.
 import { IconComponent } from '../../../../shared/ui/icon/icon.component';
 import { ToastService } from '../../../../shared/ui/toast/toast.service';
 import { EmployerDocumentRecord, EmployerTicketPreviewService } from '../tickets/employer-ticket-preview.service';
+import { Fish24DocumentDistributionPreviewService } from '../../../../core/fish24/financial/fish24-document-distribution-preview.service';
 
 type DocumentDateBasis = 'expiration' | 'sent';
 
@@ -321,6 +322,7 @@ interface PendingDocumentAction {
 export class EmployerDocumentsComponent {
   private readonly preview = inject(EmployerTicketPreviewService);
   private readonly toast = inject(ToastService);
+  private readonly distribution = inject(Fish24DocumentDistributionPreviewService);
   private readonly amountFormatter = new Intl.NumberFormat('fa-IR', { maximumFractionDigits: 0 });
 
   readonly companyOptions: readonly EmployerDocumentCompanyOption[] = [
@@ -484,14 +486,18 @@ export class EmployerDocumentsComponent {
     if (!action) return;
 
     if (action.kind === 'lock') {
-      this.preview.toggleDocumentLock(action.documentId);
-      this.toast.show('وضعیت قفل سند به‌صورت محلی تغییر کرد.', 'success');
+      const send = this.distribution.findSend(String(action.documentId));
+      const ok = send ? this.distribution.setEmployeeAccess(send.id, !send.employeeAccessActive) : false;
+      this.toast.show(ok ? 'وضعیت دسترسی کارکنان به سند تغییر کرد.' : 'تغییر دسترسی مجاز نیست.', ok ? 'success' : 'error');
     } else if (action.kind === 'delete') {
-      this.preview.deleteUndistributedDocument(action.documentId);
-      this.toast.show('سند توزیع‌نشده از پیش‌نمایش محلی حذف شد.', 'success');
+      const ok = this.distribution.deleteUnpaid(String(action.documentId));
+      this.toast.show(ok ? 'سند پرداخت‌نشده و رسید مرتبط حذف شدند.' : 'حذف این سند مجاز نیست.', ok ? 'success' : 'error');
     } else {
-      this.preview.previewDistributeDocument(action.documentId);
-      this.toast.show('وضعیت سند در پیش‌نمایش محلی به توزیع‌شده تغییر کرد؛ کیف پول تغییری نکرد.', 'success');
+      const result = this.distribution.confirmPayment(String(action.documentId));
+      const message = result.ok
+        ? result.existing ? 'این سند قبلاً پرداخت شده است؛ برداشت تکراری انجام نشد.' : 'مبلغ از کیف پول کسر، تراکنش ثبت و سند توزیع شد.'
+        : result.error === 'insufficient-funds' ? 'موجودی کیف پول کافی نیست؛ هیچ تغییری اعمال نشد.' : 'پرداخت و توزیع انجام نشد.';
+      this.toast.show(message, result.ok ? 'success' : 'error');
     }
 
     this.pendingAction.set(null);

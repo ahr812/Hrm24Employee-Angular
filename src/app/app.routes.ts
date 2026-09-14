@@ -17,6 +17,7 @@ export const routes: Routes = [
   { path: 'fish24/internal/staff', loadComponent: () => import('./features/fish24/internal/staff/internal-staff.component').then(m => m.InternalStaffComponent), canActivate: [authGuard, internalUserManagementGuard] },
   { path: 'fish24/internal/vat-settings', loadComponent: () => import('./features/fish24/internal/vat-settings/internal-vat-settings.component').then(m => m.InternalVatSettingsComponent), canActivate: [authGuard, financialManagementGuard] },
   { path: 'fish24/internal/pricing', loadComponent: () => import('./features/fish24/internal/pricing/internal-pricing.component').then(m => m.InternalPricingComponent), canActivate: [authGuard, pricingManagementGuard] },
+  { path: 'fish24/internal/sends', loadComponent: () => import('./features/fish24/internal/sends/internal-sends.component').then(m => m.InternalSendsComponent), canActivate: [authGuard, financialManagementGuard] },
   { path: 'fish24/employer/dashboard', loadComponent: () => import('./features/fish24/employer/dashboard/employer-dashboard.component').then(m => m.EmployerDashboardComponent), canActivate: [authGuard] },
   { path: 'fish24/employer/profile', loadComponent: () => import('./features/fish24/employer/profile/employer-profile.component').then(m => m.EmployerProfileComponent), canActivate: [authGuard] },
   { path: 'fish24/employer/change-password', loadComponent: () => import('./features/fish24/employer/change-password/employer-change-password.component').then(m => m.EmployerChangePasswordComponent), canActivate: [authGuard] },

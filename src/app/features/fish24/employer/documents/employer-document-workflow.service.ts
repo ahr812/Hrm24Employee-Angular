@@ -18,6 +18,7 @@ export interface EmployerDocumentReviewState {
   readonly companyId: number;
   readonly companyName: string;
   readonly fileName: string;
+  readonly sourceFile: Blob;
   readonly hostingOptionId: string;
   readonly hostingLabel: string;
   readonly expirationPreview: string;
@@ -30,6 +31,7 @@ export interface EmployerDocumentReviewInput {
   readonly companyId: number;
   readonly companyName: string;
   readonly fileName: string;
+  readonly sourceFile: Blob;
   readonly hostingOptionId: string;
   readonly hostingLabel: string;
   readonly expirationPreview: string;
