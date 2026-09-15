@@ -98,8 +98,8 @@ export const FISH24_ADMIN_NAV_CONFIG: readonly Fish24NavItem[] = [
       {
         id: 'fish24-admin-financial-invoices',
         label: 'لیست فاکتورها',
-        permission: 'financial-management'
-        // Future: route: '/fish24/admin/financial/invoices'
+        permission: 'financial-management',
+        route: '/fish24/internal/invoices'
       },
       {
         id: 'fish24-admin-financial-vat',

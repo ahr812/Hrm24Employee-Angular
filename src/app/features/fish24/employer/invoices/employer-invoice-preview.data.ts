@@ -34,6 +34,25 @@ export interface EmployerInvoicePreview {
   readonly sourceTransactionId?: string;
 }
 
+export interface LegacyFormalInvoicePreview {
+  readonly legacyId: string;
+  readonly formalInvoiceNumber: string | null;
+  readonly issueDate: string | null;
+  readonly mobile: string | null;
+  readonly name: string | null;
+  readonly companyName: string | null;
+  readonly userType: 'حقیقی' | 'حقوقی' | null;
+  readonly title: string | null;
+  readonly amountRial: number | null;
+  readonly originalSource: Readonly<Record<string, unknown>>;
+}
+
+export type Fish24FormalInvoiceSource = EmployerInvoicePreview | LegacyFormalInvoicePreview;
+
+export function isLegacyFormalInvoice(source: Fish24FormalInvoiceSource): source is LegacyFormalInvoicePreview {
+  return 'legacyId' in source;
+}
+
 export const EMPLOYER_INVOICE_SELLER_PREVIEW: EmployerInvoicePartyPreview = {
   name: 'شرکت نمونه پردازش سپهر',
   economicNumber: '411111111111',
@@ -100,5 +119,55 @@ export const EMPLOYER_INVOICE_PREVIEWS: readonly EmployerInvoicePreview[] = [
     issuedAt: '1405/02/08',
     amountRial: 845_000,
     line: { code: '10005', description: 'سامانه فیش حقوق', quantity: '۱', unit: 'خدمت', unitAmountRial: 800_000, totalAmountRial: 800_000, discountAmountRial: 0, afterDiscountAmountRial: 800_000, taxAmountRial: 45_000, finalAmountRial: 845_000 }
+  }
+];
+
+/**
+ * Historical preview records remain structurally separate from the current
+ * printable invoice contract. The original payload is retained unchanged.
+ */
+export const LEGACY_FORMAL_INVOICE_PREVIEWS: readonly LegacyFormalInvoicePreview[] = [
+  {
+    legacyId: 'legacy-00022343',
+    formalInvoiceNumber: '00022343',
+    issueDate: '1405/06/21',
+    mobile: '09359684611',
+    name: 'صمد روحی',
+    companyName: 'شرکت پستی اطمینان آذری',
+    userType: 'حقوقی',
+    title: 'فاکتور شارژ کیف پول',
+    amountRial: 550_000_000,
+    originalSource: {
+      legacyId: 'legacy-00022343', formalInvoiceNumber: '00022343', issueDate: '1405/06/21',
+      mobile: '09359684611', name: 'صمد روحی', companyName: 'شرکت پستی اطمینان آذری',
+      userType: 'حقوقی', title: 'فاکتور شارژ کیف پول', amountRial: 550_000_000
+    }
+  },
+  {
+    legacyId: 'legacy-incomplete-22339',
+    formalInvoiceNumber: '22339',
+    issueDate: '1404/06/17',
+    mobile: null,
+    name: 'علیرضا بنی سعید',
+    companyName: 'شرکت باران پایدار قرن',
+    userType: null,
+    title: 'فاکتور شارژ کیف پول',
+    amountRial: null,
+    originalSource: {
+      legacyId: 'legacy-incomplete-22339', formalInvoiceNumber: '22339', issueDate: '1404/06/17',
+      name: 'علیرضا بنی سعید', companyName: 'شرکت باران پایدار قرن', title: 'فاکتور شارژ کیف پول'
+    }
+  },
+  {
+    legacyId: 'legacy-unnumbered',
+    formalInvoiceNumber: null,
+    issueDate: '1404/05/01',
+    mobile: null,
+    name: null,
+    companyName: null,
+    userType: null,
+    title: 'رکورد تاریخی بدون شماره رسمی',
+    amountRial: null,
+    originalSource: { legacyId: 'legacy-unnumbered', issueDate: '1404/05/01' }
   }
 ];

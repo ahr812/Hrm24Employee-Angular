@@ -1,7 +1,9 @@
 import { Injectable, computed, signal } from '@angular/core';
 import {
   EMPLOYER_INVOICE_PREVIEWS,
-  EmployerInvoicePreview
+  EmployerInvoicePreview,
+  Fish24FormalInvoiceSource,
+  LEGACY_FORMAL_INVOICE_PREVIEWS
 } from '../../../features/fish24/employer/invoices/employer-invoice-preview.data';
 
 const PERSIAN_DIGITS = '۰۱۲۳۴۵۶۷۸۹';
@@ -109,6 +111,10 @@ export class Fish24FinancialPreviewService {
 
   readonly vatSettings = this.settingsState.asReadonly();
   readonly invoices = this.invoicesState.asReadonly();
+  readonly formalInvoiceSources = computed<readonly Fish24FormalInvoiceSource[]>(() => [
+    ...this.invoicesState(),
+    ...LEGACY_FORMAL_INVOICE_PREVIEWS
+  ]);
   readonly activeVatSettings = computed(() => this.settingsState().filter(setting => setting.isActive));
 
   constructor() {
