@@ -12,8 +12,7 @@ interface ZipEntry {
 @Injectable({ providedIn: 'root' })
 export class PlainXlsxService {
   export(filename: string, headers: readonly string[], rows: readonly (readonly PlainXlsxCell[])[]): void {
-    const files = this.workbookFiles(headers, rows);
-    const blob = new Blob([this.buildZip(files)], {
+    const blob = new Blob([this.workbookBytes(headers, rows)], {
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     });
     const url = URL.createObjectURL(blob);
@@ -24,6 +23,10 @@ export class PlainXlsxService {
     anchor.click();
     anchor.remove();
     setTimeout(() => URL.revokeObjectURL(url), 0);
+  }
+
+  workbookBytes(headers: readonly string[], rows: readonly (readonly PlainXlsxCell[])[]): Uint8Array {
+    return this.buildZip(this.workbookFiles(headers, rows));
   }
 
   private workbookFiles(headers: readonly string[], rows: readonly (readonly PlainXlsxCell[])[]): Readonly<Record<string, string>> {
@@ -42,8 +45,9 @@ export class PlainXlsxService {
 
   private cellXml(value: PlainXlsxCell, columnIndex: number, rowIndex: number): string {
     const reference = `${this.columnName(columnIndex)}${rowIndex}`;
+    if (value === null) return `<c r="${reference}"/>`;
     if (typeof value === 'number' && Number.isFinite(value)) return `<c r="${reference}"><v>${value}</v></c>`;
-    const text = this.escapeXml(String(value ?? ''));
+    const text = this.escapeXml(String(value));
     return `<c r="${reference}" t="inlineStr"><is><t xml:space="preserve">${text}</t></is></c>`;
   }
 

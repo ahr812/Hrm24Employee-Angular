@@ -125,11 +125,11 @@ export class Fish24FinancialPreviewService {
     return this.invoicesState().find(invoice => invoice.id === id) ?? null;
   }
 
-  issueManualInvoice(sourceTransactionId: string, amountRial: number, issueDate: string): ManualInvoiceMutationResult {
+  issueManualInvoice(sourceTransactionId: string, employerId: string, amountRial: number, issueDate: string): ManualInvoiceMutationResult {
     const existing = this.invoicesState().find(invoice => invoice.sourceTransactionId === sourceTransactionId);
     if (existing) return { ok: true, invoice: existing, existing: true };
     const normalizedDate = normalizeJalaliDate(issueDate);
-    if (!sourceTransactionId.trim() || !Number.isSafeInteger(amountRial) || amountRial <= 0 || !normalizedDate) {
+    if (!sourceTransactionId.trim() || !employerId.trim() || !Number.isSafeInteger(amountRial) || amountRial <= 0 || !normalizedDate) {
       return { ok: false, existing: false };
     }
     const id = Math.max(0, ...this.invoicesState().map(invoice => invoice.id)) + 1;
@@ -137,6 +137,7 @@ export class Fish24FinancialPreviewService {
     const tax = this.calculateVat(amountRial, normalizedDate);
     const invoice: EmployerInvoicePreview = {
       id,
+      employerId,
       title: 'فاکتور تراکنش دستی',
       invoiceNumber,
       issuedAt: normalizedDate,

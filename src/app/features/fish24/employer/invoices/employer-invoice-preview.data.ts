@@ -26,6 +26,7 @@ export interface EmployerInvoiceLinePreview {
 
 export interface EmployerInvoicePreview {
   readonly id: number;
+  readonly employerId: string;
   readonly title: 'فاکتور شارژ کیف پول' | 'فاکتور تراکنش دستی';
   readonly invoiceNumber: string;
   readonly issuedAt: string;
@@ -36,6 +37,7 @@ export interface EmployerInvoicePreview {
 
 export interface LegacyFormalInvoicePreview {
   readonly legacyId: string;
+  readonly employerId: string;
   readonly formalInvoiceNumber: string | null;
   readonly issueDate: string | null;
   readonly mobile: string | null;
@@ -44,6 +46,8 @@ export interface LegacyFormalInvoicePreview {
   readonly userType: 'حقیقی' | 'حقوقی' | null;
   readonly title: string | null;
   readonly amountRial: number;
+  readonly baseAmountRial: number;
+  readonly taxAmountRial: number;
   readonly originalSource: Readonly<Record<string, unknown>>;
 }
 
@@ -82,6 +86,7 @@ export const EMPLOYER_INVOICE_BUYER_PREVIEW: EmployerInvoicePartyPreview = {
 export const EMPLOYER_INVOICE_PREVIEWS: readonly EmployerInvoicePreview[] = [
   {
     id: 1,
+    employerId: '1001',
     title: 'فاکتور شارژ کیف پول',
     invoiceNumber: '22561',
     issuedAt: '1405/06/17',
@@ -90,6 +95,7 @@ export const EMPLOYER_INVOICE_PREVIEWS: readonly EmployerInvoicePreview[] = [
   },
   {
     id: 2,
+    employerId: '1002',
     title: 'فاکتور شارژ کیف پول',
     invoiceNumber: '22562',
     issuedAt: '1405/05/29',
@@ -98,6 +104,8 @@ export const EMPLOYER_INVOICE_PREVIEWS: readonly EmployerInvoicePreview[] = [
   },
   {
     id: 3,
+    // Authorized deterministic demo association; not verified historical ownership.
+    employerId: '1007',
     title: 'فاکتور شارژ کیف پول',
     invoiceNumber: '22563',
     issuedAt: '1405/04/11',
@@ -106,6 +114,8 @@ export const EMPLOYER_INVOICE_PREVIEWS: readonly EmployerInvoicePreview[] = [
   },
   {
     id: 4,
+    // Authorized deterministic demo association; not verified historical ownership.
+    employerId: '1001',
     title: 'فاکتور شارژ کیف پول',
     invoiceNumber: '22564',
     issuedAt: '1405/03/23',
@@ -114,6 +124,8 @@ export const EMPLOYER_INVOICE_PREVIEWS: readonly EmployerInvoicePreview[] = [
   },
   {
     id: 5,
+    // Authorized deterministic demo association; not verified historical ownership.
+    employerId: '1002',
     title: 'فاکتور شارژ کیف پول',
     invoiceNumber: '22565',
     issuedAt: '1405/02/08',
@@ -129,6 +141,8 @@ export const EMPLOYER_INVOICE_PREVIEWS: readonly EmployerInvoicePreview[] = [
 export const LEGACY_FORMAL_INVOICE_PREVIEWS: readonly LegacyFormalInvoicePreview[] = [
   {
     legacyId: 'legacy-00022343',
+    // Authorized deterministic demo association; historical customer fields remain in originalSource.
+    employerId: '1007',
     formalInvoiceNumber: '00022343',
     issueDate: '1405/06/21',
     mobile: '09359684611',
@@ -137,6 +151,8 @@ export const LEGACY_FORMAL_INVOICE_PREVIEWS: readonly LegacyFormalInvoicePreview
     userType: 'حقوقی',
     title: 'فاکتور شارژ کیف پول',
     amountRial: 550_000_000,
+    baseAmountRial: 500_000_000,
+    taxAmountRial: 50_000_000,
     originalSource: {
       legacyId: 'legacy-00022343', formalInvoiceNumber: '00022343', issueDate: '1405/06/21',
       mobile: '09359684611', name: 'صمد روحی', companyName: 'شرکت پستی اطمینان آذری',

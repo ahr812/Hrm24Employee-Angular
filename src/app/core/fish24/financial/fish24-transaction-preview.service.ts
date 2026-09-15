@@ -35,7 +35,7 @@ export class Fish24TransactionPreviewService {
       const invoice = this.financial.findInvoice(transaction.formalInvoiceId);
       return invoice ? { ok: true, existing: true, invoice } : { ok: false, existing: true, error: 'invoice-unavailable' };
     }
-    const result = this.financial.issueManualInvoice(transaction.id, transaction.amountRial, transaction.createdAt.slice(0, 10));
+    const result = this.financial.issueManualInvoice(transaction.id, transaction.employerId, transaction.amountRial, transaction.createdAt.slice(0, 10));
     if (!result.ok || !result.invoice) return { ok: false, existing: false, error: 'invoice-unavailable' };
     if (!this.wallets.associateFormalInvoice(transaction.id, result.invoice.id, result.invoice.invoiceNumber)) {
       this.financial.deleteManualInvoice(transaction.id);

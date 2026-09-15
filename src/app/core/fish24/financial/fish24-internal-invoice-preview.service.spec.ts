@@ -4,6 +4,7 @@ import { Fish24FinancialPreviewService } from './fish24-financial-preview.servic
 import { compareFormalNumbers, Fish24InternalInvoicePreviewService } from './fish24-internal-invoice-preview.service';
 import { Fish24TransactionPreviewService } from './fish24-transaction-preview.service';
 import { Fish24WalletPreviewService } from './fish24-wallet-preview.service';
+import { BusinessUserPreviewService } from '../../../features/fish24/internal/users/business-user-preview.service';
 
 describe('Fish24InternalInvoicePreviewService', () => {
   function setup() {
@@ -12,7 +13,8 @@ describe('Fish24InternalInvoicePreviewService', () => {
     const roles = new Fish24RolePreviewService();
     const permissions = new Fish24PermissionService();
     const transactions = new Fish24TransactionPreviewService(wallet, financial, roles, permissions);
-    return { financial, wallet, roles, transactions, service: new Fish24InternalInvoicePreviewService(financial, wallet, transactions) };
+    const users = new BusinessUserPreviewService();
+    return { financial, wallet, roles, transactions, service: new Fish24InternalInvoicePreviewService(financial, wallet, transactions, users) };
   }
 
   it('includes every numbered current and legacy source', () => {
@@ -34,6 +36,14 @@ describe('Fish24InternalInvoicePreviewService', () => {
   it('requires an authoritative amount for every listed invoice', () => {
     const { service } = setup();
     expect(service.invoices().every(invoice => Number.isFinite(invoice.amountRial))).toBeTrue();
+  });
+
+  it('resolves a current employer mobile for every listed invoice', () => {
+    const { service } = setup();
+    expect(service.invoices().every(invoice => /^09\d{9}$/.test(invoice.mobile))).toBeTrue();
+    expect(service.invoices().find(invoice => invoice.formalInvoiceNumber === '22561')?.employerId).toBe('1001');
+    expect(service.invoices().find(invoice => invoice.formalInvoiceNumber === '22562')?.employerId).toBe('1002');
+    expect(service.invoices().find(invoice => invoice.formalInvoiceNumber === '00022343')?.employerId).toBe('1007');
   });
 
   it('deletes a disposable manual invoice without changing the transaction or wallet facts', () => {
