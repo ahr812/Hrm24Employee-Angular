@@ -43,7 +43,7 @@ export interface LegacyFormalInvoicePreview {
   readonly companyName: string | null;
   readonly userType: 'حقیقی' | 'حقوقی' | null;
   readonly title: string | null;
-  readonly amountRial: number | null;
+  readonly amountRial: number;
   readonly originalSource: Readonly<Record<string, unknown>>;
 }
 
@@ -143,31 +143,4 @@ export const LEGACY_FORMAL_INVOICE_PREVIEWS: readonly LegacyFormalInvoicePreview
       userType: 'حقوقی', title: 'فاکتور شارژ کیف پول', amountRial: 550_000_000
     }
   },
-  {
-    legacyId: 'legacy-incomplete-22339',
-    formalInvoiceNumber: '22339',
-    issueDate: '1404/06/17',
-    mobile: null,
-    name: 'علیرضا بنی سعید',
-    companyName: 'شرکت باران پایدار قرن',
-    userType: null,
-    title: 'فاکتور شارژ کیف پول',
-    amountRial: null,
-    originalSource: {
-      legacyId: 'legacy-incomplete-22339', formalInvoiceNumber: '22339', issueDate: '1404/06/17',
-      name: 'علیرضا بنی سعید', companyName: 'شرکت باران پایدار قرن', title: 'فاکتور شارژ کیف پول'
-    }
-  },
-  {
-    legacyId: 'legacy-unnumbered',
-    formalInvoiceNumber: null,
-    issueDate: '1404/05/01',
-    mobile: null,
-    name: null,
-    companyName: null,
-    userType: null,
-    title: 'رکورد تاریخی بدون شماره رسمی',
-    amountRial: null,
-    originalSource: { legacyId: 'legacy-unnumbered', issueDate: '1404/05/01' }
-  }
 ];

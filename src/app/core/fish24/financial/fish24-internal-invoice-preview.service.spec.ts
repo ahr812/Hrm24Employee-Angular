@@ -15,14 +15,13 @@ describe('Fish24InternalInvoicePreviewService', () => {
     return { financial, wallet, roles, transactions, service: new Fish24InternalInvoicePreviewService(financial, wallet, transactions) };
   }
 
-  it('includes every numbered current and legacy source while excluding unnumbered records', () => {
+  it('includes every numbered current and legacy source', () => {
     const { financial, service } = setup();
     const numberedSources = financial.formalInvoiceSources().filter(source =>
       ('invoiceNumber' in source ? source.invoiceNumber : source.formalInvoiceNumber)?.trim()
     );
     expect(service.invoices().length).toBe(numberedSources.length);
     expect(service.invoices().some(invoice => invoice.formalInvoiceNumber === '00022343')).toBeTrue();
-    expect(service.invoices().some(invoice => invoice.sourceIdentity === 'legacy-unnumbered')).toBeFalse();
   });
 
   it('preserves formal-number text and compares values without numeric precision loss', () => {
@@ -32,13 +31,9 @@ describe('Fish24InternalInvoicePreviewService', () => {
     expect(compareFormalNumbers('99999999999999999999', '100000000000000000000')).toBeLessThan(0);
   });
 
-  it('keeps incomplete legacy values honest and non-renderable', () => {
+  it('requires an authoritative amount for every listed invoice', () => {
     const { service } = setup();
-    const incomplete = service.find('legacy-incomplete-22339')!;
-    expect(incomplete.amountRial).toBeNull();
-    expect(incomplete.mobile).toBeNull();
-    expect(incomplete.printableInvoiceId).toBeNull();
-    expect(incomplete.deletionEligible).toBeFalse();
+    expect(service.invoices().every(invoice => Number.isFinite(invoice.amountRial))).toBeTrue();
   });
 
   it('deletes a disposable manual invoice without changing the transaction or wallet facts', () => {

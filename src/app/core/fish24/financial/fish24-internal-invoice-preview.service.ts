@@ -13,7 +13,7 @@ export interface InternalFormalInvoiceListItem {
   readonly companyName: string | null;
   readonly userType: 'حقیقی' | 'حقوقی' | null;
   readonly title: string | null;
-  readonly amountRial: number | null;
+  readonly amountRial: number;
   readonly linkedTransactionId: string | null;
   readonly printableInvoiceId: number | null;
   readonly deletionEligible: boolean;
