@@ -11,19 +11,14 @@ export const ACCOUNTING_VOUCHER_HEADERS = [
 export interface AccountingVoucherExportResult {
   readonly rows: readonly (readonly PlainXlsxCell[])[];
   readonly exportedInvoiceCount: number;
-  readonly excludedUnknownSources: readonly string[];
   readonly incompatibleTrackingSources: readonly string[];
 }
 
 export function buildAccountingVoucherExport(invoices: readonly InternalFormalInvoiceListItem[]): AccountingVoucherExportResult {
-  const eligible = invoices.filter(invoice => invoice.voucherEligibility === 'credit');
-  const excludedUnknownSources = invoices
-    .filter(invoice => invoice.voucherEligibility === 'unknown')
-    .map(invoice => invoice.sourceIdentity);
   const incompatibleTrackingSources: string[] = [];
   const rows: PlainXlsxCell[][] = [];
 
-  eligible.forEach((invoice, index) => {
+  invoices.forEach((invoice, index) => {
     const mobile = normalizeFish24Digits(invoice.mobile).replace(/\D/g, '');
     const date = normalizeJalaliDate(invoice.voucherDate);
     const employerName = invoice.userType === 'حقوقی' ? invoice.companyName?.trim() : invoice.name?.trim();
@@ -52,7 +47,7 @@ export function buildAccountingVoucherExport(invoices: readonly InternalFormalIn
     ]);
   });
 
-  return { rows, exportedInvoiceCount: eligible.length, excludedUnknownSources, incompatibleTrackingSources };
+  return { rows, exportedInvoiceCount: invoices.length, incompatibleTrackingSources };
 }
 
 function parseTracking(value: string | null): { readonly descriptionValue: string | null; readonly numericValue: number | null; readonly incompatible: boolean } {

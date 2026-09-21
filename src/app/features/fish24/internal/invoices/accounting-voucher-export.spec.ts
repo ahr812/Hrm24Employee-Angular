@@ -19,7 +19,7 @@ describe('accounting voucher export', () => {
     ]);
   });
 
-  it('creates two balanced rows per eligible invoice with sequential shared voucher numbers', () => {
+  it('creates two balanced rows per invoice with sequential shared voucher numbers', () => {
     const result = buildAccountingVoucherExport([invoice(), invoice({ sourceIdentity: 'current-1', formalInvoiceNumber: '22561', voucherAmountRial: 250_000 })]);
     expect(result.rows.length).toBe(4);
     expect(result.rows.every(row => row.length === 16)).toBeTrue();
@@ -52,14 +52,17 @@ describe('accounting voucher export', () => {
     for (const row of result.rows) expect([2, 7, 8, 9, 10].every(index => row[index] === null)).toBeTrue();
   });
 
-  it('excludes debit and unknown provenance without mutating input order or financial values', () => {
+  it('includes credit, debit and unknown provenance without mutating input order or financial values', () => {
     const credit = invoice();
     const debit = invoice({ sourceIdentity: 'debit', voucherEligibility: 'debit' });
     const unknown = invoice({ sourceIdentity: 'unknown', voucherEligibility: 'unknown' });
     const before = JSON.stringify([credit, debit, unknown]);
     const result = buildAccountingVoucherExport([credit, debit, unknown]);
-    expect(result.exportedInvoiceCount).toBe(1);
-    expect(result.excludedUnknownSources).toEqual(['unknown']);
+    expect(result.exportedInvoiceCount).toBe(3);
+    expect(result.rows.length).toBe(6);
+    expect(result.rows.map(row => row[0])).toEqual([1, 1, 2, 2, 3, 3]);
+    expect(result.rows.reduce((sum, row) => sum + Number(row[12]), 0)).toBe(1_650_000_000);
+    expect(result.rows.reduce((sum, row) => sum + Number(row[13]), 0)).toBe(1_650_000_000);
     expect(JSON.stringify([credit, debit, unknown])).toBe(before);
   });
 

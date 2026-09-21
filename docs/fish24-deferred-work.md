@@ -2,11 +2,7 @@
 
 ## Internal formal invoice exports
 
-The following specialized export remains intentionally deferred until an authoritative sample file and field contract are supplied:
-
-- خروجی تفصیلی مشتریان
-
-The specialized «خروجی فاکتور» is implemented from `InvoiceExportSample.xlsx`: it exports the 45-column accounting schema using the applied main filters. «خروجی سند حسابداری» is implemented from `VoucherExportSample.xlsx` as a plain 16-column, two-row-per-credit-invoice workbook. «خروجی تفصیلی مشتریان» stays visible in the invoice-list toolbar, clearly marked as not yet implemented, and does not create a substitute file.
+All three specialized invoice-list exports are implemented from their supplied reference samples. «خروجی فاکتور» uses the exact 45-column schema. «خروجی سند حسابداری» uses the exact 16-column schema and creates one balanced two-row voucher for every invoice in the applied main-filter results, regardless of transaction direction or provenance. «خروجی تفصیلی مشتریان» uses the exact 16-column customer schema and exports one current employer profile per distinct employer in first-occurrence order. Specialized exports ignore column selection, header searches, table sorting and pagination.
 
 The current sample-only invoice ownership associations are deterministic demonstration data, not verified historical ownership: `22561 → 1001`, `22562 → 1002`, `22563 → 1007`, `22564 → 1001`, `22565 → 1002`, and `00022343 → 1007`. Production/API data must provide its own authoritative employer relationship and must not use this fixture strategy.
 

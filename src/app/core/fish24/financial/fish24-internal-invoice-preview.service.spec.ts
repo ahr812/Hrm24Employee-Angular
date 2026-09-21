@@ -6,6 +6,7 @@ import { Fish24TransactionPreviewService } from './fish24-transaction-preview.se
 import { Fish24WalletPreviewService } from './fish24-wallet-preview.service';
 import { BusinessUserPreviewService } from '../../../features/fish24/internal/users/business-user-preview.service';
 import { buildAccountingVoucherExport } from '../../../features/fish24/internal/invoices/accounting-voucher-export';
+import { buildCustomerDetailExportRows } from '../../../features/fish24/internal/invoices/customer-detail-export';
 
 describe('Fish24InternalInvoicePreviewService', () => {
   function setup() {
@@ -15,7 +16,7 @@ describe('Fish24InternalInvoicePreviewService', () => {
     const permissions = new Fish24PermissionService();
     const transactions = new Fish24TransactionPreviewService(wallet, financial, roles, permissions);
     const users = new BusinessUserPreviewService();
-    return { financial, wallet, roles, transactions, service: new Fish24InternalInvoicePreviewService(financial, wallet, transactions, users) };
+    return { financial, wallet, roles, transactions, users, service: new Fish24InternalInvoicePreviewService(financial, wallet, transactions, users) };
   }
 
   it('includes every numbered current and legacy source', () => {
@@ -70,7 +71,6 @@ describe('Fish24InternalInvoicePreviewService', () => {
     });
     expect(result.exportedInvoiceCount).toBe(6);
     expect(result.rows.length).toBe(12);
-    expect(result.excludedUnknownSources).toEqual([]);
     expect(result.incompatibleTrackingSources).toEqual([]);
     for (let index = 0; index < result.rows.length; index += 2) {
       expect(result.rows[index][12]).toBe(result.rows[index + 1][13]);
@@ -85,6 +85,19 @@ describe('Fish24InternalInvoicePreviewService', () => {
       expect(invoice.voucherAmountRial).toBe(invoice.amountRial);
     }
     expect([wallet.balance('1001'), wallet.balance('1002'), wallet.balance('1007')]).toEqual([75_000_000, 18_000_000, 0]);
+  });
+
+  it('exports one current customer profile per distinct invoice employer', () => {
+    const { users, service } = setup();
+    const invoices = service.invoices();
+    const beforeInvoices = JSON.stringify(invoices);
+    const beforeUsers = JSON.stringify(users.users());
+    const rows = buildCustomerDetailExportRows(invoices, employerId => users.findUser(Number(employerId)));
+    expect(rows.length).toBe(3);
+    expect(rows.map(row => row[1])).toEqual([9121234567, 9129876543, 9123334455]);
+    expect(rows.every(row => row.length === 16)).toBeTrue();
+    expect(JSON.stringify(invoices)).toBe(beforeInvoices);
+    expect(JSON.stringify(users.users())).toBe(beforeUsers);
   });
 
   it('deletes a disposable manual invoice without changing the transaction or wallet facts', () => {
