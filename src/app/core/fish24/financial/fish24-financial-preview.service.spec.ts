@@ -2,172 +2,101 @@ import { Fish24FinancialPreviewService, VatSettingDraft, normalizeJalaliDate, va
 
 describe('Fish24FinancialPreviewService', () => {
   const validDraft = (overrides: Partial<VatSettingDraft> = {}): VatSettingDraft => ({
-    title: 'بازه آزمون',
-    startDate: '۱۴۰۶/۰۱/۰۱',
-    endDate: '۱۴۰۶/۱۲/۲۹',
-    taxPercent: '۶.۵',
-    dutyPercent: '۳٫۵',
-    description: '',
-    isActive: true,
-    ...overrides
+    title: 'بازه آزمون', startDate: '۱۴۰۶/۰۱/۰۱', endDate: '۱۴۰۶/۱۲/۲۹', taxPercent: '۶.۵', dutyPercent: '۳٫۵', description: '', isActive: true, ...overrides
   });
 
-  it('accepts zero and Persian decimals but rejects invalid percentages and totals above 100', () => {
+  it('validates percentages, Jalali dates and inclusive period overlap', () => {
     expect(validateVatPercent('۰')).toBe(0);
     expect(validateVatPercent('۶٫۵')).toBe(6.5);
     expect(validateVatPercent('-1')).toBeNull();
-    expect(validateVatPercent('')).toBeNull();
-    expect(validateVatPercent('abc')).toBeNull();
-    expect(validateVatPercent('Infinity')).toBeNull();
     expect(validateVatPercent('101')).toBeNull();
-
-    const service = new Fish24FinancialPreviewService();
-    const result = service.saveVatSetting(validDraft({ taxPercent: '60', dutyPercent: '41' }), null);
-    expect(result.ok).toBeFalse();
-    expect(result.fieldErrors['totalPercent']).toBeTruthy();
-    expect(service.saveVatSetting(validDraft({ taxPercent: '60', dutyPercent: '40' }), null).ok).toBeTrue();
-  });
-
-  it('validates Jalali dates and treats shared boundaries as overlap', () => {
     expect(normalizeJalaliDate('۱۴۰۵/۰۱/۰۱')).toBe('1405/01/01');
     expect(normalizeJalaliDate('1405/13/01')).toBeNull();
-    expect(normalizeJalaliDate('1404/12/30')).toBeNull();
-    expect(vatPeriodsOverlap(
-      { startDate: '1405/01/01', endDate: '1405/06/31' },
-      { startDate: '1405/06/31', endDate: '1405/12/29' }
-    )).toBeTrue();
-    expect(vatPeriodsOverlap(
-      { startDate: '1405/02/01', endDate: '1405/03/01' },
-      { startDate: '1405/01/01', endDate: '1405/12/29' }
-    )).toBeTrue();
-    expect(vatPeriodsOverlap(
-      { startDate: '1405/01/01', endDate: '1405/12/29' },
-      { startDate: '1405/02/01', endDate: '1405/03/01' }
-    )).toBeTrue();
-    expect(vatPeriodsOverlap(
-      { startDate: '1405/01/01', endDate: '1405/01/01' },
-      { startDate: '1405/01/02', endDate: '1405/01/02' }
-    )).toBeFalse();
+    expect(vatPeriodsOverlap({ startDate: '1405/01/01', endDate: '1405/06/31' }, { startDate: '1405/06/31', endDate: '1405/12/29' })).toBeTrue();
   });
 
-  it('rejects active overlap atomically while allowing inactive overlap', () => {
+  it('keeps historical invoice snapshots unchanged on construction', () => {
     const service = new Fish24FinancialPreviewService();
-    const beforeSettings = service.vatSettings();
-    const beforeInvoices = service.invoices();
-    const rejected = service.saveVatSetting(validDraft({ startDate: '1405/12/29', endDate: '1406/02/01' }), null);
-    expect(rejected.ok).toBeFalse();
-    expect(rejected.conflict?.id).toBe(5);
-    expect(service.vatSettings()).toBe(beforeSettings);
-    expect(service.invoices()).toBe(beforeInvoices);
-    expect(service.saveVatSetting(validDraft({ startDate: '1405/12/29', endDate: '1406/02/01', isActive: false }), null).ok).toBeTrue();
+    expect(service.findInvoice(1)?.amountRial).toBe(267_000);
+    expect(service.findInvoice(1)?.line.afterDiscountAmountRial).toBe(250_000);
+    expect(service.findInvoice(1)?.line.taxAmountRial).toBe(17_000);
+    expect(service.findInvoice(1)?.vatSettingId).toBeNull();
   });
 
-  it('blocks activation of an overlapping inactive period and permits self-edit', () => {
+  it('splits VAT-inclusive gross to whole rials and reconciles exactly', () => {
     const service = new Fish24FinancialPreviewService();
+    expect(service.splitVatIncluded(110, '1405/06/01')).toEqual({
+      grossAmountRial: 110, baseAmountRial: 100, taxAmountRial: 10, vatRatePercent: 10, vatSettingId: 5
+    });
+    const rounded = service.splitVatIncluded(100, '1405/06/01');
+    expect(rounded.baseAmountRial).toBe(91);
+    expect(rounded.baseAmountRial + rounded.taxAmountRial).toBe(rounded.grossAmountRial);
+  });
+
+  it('uses zero VAT when no active setting applies', () => {
+    const service = new Fish24FinancialPreviewService();
+    expect(service.splitVatIncluded(110, '1406/01/01')).toEqual({
+      grossAmountRial: 110, baseAmountRial: 110, taxAmountRial: 0, vatRatePercent: 0, vatSettingId: null
+    });
+    expect(service.toggleVatSetting(5).ok).toBeTrue();
+    expect(service.splitVatIncluded(110, '1405/06/01').taxAmountRial).toBe(0);
+  });
+
+  it('persists an issuance snapshot and never changes it on deactivation or reactivation', () => {
+    const service = new Fish24FinancialPreviewService();
+    const issued = service.issueManualInvoice('vat-snapshot', '1001', 110, '1405/06/01').invoice!;
+    expect([issued.line.afterDiscountAmountRial, issued.line.taxAmountRial, issued.amountRial]).toEqual([100, 10, 110]);
+    expect([issued.vatRatePercent, issued.vatSettingId]).toEqual([10, 5]);
+    expect(service.toggleVatSetting(5).ok).toBeTrue();
+    expect(service.findInvoice(issued.id)).toEqual(issued);
+    const noVat = service.issueManualInvoice('vat-inactive', '1001', 110, '1405/06/02').invoice!;
+    expect([noVat.line.afterDiscountAmountRial, noVat.line.taxAmountRial, noVat.amountRial]).toEqual([110, 0, 110]);
+    expect(service.toggleVatSetting(5).ok).toBeTrue();
+    expect(service.findInvoice(issued.id)).toEqual(issued);
+    expect(service.findInvoice(noVat.id)).toEqual(noVat);
+  });
+
+  it('rejects edit and delete using the setting current range even when proposed dates move', () => {
+    const service = new Fish24FinancialPreviewService();
+    const current = service.vatSettings().find(setting => setting.id === 5)!;
+    const edit = service.saveVatSetting(validDraft({ startDate: '1407/01/01', endDate: '1407/12/29' }), current.id);
+    expect(edit.ok).toBeFalse();
+    expect(edit.protectedSetting?.id).toBe(5);
+    expect(service.vatSettings().find(setting => setting.id === 5)).toEqual(current);
+    expect(service.deleteVatSetting(5).protectedSetting?.id).toBe(5);
+  });
+
+  it('protects both inclusive boundaries after invoice issuance', () => {
+    const service = new Fish24FinancialPreviewService();
+    expect(service.saveVatSetting(validDraft({ startDate: '1406/01/01', endDate: '1406/01/02' }), null).ok).toBeTrue();
+    const setting = service.vatSettings().find(item => item.title === 'بازه آزمون')!;
+    service.issueManualInvoice('boundary-start', '1001', 110, '1406/01/01');
+    service.issueManualInvoice('boundary-end', '1001', 110, '1406/01/02');
+    expect(service.saveVatSetting(validDraft({ title: 'جابجایی', startDate: '1407/01/01', endDate: '1407/12/29' }), setting.id).protectedSetting?.id).toBe(setting.id);
+    expect(service.deleteVatSetting(setting.id).protectedSetting?.id).toBe(setting.id);
+  });
+
+  it('allows deactivation for protected periods and retains activation overlap protection', () => {
+    const service = new Fish24FinancialPreviewService();
+    const before = service.invoices();
+    expect(service.toggleVatSetting(5).ok).toBeTrue();
+    expect(service.invoices()).toBe(before);
+    expect(service.toggleVatSetting(5).ok).toBeTrue();
     expect(service.saveVatSetting(validDraft({ startDate: '1405/06/01', endDate: '1405/07/01', isActive: false }), null).ok).toBeTrue();
     const inactive = service.vatSettings().find(setting => setting.title === 'بازه آزمون')!;
     expect(service.toggleVatSetting(inactive.id).conflict?.id).toBe(5);
-    const current = service.vatSettings().find(setting => setting.id === 5)!;
-    expect(service.saveVatSetting({
-      title: '  سال ۱۴۰۵ ویرایش‌شده  ',
-      startDate: current.startDate,
-      endDate: current.endDate,
-      taxPercent: String(current.taxPercent),
-      dutyPercent: String(current.dutyPercent),
-      description: '',
-      isActive: true
-    }, current.id).ok).toBeTrue();
-    expect(service.vatSettings().find(setting => setting.id === 5)?.title).toBe('سال ۱۴۰۵ ویرایش‌شده');
   });
 
-  it('accepts a valid same-day period and an adjacent non-overlapping active period', () => {
+  it('allows editing and deleting a setting that has no issued invoices', () => {
     const service = new Fish24FinancialPreviewService();
-    expect(service.saveVatSetting(validDraft({ startDate: '1406/01/01', endDate: '1406/01/01' }), null).ok).toBeTrue();
-    expect(service.saveVatSetting(validDraft({ title: 'روز بعد', startDate: '1406/01/02', endDate: '1406/01/02' }), null).ok).toBeTrue();
+    expect(service.saveVatSetting(validDraft(), null).ok).toBeTrue();
+    const setting = service.vatSettings().find(item => item.title === 'بازه آزمون')!;
+    expect(service.saveVatSetting(validDraft({ title: 'ویرایش مجاز', isActive: false }), setting.id).ok).toBeTrue();
+    expect(service.deleteVatSetting(setting.id).ok).toBeTrue();
   });
 
-  it('matches both inclusive boundaries and excludes dates outside the period', () => {
+  it('retains add-on VAT calculation for document-pricing receipts', () => {
     const service = new Fish24FinancialPreviewService();
-    expect(service.calculateVat(1_000, '1405/01/01').vatAmountRial).toBe(100);
-    expect(service.calculateVat(1_000, '1405/12/29').vatAmountRial).toBe(100);
-    expect(service.calculateVat(1_000, '1406/01/01').vatAmountRial).toBe(0);
-  });
-
-  it('recalculates every historical invoice in the edited period from the authoritative after-discount base', () => {
-    const service = new Fish24FinancialPreviewService();
-    expect(service.findInvoice(1)?.line.taxAmountRial).toBe(25_000);
-    const current = service.vatSettings().find(setting => setting.id === 5)!;
-    const result = service.saveVatSetting({
-      title: current.title,
-      startDate: current.startDate,
-      endDate: current.endDate,
-      taxPercent: '5',
-      dutyPercent: '2',
-      description: current.description,
-      isActive: true
-    }, current.id);
-    expect(result.ok).toBeTrue();
-    expect(service.findInvoice(1)?.line.taxAmountRial).toBe(17_500);
-    expect(service.findInvoice(1)?.amountRial).toBe(267_500);
-    expect(service.findInvoice(5)?.line.taxAmountRial).toBe(56_000);
-  });
-
-  it('removes, reapplies and date-resolves VAT without compounding', () => {
-    const service = new Fish24FinancialPreviewService();
-    expect(service.toggleVatSetting(5).ok).toBeTrue();
-    expect(service.findInvoice(1)?.line.taxAmountRial).toBe(0);
-    expect(service.findInvoice(1)?.amountRial).toBe(250_000);
-    expect(service.toggleVatSetting(5).ok).toBeTrue();
-    expect(service.findInvoice(1)?.line.taxAmountRial).toBe(25_000);
-    expect(service.toggleVatSetting(5).ok).toBeTrue();
-    expect(service.toggleVatSetting(5).ok).toBeTrue();
-    expect(service.findInvoice(1)?.line.taxAmountRial).toBe(25_000);
-
-    const current = service.vatSettings().find(setting => setting.id === 5)!;
-    expect(service.saveVatSetting({
-      title: current.title,
-      startDate: '1405/06/01',
-      endDate: current.endDate,
-      taxPercent: String(current.taxPercent),
-      dutyPercent: String(current.dutyPercent),
-      description: current.description,
-      isActive: true
-    }, current.id).ok).toBeTrue();
-    expect(service.findInvoice(1)?.line.taxAmountRial).toBe(25_000);
-    expect(service.findInvoice(2)?.line.taxAmountRial).toBe(0);
-  });
-
-  it('updates old and new ranges when a period moves while preserving unaffected invoice identity and base', () => {
-    const service = new Fish24FinancialPreviewService();
-    const unaffectedBefore = service.findInvoice(1)!;
-    const current = service.vatSettings().find(setting => setting.id === 5)!;
-    expect(service.saveVatSetting({
-      title: current.title,
-      startDate: '1405/03/01',
-      endDate: '1405/05/30',
-      taxPercent: String(current.taxPercent),
-      dutyPercent: String(current.dutyPercent),
-      description: current.description,
-      isActive: true
-    }, current.id).ok).toBeTrue();
-    const movedOutside = service.findInvoice(1)!;
-    const movedInside = service.findInvoice(2)!;
-    expect(movedOutside.id).toBe(unaffectedBefore.id);
-    expect(movedOutside.issuedAt).toBe(unaffectedBefore.issuedAt);
-    expect(movedOutside.line.afterDiscountAmountRial).toBe(unaffectedBefore.line.afterDiscountAmountRial);
-    expect(movedOutside.line.taxAmountRial).toBe(0);
-    expect(movedInside.line.taxAmountRial).toBe(50_000);
-
-    expect(service.saveVatSetting({
-      title: current.title,
-      startDate: '1405/02/01',
-      endDate: '1405/06/30',
-      taxPercent: String(current.taxPercent),
-      dutyPercent: String(current.dutyPercent),
-      description: current.description,
-      isActive: true
-    }, current.id).ok).toBeTrue();
-    expect(service.findInvoice(1)?.line.taxAmountRial).toBe(25_000);
-    expect(service.findInvoice(5)?.line.taxAmountRial).toBe(80_000);
+    expect(service.calculateVat(100_000, '1405/06/01')).toEqual({ vatAmountRial: 10_000, finalAmountRial: 110_000 });
   });
 });

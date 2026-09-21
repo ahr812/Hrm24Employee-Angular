@@ -3,7 +3,8 @@ import {
   EMPLOYER_INVOICE_PREVIEWS,
   EmployerInvoicePreview,
   Fish24FormalInvoiceSource,
-  LEGACY_FORMAL_INVOICE_PREVIEWS
+  LEGACY_FORMAL_INVOICE_PREVIEWS,
+  isLegacyFormalInvoice
 } from '../../../features/fish24/employer/invoices/employer-invoice-preview.data';
 
 const PERSIAN_DIGITS = '۰۱۲۳۴۵۶۷۸۹';
@@ -35,6 +36,15 @@ export interface VatMutationResult {
   readonly ok: boolean;
   readonly fieldErrors: Readonly<Record<string, string>>;
   readonly conflict?: VatSettingRecord;
+  readonly protectedSetting?: VatSettingRecord;
+}
+
+export interface VatInclusiveSplit {
+  readonly grossAmountRial: number;
+  readonly baseAmountRial: number;
+  readonly taxAmountRial: number;
+  readonly vatRatePercent: number;
+  readonly vatSettingId: number | null;
 }
 
 export interface ManualInvoiceMutationResult {
@@ -106,7 +116,7 @@ export class Fish24FinancialPreviewService {
     ...invoice,
     line: { ...invoice.line }
   }));
-  private readonly invoicesState = signal<readonly EmployerInvoicePreview[]>([]);
+  private readonly invoicesState = signal<readonly EmployerInvoicePreview[]>(this.baseInvoices);
   private readonly manualBaseInvoicesState = signal<readonly EmployerInvoicePreview[]>([]);
 
   readonly vatSettings = this.settingsState.asReadonly();
@@ -116,10 +126,6 @@ export class Fish24FinancialPreviewService {
     ...LEGACY_FORMAL_INVOICE_PREVIEWS
   ]);
   readonly activeVatSettings = computed(() => this.settingsState().filter(setting => setting.isActive));
-
-  constructor() {
-    this.recalculateInvoices(this.settingsState());
-  }
 
   findInvoice(id: number): EmployerInvoicePreview | null {
     return this.invoicesState().find(invoice => invoice.id === id) ?? null;
@@ -134,38 +140,40 @@ export class Fish24FinancialPreviewService {
     }
     const id = Math.max(0, ...this.invoicesState().map(invoice => invoice.id)) + 1;
     const invoiceNumber = String(Math.max(22560, ...this.invoicesState().map(invoice => Number(invoice.invoiceNumber) || 0)) + 1);
-    const tax = this.calculateVat(amountRial, normalizedDate);
+    const split = this.splitVatIncluded(amountRial, normalizedDate);
     const invoice: EmployerInvoicePreview = {
       id,
       employerId,
       title: 'فاکتور تراکنش دستی',
       invoiceNumber,
       issuedAt: normalizedDate,
-      amountRial: tax.finalAmountRial,
+      amountRial: split.grossAmountRial,
+      vatRatePercent: split.vatRatePercent,
+      vatSettingId: split.vatSettingId,
       sourceTransactionId,
       line: {
         code: `MAN-${id}`,
         description: 'تراکنش دستی کیف پول',
         quantity: '۱',
         unit: 'خدمت',
-        unitAmountRial: amountRial,
-        totalAmountRial: amountRial,
+        unitAmountRial: split.baseAmountRial,
+        totalAmountRial: split.baseAmountRial,
         discountAmountRial: 0,
-        afterDiscountAmountRial: amountRial,
-        taxAmountRial: tax.vatAmountRial,
-        finalAmountRial: tax.finalAmountRial
+        afterDiscountAmountRial: split.baseAmountRial,
+        taxAmountRial: split.taxAmountRial,
+        finalAmountRial: split.grossAmountRial
       }
     };
     this.manualBaseInvoicesState.update(invoices => [invoice, ...invoices]);
-    this.recalculateInvoices(this.settingsState());
-    return { ok: true, invoice: this.findInvoice(id)!, existing: false };
+    this.invoicesState.update(invoices => [invoice, ...invoices]);
+    return { ok: true, invoice, existing: false };
   }
 
   deleteManualInvoice(sourceTransactionId: string): boolean {
     const current = this.manualBaseInvoicesState();
     if (!current.some(invoice => invoice.sourceTransactionId === sourceTransactionId)) return false;
     this.manualBaseInvoicesState.set(current.filter(invoice => invoice.sourceTransactionId !== sourceTransactionId));
-    this.recalculateInvoices(this.settingsState());
+    this.invoicesState.update(invoices => invoices.filter(invoice => invoice.sourceTransactionId !== sourceTransactionId));
     return true;
   }
 
@@ -173,14 +181,18 @@ export class Fish24FinancialPreviewService {
     const validated = this.validateDraft(draft);
     if (!validated.ok || !validated.record) return { ok: false, fieldErrors: validated.fieldErrors };
     const candidate = validated.record;
+    const current = this.settingsState();
+    const existing = editingId === null ? null : current.find(setting => setting.id === editingId) ?? null;
+    if (editingId !== null && !existing) return { ok: false, fieldErrors: {} };
+    if (existing && this.hasInvoiceInRange(existing)) {
+      return { ok: false, fieldErrors: {}, protectedSetting: existing };
+    }
     const conflict = candidate.isActive
       ? this.settingsState().find(setting => setting.isActive && setting.id !== editingId && vatPeriodsOverlap(candidate, setting))
       : undefined;
     if (conflict) return { ok: false, fieldErrors: {}, conflict };
 
-    const current = this.settingsState();
     const nextId = editingId ?? Math.max(0, ...current.map(setting => setting.id)) + 1;
-    const existing = editingId === null ? null : current.find(setting => setting.id === editingId) ?? null;
     const saved: VatSettingRecord = {
       ...candidate,
       id: nextId,
@@ -189,7 +201,7 @@ export class Fish24FinancialPreviewService {
     const nextSettings = existing
       ? current.map(setting => setting.id === editingId ? saved : setting)
       : [saved, ...current];
-    this.commitFinancialState(nextSettings);
+    this.settingsState.set(nextSettings);
     return { ok: true, fieldErrors: {} };
   }
 
@@ -202,7 +214,15 @@ export class Fish24FinancialPreviewService {
       if (conflict) return { ok: false, fieldErrors: {}, conflict };
     }
     const nextSettings = current.map(setting => setting.id === id ? { ...setting, isActive: !setting.isActive } : setting);
-    this.commitFinancialState(nextSettings);
+    this.settingsState.set(nextSettings);
+    return { ok: true, fieldErrors: {} };
+  }
+
+  deleteVatSetting(id: number): VatMutationResult {
+    const target = this.settingsState().find(setting => setting.id === id);
+    if (!target) return { ok: false, fieldErrors: {} };
+    if (this.hasInvoiceInRange(target)) return { ok: false, fieldErrors: {}, protectedSetting: target };
+    this.settingsState.update(settings => settings.filter(setting => setting.id !== id));
     return { ok: true, fieldErrors: {} };
   }
 
@@ -214,6 +234,24 @@ export class Fish24FinancialPreviewService {
     const totalPercent = setting ? setting.taxPercent + setting.dutyPercent : 0;
     const vatAmountRial = Math.round(baseAmountRial * totalPercent / 100);
     return { vatAmountRial, finalAmountRial: baseAmountRial + vatAmountRial };
+  }
+
+  splitVatIncluded(grossAmountRial: number, issueDate: string, settings: readonly VatSettingRecord[] = this.settingsState()): VatInclusiveSplit {
+    const normalizedDate = normalizeJalaliDate(issueDate);
+    const setting = normalizedDate
+      ? settings.find(item => item.isActive && item.startDate <= normalizedDate && item.endDate >= normalizedDate)
+      : undefined;
+    const vatRatePercent = setting ? setting.taxPercent + setting.dutyPercent : 0;
+    const baseAmountRial = vatRatePercent === 0
+      ? grossAmountRial
+      : Math.round(grossAmountRial / (1 + vatRatePercent / 100));
+    return {
+      grossAmountRial,
+      baseAmountRial,
+      taxAmountRial: grossAmountRial - baseAmountRial,
+      vatRatePercent,
+      vatSettingId: setting?.id ?? null
+    };
   }
 
   private validateDraft(draft: VatSettingDraft): { ok: boolean; record?: VatSettingRecord; fieldErrors: Readonly<Record<string, string>> } {
@@ -242,24 +280,10 @@ export class Fish24FinancialPreviewService {
     };
   }
 
-  private commitFinancialState(settings: readonly VatSettingRecord[]): void {
-    const recalculated = this.buildRecalculatedInvoices(settings);
-    this.settingsState.set(settings);
-    this.invoicesState.set(recalculated);
-  }
-
-  private recalculateInvoices(settings: readonly VatSettingRecord[]): void {
-    this.invoicesState.set(this.buildRecalculatedInvoices(settings));
-  }
-
-  private buildRecalculatedInvoices(settings: readonly VatSettingRecord[]): readonly EmployerInvoicePreview[] {
-    return [...this.manualBaseInvoicesState(), ...this.baseInvoices].map(invoice => {
-      const result = this.calculateVat(invoice.line.afterDiscountAmountRial, invoice.issuedAt, settings);
-      return {
-        ...invoice,
-        amountRial: result.finalAmountRial,
-        line: { ...invoice.line, taxAmountRial: result.vatAmountRial, finalAmountRial: result.finalAmountRial }
-      };
+  private hasInvoiceInRange(setting: Pick<VatSettingRecord, 'startDate' | 'endDate'>): boolean {
+    return this.formalInvoiceSources().some(source => {
+      const issueDate = isLegacyFormalInvoice(source) ? source.issueDate : source.issuedAt;
+      return issueDate !== null && issueDate >= setting.startDate && issueDate <= setting.endDate;
     });
   }
 

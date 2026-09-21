@@ -18,6 +18,10 @@ export interface InternalFormalInvoiceListItem {
   readonly amountRial: number;
   readonly baseAmountRial: number;
   readonly taxAmountRial: number;
+  readonly voucherEligibility: 'credit' | 'debit' | 'unknown';
+  readonly voucherAmountRial: number;
+  readonly voucherDate: string;
+  readonly trackingIdentifier: string | null;
   readonly linkedTransactionId: string | null;
   readonly printableInvoiceId: number | null;
   readonly deletionEligible: boolean;
@@ -84,6 +88,10 @@ export class Fish24InternalInvoicePreviewService {
         amountRial: source.amountRial,
         baseAmountRial: source.baseAmountRial,
         taxAmountRial: source.taxAmountRial,
+        voucherEligibility: source.accountingVoucherProvenance,
+        voucherAmountRial: source.amountRial,
+        voucherDate: source.issueDate,
+        trackingIdentifier: source.trackingNumber,
         linkedTransactionId: null,
         printableInvoiceId: null,
         deletionEligible: false,
@@ -114,6 +122,10 @@ export class Fish24InternalInvoicePreviewService {
       amountRial: source.amountRial,
       baseAmountRial: source.line.afterDiscountAmountRial,
       taxAmountRial: source.line.taxAmountRial,
+      voucherEligibility: transaction?.direction ?? 'unknown',
+      voucherAmountRial: transaction?.amountRial ?? source.amountRial,
+      voucherDate: transaction?.createdAt.slice(0, 10) ?? source.issuedAt,
+      trackingIdentifier: transaction?.trackingCode?.trim() || null,
       linkedTransactionId: transaction?.id ?? null,
       printableInvoiceId: source.id,
       deletionEligible: transaction?.origin === 'manual',

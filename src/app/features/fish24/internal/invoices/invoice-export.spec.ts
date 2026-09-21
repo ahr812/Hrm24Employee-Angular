@@ -6,6 +6,7 @@ describe('specialized invoice export', () => {
     sourceIdentity: 'legacy-leading-zero', employerId: '1007', formalInvoiceNumber: '00022343', issueDate: '1405/06/21',
     mobile: '09123334455', name: 'حامد اکبری', companyName: 'کارگاه توسعه پارس', userType: 'حقوقی',
     title: 'فاکتور شارژ کیف پول', amountRial: 550_000_000, baseAmountRial: 500_000_000, taxAmountRial: 50_000_000,
+    voucherEligibility: 'credit', voucherAmountRial: 550_000_000, voucherDate: '1405/06/21', trackingIdentifier: null,
     linkedTransactionId: null, printableInvoiceId: null, deletionEligible: false, sourceKind: 'legacy', originalSource: {} as never,
     ...overrides
   });

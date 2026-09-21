@@ -46,6 +46,15 @@ describe('Fish24InternalInvoicePreviewService', () => {
     expect(service.invoices().find(invoice => invoice.formalInvoiceNumber === '00022343')?.employerId).toBe('1007');
   });
 
+  it('uses explicit transaction provenance and stored transaction facts for voucher eligibility', () => {
+    const { service } = setup();
+    const linkedCredit = service.invoices().find(invoice => invoice.formalInvoiceNumber === '22561')!;
+    expect([linkedCredit.voucherEligibility, linkedCredit.voucherAmountRial, linkedCredit.voucherDate, linkedCredit.trackingIdentifier])
+      .toEqual(['credit', 250_000, '1405/06/14', 'TRX-22561']);
+    expect(service.invoices().find(invoice => invoice.formalInvoiceNumber === '22563')?.voucherEligibility).toBe('unknown');
+    expect(service.invoices().find(invoice => invoice.formalInvoiceNumber === '00022343')?.voucherEligibility).toBe('credit');
+  });
+
   it('deletes a disposable manual invoice without changing the transaction or wallet facts', () => {
     const { wallet, transactions, service } = setup();
     const created = transactions.createManualTransaction({ requestId: 'invoice-deletion-proof', employerId: '1001', mobile: '09121234567', fullName: 'مریم احمدی', companyName: 'مجموعه نمونه سپهر', workplaceName: 'مجموعه نمونه سپهر', userType: 'حقوقی', amountRial: '125000', direction: 'debit', createdAt: '1405/06/22 11:20' }).transaction!;
@@ -54,6 +63,7 @@ describe('Fish24InternalInvoicePreviewService', () => {
     const listItem = service.invoices().find(invoice => invoice.linkedTransactionId === created.id)!;
     const factsBefore = wallet.transactions().find(transaction => transaction.id === created.id)!;
     expect(listItem.deletionEligible).toBeTrue();
+    expect(listItem.voucherEligibility).toBe('debit');
     expect(service.deleteManualInvoice(listItem.sourceIdentity).ok).toBeTrue();
     const factsAfter = wallet.transactions().find(transaction => transaction.id === created.id)!;
     expect(service.find(listItem.sourceIdentity)).toBeNull();

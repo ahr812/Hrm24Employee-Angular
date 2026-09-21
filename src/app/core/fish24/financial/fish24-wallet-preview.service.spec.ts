@@ -44,13 +44,16 @@ describe('Fish24WalletPreviewService manual transactions', () => {
     const created = wallet.createManualTransaction({ requestId: 'request-invoice', employerId: '1001', mobile: '09121234567', fullName: 'مریم احمدی', companyName: 'مجموعه نمونه سپهر', workplaceName: 'مجموعه نمونه سپهر', userType: 'حقوقی', amountRial: '1000000', direction: 'debit', createdAt: '1405/06/20 10:00' }).transaction!;
     const balanceAfterTransaction = wallet.balance('1001');
     const invoice = transactions.issueFormalInvoice(created.id).invoice!;
-    expect(invoice.line.taxAmountRial).toBe(100_000);
+    expect(invoice.line.taxAmountRial).toBe(90_909);
+    expect(invoice.line.afterDiscountAmountRial).toBe(909_091);
+    expect(invoice.amountRial).toBe(created.amountRial);
     expect(wallet.transactions().find(item => item.id === created.id)?.formalInvoiceNumber).toBe(invoice.invoiceNumber);
     expect(transactions.issueFormalInvoice(created.id).existing).toBeTrue();
     const manualCredit = wallet.transactions().find(item => item.id === '4003')!;
     expect(transactions.issueFormalInvoice(manualCredit.id).ok).toBeTrue();
     expect(wallet.transactions().find(item => item.id === manualCredit.id)?.formalInvoiceNumber).not.toBeNull();
     expect(wallet.balance('1001')).toBe(balanceAfterTransaction);
+    expect(wallet.transactions().find(item => item.id === created.id)?.amountRial).toBe(1_000_000);
     expect(transactions.deleteFormalInvoice(created.id).ok).toBeTrue();
     expect(wallet.transactions().find(item => item.id === created.id)?.amountRial).toBe(1_000_000);
     expect(wallet.transactions().find(item => item.id === created.id)?.formalInvoiceNumber).toBeNull();
