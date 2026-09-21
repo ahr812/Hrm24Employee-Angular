@@ -17,10 +17,10 @@ describe('Fish24FinancialPreviewService', () => {
 
   it('keeps historical invoice snapshots unchanged on construction', () => {
     const service = new Fish24FinancialPreviewService();
-    expect(service.findInvoice(1)?.amountRial).toBe(267_000);
-    expect(service.findInvoice(1)?.line.afterDiscountAmountRial).toBe(250_000);
-    expect(service.findInvoice(1)?.line.taxAmountRial).toBe(17_000);
-    expect(service.findInvoice(1)?.vatSettingId).toBeNull();
+    expect(service.findInvoice(1)?.amountRial).toBe(250_000);
+    expect(service.findInvoice(1)?.line.afterDiscountAmountRial).toBe(227_273);
+    expect(service.findInvoice(1)?.line.taxAmountRial).toBe(22_727);
+    expect([service.findInvoice(1)?.vatRatePercent, service.findInvoice(1)?.vatSettingId]).toEqual([10, 5]);
   });
 
   it('splits VAT-inclusive gross to whole rials and reconciles exactly', () => {

@@ -5,6 +5,7 @@ import { compareFormalNumbers, Fish24InternalInvoicePreviewService } from './fis
 import { Fish24TransactionPreviewService } from './fish24-transaction-preview.service';
 import { Fish24WalletPreviewService } from './fish24-wallet-preview.service';
 import { BusinessUserPreviewService } from '../../../features/fish24/internal/users/business-user-preview.service';
+import { buildAccountingVoucherExport } from '../../../features/fish24/internal/invoices/accounting-voucher-export';
 
 describe('Fish24InternalInvoicePreviewService', () => {
   function setup() {
@@ -50,9 +51,40 @@ describe('Fish24InternalInvoicePreviewService', () => {
     const { service } = setup();
     const linkedCredit = service.invoices().find(invoice => invoice.formalInvoiceNumber === '22561')!;
     expect([linkedCredit.voucherEligibility, linkedCredit.voucherAmountRial, linkedCredit.voucherDate, linkedCredit.trackingIdentifier])
-      .toEqual(['credit', 250_000, '1405/06/14', 'TRX-22561']);
-    expect(service.invoices().find(invoice => invoice.formalInvoiceNumber === '22563')?.voucherEligibility).toBe('unknown');
+      .toEqual(['credit', 250_000, '1405/06/14', '014101']);
+    expect(service.invoices().find(invoice => invoice.formalInvoiceNumber === '22562')?.trackingIdentifier).toBe('014096');
+    expect(['22563', '22564', '22565'].every(number =>
+      service.invoices().find(invoice => invoice.formalInvoiceNumber === number)?.voucherEligibility === 'credit'
+    )).toBeTrue();
     expect(service.invoices().find(invoice => invoice.formalInvoiceNumber === '00022343')?.voucherEligibility).toBe('credit');
+  });
+
+  it('reconciles all six demo invoices into balanced voucher pairs', () => {
+    const { wallet, service } = setup();
+    const invoices = service.invoices();
+    const result = buildAccountingVoucherExport(invoices);
+    expect(invoices.length).toBe(6);
+    expect(invoices.every(invoice => invoice.voucherEligibility === 'credit')).toBeTrue();
+    expect(Object.fromEntries(invoices.map(invoice => [invoice.formalInvoiceNumber, invoice.employerId]))).toEqual({
+      '22561': '1001', '22562': '1002', '22563': '1007', '22564': '1001', '22565': '1002', '00022343': '1007'
+    });
+    expect(result.exportedInvoiceCount).toBe(6);
+    expect(result.rows.length).toBe(12);
+    expect(result.excludedUnknownSources).toEqual([]);
+    expect(result.incompatibleTrackingSources).toEqual([]);
+    for (let index = 0; index < result.rows.length; index += 2) {
+      expect(result.rows[index][12]).toBe(result.rows[index + 1][13]);
+    }
+    const debit = result.rows.reduce((sum, row) => sum + Number(row[12]), 0);
+    const credit = result.rows.reduce((sum, row) => sum + Number(row[13]), 0);
+    expect([debit, credit]).toEqual([552_696_000, 552_696_000]);
+    for (const invoice of invoices.filter(item => item.linkedTransactionId !== null)) {
+      const transaction = wallet.transactions().find(item => item.id === invoice.linkedTransactionId)!;
+      expect(invoice.amountRial).toBe(transaction.amountRial);
+      expect(invoice.baseAmountRial + invoice.taxAmountRial).toBe(invoice.amountRial);
+      expect(invoice.voucherAmountRial).toBe(invoice.amountRial);
+    }
+    expect([wallet.balance('1001'), wallet.balance('1002'), wallet.balance('1007')]).toEqual([75_000_000, 18_000_000, 0]);
   });
 
   it('deletes a disposable manual invoice without changing the transaction or wallet facts', () => {

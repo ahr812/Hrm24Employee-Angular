@@ -31,9 +31,12 @@ export interface EmployerInvoicePreview {
   readonly invoiceNumber: string;
   readonly issuedAt: string;
   readonly amountRial: number;
-  /** Issuance-time VAT snapshot. Historical preview fixtures predate this metadata. */
+  /** Issuance-time VAT snapshot. Null only for fixtures that predate this metadata. */
   readonly vatRatePercent: number | null;
   readonly vatSettingId: number | null;
+  /** Explicit fixture provenance used only when no authoritative transaction is linked. */
+  readonly accountingVoucherProvenance: 'credit' | 'unknown';
+  readonly trackingNumber: string | null;
   readonly line: EmployerInvoiceLinePreview;
   readonly sourceTransactionId?: string;
 }
@@ -95,10 +98,12 @@ export const EMPLOYER_INVOICE_PREVIEWS: readonly EmployerInvoicePreview[] = [
     title: 'فاکتور شارژ کیف پول',
     invoiceNumber: '22561',
     issuedAt: '1405/06/17',
-    amountRial: 267_000,
-    vatRatePercent: null,
-    vatSettingId: null,
-    line: { code: '10001', description: 'سامانه فیش حقوق', quantity: '۱', unit: 'خدمت', unitAmountRial: 250_000, totalAmountRial: 250_000, discountAmountRial: 0, afterDiscountAmountRial: 250_000, taxAmountRial: 17_000, finalAmountRial: 267_000 }
+    amountRial: 250_000,
+    vatRatePercent: 10,
+    vatSettingId: 5,
+    accountingVoucherProvenance: 'credit',
+    trackingNumber: null,
+    line: { code: '10001', description: 'سامانه فیش حقوق', quantity: '۱', unit: 'خدمت', unitAmountRial: 227_273, totalAmountRial: 227_273, discountAmountRial: 0, afterDiscountAmountRial: 227_273, taxAmountRial: 22_727, finalAmountRial: 250_000 }
   },
   {
     id: 2,
@@ -106,10 +111,12 @@ export const EMPLOYER_INVOICE_PREVIEWS: readonly EmployerInvoicePreview[] = [
     title: 'فاکتور شارژ کیف پول',
     invoiceNumber: '22562',
     issuedAt: '1405/05/29',
-    amountRial: 534_000,
-    vatRatePercent: null,
-    vatSettingId: null,
-    line: { code: '10002', description: 'سامانه فیش حقوق', quantity: '۱', unit: 'خدمت', unitAmountRial: 500_000, totalAmountRial: 500_000, discountAmountRial: 0, afterDiscountAmountRial: 500_000, taxAmountRial: 34_000, finalAmountRial: 534_000 }
+    amountRial: 500_000,
+    vatRatePercent: 10,
+    vatSettingId: 5,
+    accountingVoucherProvenance: 'credit',
+    trackingNumber: null,
+    line: { code: '10002', description: 'سامانه فیش حقوق', quantity: '۱', unit: 'خدمت', unitAmountRial: 454_545, totalAmountRial: 454_545, discountAmountRial: 0, afterDiscountAmountRial: 454_545, taxAmountRial: 45_455, finalAmountRial: 500_000 }
   },
   {
     id: 3,
@@ -121,6 +128,8 @@ export const EMPLOYER_INVOICE_PREVIEWS: readonly EmployerInvoicePreview[] = [
     amountRial: 712_000,
     vatRatePercent: null,
     vatSettingId: null,
+    accountingVoucherProvenance: 'credit',
+    trackingNumber: null,
     line: { code: '10003', description: 'سامانه فیش حقوق', quantity: '۱', unit: 'خدمت', unitAmountRial: 680_000, totalAmountRial: 680_000, discountAmountRial: 0, afterDiscountAmountRial: 680_000, taxAmountRial: 32_000, finalAmountRial: 712_000 }
   },
   {
@@ -133,6 +142,8 @@ export const EMPLOYER_INVOICE_PREVIEWS: readonly EmployerInvoicePreview[] = [
     amountRial: 389_000,
     vatRatePercent: null,
     vatSettingId: null,
+    accountingVoucherProvenance: 'credit',
+    trackingNumber: null,
     line: { code: '10004', description: 'سامانه فیش حقوق', quantity: '۱', unit: 'خدمت', unitAmountRial: 370_000, totalAmountRial: 370_000, discountAmountRial: 0, afterDiscountAmountRial: 370_000, taxAmountRial: 19_000, finalAmountRial: 389_000 }
   },
   {
@@ -145,6 +156,8 @@ export const EMPLOYER_INVOICE_PREVIEWS: readonly EmployerInvoicePreview[] = [
     amountRial: 845_000,
     vatRatePercent: null,
     vatSettingId: null,
+    accountingVoucherProvenance: 'credit',
+    trackingNumber: null,
     line: { code: '10005', description: 'سامانه فیش حقوق', quantity: '۱', unit: 'خدمت', unitAmountRial: 800_000, totalAmountRial: 800_000, discountAmountRial: 0, afterDiscountAmountRial: 800_000, taxAmountRial: 45_000, finalAmountRial: 845_000 }
   }
 ];

@@ -150,6 +150,8 @@ export class Fish24FinancialPreviewService {
       amountRial: split.grossAmountRial,
       vatRatePercent: split.vatRatePercent,
       vatSettingId: split.vatSettingId,
+      accountingVoucherProvenance: 'unknown',
+      trackingNumber: null,
       sourceTransactionId,
       line: {
         code: `MAN-${id}`,
