@@ -1,5 +1,9 @@
 # Fish24 deferred work
 
+## Internal sent-SMS history
+
+The user intends to revisit this read-only page later. Delivery-status display and resend functionality remain deferred candidates and require future business decisions; no placeholder action or column is included now.
+
 ## Internal formal invoice exports
 
 All three specialized invoice-list exports are implemented from their supplied reference samples. «خروجی فاکتور» uses the exact 45-column schema. «خروجی سند حسابداری» uses the exact 16-column schema and creates one balanced two-row voucher for every invoice in the applied main-filter results, regardless of transaction direction or provenance. «خروجی تفصیلی مشتریان» uses the exact 16-column customer schema and exports one current employer profile per distinct employer in first-occurrence order. Specialized exports ignore column selection, header searches, table sorting and pagination.

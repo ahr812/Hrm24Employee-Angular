@@ -113,8 +113,15 @@ export const FISH24_ADMIN_NAV_CONFIG: readonly Fish24NavItem[] = [
     id: 'fish24-admin-tickets',
     label: 'تیکت ها و پیام ها',
     icon: 'message-circle',
-    permission: 'tickets-messages'
-    // Future: route: '/fish24/admin/tickets'
+    permission: 'tickets-messages',
+    children: [
+      {
+        id: 'fish24-admin-sms-history',
+        label: 'لیست پیام کوتاه',
+        permission: 'tickets-messages',
+        route: '/fish24/internal/sms-history'
+      }
+    ]
   },
   {
     id: 'fish24-admin-discounts',

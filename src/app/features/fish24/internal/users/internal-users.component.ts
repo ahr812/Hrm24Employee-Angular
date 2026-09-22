@@ -12,6 +12,7 @@ import { BusinessUserPreviewService, BusinessUserRecord, BusinessUserRole, Emplo
 import { InternalListColumn, InternalListColumnSearches, InternalListSort, filterByInternalListColumns, nextInternalListSort, sortInternalListRows } from '../../../../shared/ui/data-list/internal-list.model';
 import { InternalListPreferencesService } from '../../../../shared/ui/data-list/internal-list-preferences.service';
 import { PlainXlsxService } from '../../../../shared/ui/data-list/plain-xlsx.service';
+import { InternalSmsHistoryPreviewService } from '../sms/internal-sms-history-preview.service';
 
 type UserCapability = Fish24RoleId;
 type RoleFilter = 'all' | BusinessUserRole;
@@ -593,6 +594,7 @@ export class InternalUsersComponent {
   private readonly businessUserService = inject(BusinessUserPreviewService);
   private readonly listPreferences = inject(InternalListPreferencesService);
   private readonly xlsxService = inject(PlainXlsxService);
+  private readonly smsHistory = inject(InternalSmsHistoryPreviewService);
   private readonly restoredMainFilters = this.listPreferences.loadFilters(
     BUSINESS_USER_LIST_ID,
     BUSINESS_USER_FILTER_DEFAULTS,
@@ -644,6 +646,8 @@ export class InternalUsersComponent {
   readonly directSmsAttempted = signal(false);
   readonly operationsUserId = signal<number | null>(null);
   readonly pendingConfirmation = signal<PendingConfirmation | null>(null);
+  private groupSmsSubmissionKey = '';
+  private directSmsSubmissionKey = '';
 
   readonly activeRoles = computed(() => this.previewRoleService.getPreviewRoles());
 
@@ -894,21 +898,34 @@ export class InternalUsersComponent {
     this.groupSmsMessage.set('');
     this.groupSmsAudience.set('search-results');
     this.groupSmsAttempted.set(false);
+    this.groupSmsSubmissionKey = this.smsHistory.nextSubmissionKey('user-group');
     this.isGroupSmsOpen.set(true);
   }
 
   closeGroupSms(): void {
     this.isGroupSmsOpen.set(false);
     this.groupSmsAttempted.set(false);
+    this.groupSmsSubmissionKey = '';
   }
 
   submitGroupSms(event: Event): void {
     event.preventDefault();
     this.groupSmsAttempted.set(true);
-    if (!this.groupSmsMessage().trim()) {
+    const message = this.groupSmsMessage().trim();
+    const submissionKey = this.groupSmsSubmissionKey;
+    if (!this.isGroupSmsOpen() || !message || !submissionKey) {
       return;
     }
 
+    const recipients = (this.groupSmsAudience() === 'all' ? this.users() : this.filteredUsers())
+      .filter(user => user.roles.includes('employer'));
+    recipients.forEach(recipient => this.smsHistory.recordCompletedMockSend({
+      recipient,
+      message,
+      senderRole: this.previewRoleService.getPreviewRole(),
+      source: 'user-group',
+      submissionKey: `${submissionKey}:${recipient.id}`
+    }));
     this.closeGroupSms();
     this.toastService.show('ارسال واقعی انجام نشد؛ پیامک فقط در پیش‌نمایش بررسی شد.');
   }
@@ -926,11 +943,13 @@ export class InternalUsersComponent {
     this.directSmsUserId.set(user.id);
     this.directSmsMessage.set('');
     this.directSmsAttempted.set(false);
+    this.directSmsSubmissionKey = this.smsHistory.nextSubmissionKey('user-direct');
   }
 
   closeDirectSms(): void {
     this.directSmsUserId.set(null);
     this.directSmsAttempted.set(false);
+    this.directSmsSubmissionKey = '';
   }
 
   submitDirectSms(event: Event): void {
@@ -938,10 +957,19 @@ export class InternalUsersComponent {
     this.directSmsAttempted.set(true);
     const message = this.directSmsMessage().trim();
     this.directSmsMessage.set(message);
-    if (!this.directSmsUser() || !message) {
+    const recipient = this.directSmsUser();
+    const submissionKey = this.directSmsSubmissionKey;
+    if (!recipient || !message || !submissionKey) {
       return;
     }
 
+    this.smsHistory.recordCompletedMockSend({
+      recipient,
+      message,
+      senderRole: this.previewRoleService.getPreviewRole(),
+      source: 'user-direct',
+      submissionKey
+    });
     this.closeDirectSms();
     this.toastService.show('ارسال واقعی انجام نشد؛ پیامک مستقیم فقط در پیش‌نمایش بررسی شد.');
   }

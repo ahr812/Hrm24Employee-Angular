@@ -3,6 +3,7 @@ import { authGuard, guestGuard } from './core/auth/auth.guard';
 import { internalUserManagementGuard } from './core/fish24/permissions/internal-user-management.guard';
 import { financialManagementGuard } from './core/fish24/permissions/financial-management.guard';
 import { pricingManagementGuard } from './core/fish24/permissions/pricing-management.guard';
+import { ticketsMessagesGuard } from './core/fish24/permissions/tickets-messages.guard';
 
 export const routes: Routes = [
   { path: 'login', loadComponent: () => import('./features/auth/login/login.component').then(m => m.LoginComponent), canActivate: [guestGuard] },
@@ -20,6 +21,7 @@ export const routes: Routes = [
   { path: 'fish24/internal/sends', loadComponent: () => import('./features/fish24/internal/sends/internal-sends.component').then(m => m.InternalSendsComponent), canActivate: [authGuard, financialManagementGuard] },
   { path: 'fish24/internal/transactions', loadComponent: () => import('./features/fish24/internal/transactions/internal-transactions.component').then(m => m.InternalTransactionsComponent), canActivate: [authGuard, financialManagementGuard] },
   { path: 'fish24/internal/invoices', loadComponent: () => import('./features/fish24/internal/invoices/internal-invoices.component').then(m => m.InternalInvoicesComponent), canActivate: [authGuard, financialManagementGuard] },
+  { path: 'fish24/internal/sms-history', loadComponent: () => import('./features/fish24/internal/sms/internal-sms-history.component').then(m => m.InternalSmsHistoryComponent), canActivate: [authGuard, ticketsMessagesGuard] },
   { path: 'fish24/employer/dashboard', loadComponent: () => import('./features/fish24/employer/dashboard/employer-dashboard.component').then(m => m.EmployerDashboardComponent), canActivate: [authGuard] },
   { path: 'fish24/employer/profile', loadComponent: () => import('./features/fish24/employer/profile/employer-profile.component').then(m => m.EmployerProfileComponent), canActivate: [authGuard] },
   { path: 'fish24/employer/change-password', loadComponent: () => import('./features/fish24/employer/change-password/employer-change-password.component').then(m => m.EmployerChangePasswordComponent), canActivate: [authGuard] },
