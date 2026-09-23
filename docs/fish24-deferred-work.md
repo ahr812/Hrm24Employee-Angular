@@ -6,6 +6,12 @@ Employer and internal ticket screens use one in-memory preview source. Internal 
 
 Ticket `3004` is an explicit deterministic demonstration fixture for preview employer `user-1` (علی احمدی، `09123456789`). It contains an employer request, an internal Support reply and a small valid PDF attachment whose bytes are initialized from source on every application start. Its reappearance after refresh demonstrates fixture initialization only; it does not imply persistence for user-created tickets or attachments.
 
+## Internal news preview contract
+
+News and categories share one in-memory Signal source. News stores stable category IDs and may belong to multiple categories; displayed category names and distinct counts are always derived from those relationships. Linked categories cannot be deleted even when every linked news item is inactive. Deactivation removes a category from new assignments without deleting or deactivating existing news, and an existing inactive relationship is preserved during unrelated edits unless the editor explicitly removes it. News deletion removes the authoritative record and therefore all of its category relationships.
+
+Rich content is edited with the MIT-licensed Tiptap 3 editor and its official ProseMirror-based extensions for headings, lists, links, images, tables, alignment, direction, history and formatting. Angular renders previews through its normal sanitized `[innerHTML]` path; executable elements, event handlers and unsafe URL schemes are also removed before saving. Main, category and embedded images are validated as JPG/PNG/WebP up to 5 MB and represented as browser-memory data URLs when selected. These previews, newly created records and selected bytes do not persist across a full refresh and are not uploaded or published. Comment management is intentionally deferred to the next phase; fixture comment, like and view counts are display-only demonstration data.
+
 ## Internal sent-SMS history
 
 The user intends to revisit this read-only page later. Delivery-status display and resend functionality remain deferred candidates and require future business decisions; no placeholder action or column is included now.

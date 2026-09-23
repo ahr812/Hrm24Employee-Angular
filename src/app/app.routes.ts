@@ -4,6 +4,7 @@ import { internalUserManagementGuard } from './core/fish24/permissions/internal-
 import { financialManagementGuard } from './core/fish24/permissions/financial-management.guard';
 import { pricingManagementGuard } from './core/fish24/permissions/pricing-management.guard';
 import { ticketsMessagesGuard } from './core/fish24/permissions/tickets-messages.guard';
+import { newsManagementGuard } from './core/fish24/permissions/news-management.guard';
 
 export const routes: Routes = [
   { path: 'login', loadComponent: () => import('./features/auth/login/login.component').then(m => m.LoginComponent), canActivate: [guestGuard] },
@@ -24,6 +25,11 @@ export const routes: Routes = [
   { path: 'fish24/internal/sms-history', loadComponent: () => import('./features/fish24/internal/sms/internal-sms-history.component').then(m => m.InternalSmsHistoryComponent), canActivate: [authGuard, ticketsMessagesGuard] },
   { path: 'fish24/internal/tickets/:id', loadComponent: () => import('./features/fish24/internal/tickets/internal-ticket-view.component').then(m => m.InternalTicketViewComponent), canActivate: [authGuard, ticketsMessagesGuard] },
   { path: 'fish24/internal/tickets', loadComponent: () => import('./features/fish24/internal/tickets/internal-tickets.component').then(m => m.InternalTicketsComponent), canActivate: [authGuard, ticketsMessagesGuard] },
+  { path: 'fish24/internal/news/new', loadComponent: () => import('./features/fish24/internal/news/internal-news-form.component').then(m => m.InternalNewsFormComponent), canActivate: [authGuard, newsManagementGuard] },
+  { path: 'fish24/internal/news/categories', loadComponent: () => import('./features/fish24/internal/news/internal-news-management.component').then(m => m.InternalNewsManagementComponent), canActivate: [authGuard, newsManagementGuard] },
+  { path: 'fish24/internal/news/:id/edit', loadComponent: () => import('./features/fish24/internal/news/internal-news-form.component').then(m => m.InternalNewsFormComponent), canActivate: [authGuard, newsManagementGuard] },
+  { path: 'fish24/internal/news/:id', loadComponent: () => import('./features/fish24/internal/news/internal-news-preview.component').then(m => m.InternalNewsPreviewComponent), canActivate: [authGuard, newsManagementGuard] },
+  { path: 'fish24/internal/news', loadComponent: () => import('./features/fish24/internal/news/internal-news-management.component').then(m => m.InternalNewsManagementComponent), canActivate: [authGuard, newsManagementGuard] },
   { path: 'fish24/employer/dashboard', loadComponent: () => import('./features/fish24/employer/dashboard/employer-dashboard.component').then(m => m.EmployerDashboardComponent), canActivate: [authGuard] },
   { path: 'fish24/employer/profile', loadComponent: () => import('./features/fish24/employer/profile/employer-profile.component').then(m => m.EmployerProfileComponent), canActivate: [authGuard] },
   { path: 'fish24/employer/change-password', loadComponent: () => import('./features/fish24/employer/change-password/employer-change-password.component').then(m => m.EmployerChangePasswordComponent), canActivate: [authGuard] },
