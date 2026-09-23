@@ -60,7 +60,7 @@ interface NavItem {
                   class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-muted dark:text-slate-300 transition-all duration-200 hover:bg-primary/8 dark:hover:bg-primary/15 group">
                   <ui-icon [name]="item.icon || 'folder'" [size]="20" class="text-slate-500 dark:text-slate-400 group-hover:scale-110 transition-transform duration-200"></ui-icon>
                   <span class="font-extrabold text-sm flex-1">{{ item.label }}</span>
-                  @if (item.id === 'fish24-admin-tickets' && ticketService.needsReviewCount() > 0) {<span class="inline-flex min-w-5 items-center justify-center rounded-full bg-danger px-1.5 py-0.5 text-[10px] font-bold text-white">{{ ticketService.needsReviewCount() }}</span>}
+                  @if (ticketBadgeForNav(item.id) > 0) {<span class="inline-flex min-w-5 items-center justify-center rounded-full bg-danger px-1.5 py-0.5 text-[10px] font-bold text-white">{{ ticketBadgeForNav(item.id) }}</span>}
                   <ui-icon 
                     [name]="'chevron-down'" 
                     [size]="18" 
@@ -78,7 +78,8 @@ interface NavItem {
                            class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors duration-200 group text-foreground dark:text-slate-300"
                            (click)="onDesktopNavClick()">
                           <span class="w-2 h-2 rounded-full bg-slate-400 dark:bg-slate-500 flex-shrink-0 mt-0.5"></span>
-                          <span class="text-sm font-medium leading-tight">{{ child.label }}</span>
+                          <span class="min-w-0 flex-1 text-sm font-medium leading-tight">{{ child.label }}</span>
+                          @if (ticketBadgeForNav(child.id) > 0) {<span class="inline-flex min-w-5 shrink-0 items-center justify-center rounded-full bg-danger px-1.5 py-0.5 text-[10px] font-bold text-white">{{ ticketBadgeForNav(child.id) }}</span>}
                         </a>
                       } @else {
                         <div class="flex items-center gap-3 px-3 py-2 rounded-lg text-foreground dark:text-slate-300">
@@ -96,7 +97,8 @@ interface NavItem {
                  class="flex items-center gap-3 px-4 py-3 rounded-xl text-muted transition-all duration-200 group hover:bg-primary/8 dark:hover:bg-primary/15"
                  (click)="onDesktopNavClick()">
                 <ui-icon [name]="item.icon || 'file-text'" [size]="20" class="text-blue-500 group-hover:scale-110 transition-transform duration-200"></ui-icon>
-                <span class="font-extrabold text-sm">{{ item.label }}</span>
+                <span class="min-w-0 flex-1 font-extrabold text-sm">{{ item.label }}</span>
+                @if (ticketBadgeForNav(item.id) > 0) {<span class="inline-flex min-w-5 shrink-0 items-center justify-center rounded-full bg-danger px-1.5 py-0.5 text-[10px] font-bold text-white">{{ ticketBadgeForNav(item.id) }}</span>}
               </a>
             } @else {
               <!-- Non-clickable future item (no route, no children) -->
@@ -151,7 +153,7 @@ interface NavItem {
                   [class.mobile-nav-active]="isGroupExpanded(item.id)">
                   <ui-icon [name]="item.icon || 'folder'" [size]="isTablet ? 40 : 28" class="text-blue-500 mobile-nav-icon transition-all duration-300"></ui-icon>
                   <span class="mobile-nav-label text-[13px] font-extrabold text-foreground dark:text-slate-200 text-center" [class.tablet-label]="isTablet">{{ item.label }}</span>
-                  @if (item.id === 'fish24-admin-tickets' && ticketService.needsReviewCount() > 0) {<span class="absolute left-2 top-2 inline-flex min-w-5 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold text-white">{{ ticketService.needsReviewCount() }}</span>}
+                  @if (ticketBadgeForNav(item.id) > 0) {<span class="absolute left-2 top-2 inline-flex min-w-5 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold text-white">{{ ticketBadgeForNav(item.id) }}</span>}
                 </button>
                 
                 <!-- Mobile expanded children panel -->
@@ -160,10 +162,11 @@ interface NavItem {
                     @for (child of item.children; track child.id) {
                       @if (child.route) {
                         <a [routerLink]="child.route" routerLinkActive="mobile-nav-active"
-                           class="block text-sm text-foreground dark:text-slate-300 px-3 py-2.5 rounded-lg bg-slate-50/50 dark:bg-slate-700/30 border border-slate-200/30 dark:border-slate-600/30 hover:bg-slate-100/70 dark:hover:bg-slate-700/50 transition-colors duration-200"
+                           class="flex items-center gap-2 text-sm text-foreground dark:text-slate-300 px-3 py-2.5 rounded-lg bg-slate-50/50 dark:bg-slate-700/30 border border-slate-200/30 dark:border-slate-600/30 hover:bg-slate-100/70 dark:hover:bg-slate-700/50 transition-colors duration-200"
                            (click)="onMobileLeafNavClick()">
-                          <span class="inline-block w-2 h-2 rounded-full bg-slate-400 dark:bg-slate-500 mr-2.5 align-middle"></span>
-                          <span class="font-medium">{{ child.label }}</span>
+                          <span class="inline-block h-2 w-2 shrink-0 rounded-full bg-slate-400 dark:bg-slate-500"></span>
+                          <span class="min-w-0 flex-1 font-medium">{{ child.label }}</span>
+                          @if (ticketBadgeForNav(child.id) > 0) {<span class="inline-flex min-w-5 shrink-0 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold text-white">{{ ticketBadgeForNav(child.id) }}</span>}
                         </a>
                       } @else {
                         <div class="text-sm text-foreground dark:text-slate-300 px-3 py-2.5 rounded-lg bg-slate-50/50 dark:bg-slate-700/30 border border-slate-200/30 dark:border-slate-600/30">
@@ -181,6 +184,7 @@ interface NavItem {
                    (click)="onMobileLeafNavClick()">
                   <ui-icon [name]="item.icon || 'file-text'" [size]="isTablet ? 40 : 28" class="text-blue-500 mobile-nav-icon transition-all duration-300"></ui-icon>
                   <span class="mobile-nav-label text-[13px] font-extrabold text-foreground dark:text-slate-200 text-center" [class.tablet-label]="isTablet">{{ item.label }}</span>
+                  @if (ticketBadgeForNav(item.id) > 0) {<span class="absolute left-2 top-2 inline-flex min-w-5 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold text-white">{{ ticketBadgeForNav(item.id) }}</span>}
                 </a>
               } @else {
                 <!-- Mobile non-clickable future leaf item -->
@@ -332,6 +336,12 @@ export class SidebarComponent {
       expanded.add(groupId);
     }
     this.expandedGroups.set(expanded);
+  }
+
+  ticketBadgeForNav(itemId: string): number {
+    if (itemId === 'fish24-admin-tickets' || itemId === 'fish24-admin-ticket-list') return this.ticketService.needsReviewCount();
+    if (itemId === 'fish24-employer-tickets') return this.ticketService.answeredCountForEmployer(this.authService.currentUser()?.id ?? '');
+    return 0;
   }
 
   /**

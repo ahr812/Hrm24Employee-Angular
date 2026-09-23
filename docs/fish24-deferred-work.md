@@ -2,7 +2,9 @@
 
 ## Shared ticket preview contract
 
-Employer and internal ticket screens use one in-memory preview source. Internal Administrator, Sales and Support share full visibility; employer access is restricted by the authenticated employer id at service and route-view boundaries. The lifecycle is «نیاز به بررسی» for creation/employer reply/referral, «جواب داده شده» for an internal reply, and «بسته شده» until either side reopens it. Department referral is limited to management, sales and support and its audit history is internal-only. Replies require text; each submitted message accepts up to five image/PDF/Word/Excel/ZIP files of at most 10 MB each. Selected Blob bytes are held only in current browser memory, are not persisted, uploaded, scanned or delivered to a backend, and disappear after refresh.
+Employer and internal ticket screens use one in-memory preview source. Internal Administrator, Sales and Support share full visibility; employer access is restricted by the authenticated employer id at service and route-view boundaries. The lifecycle is «نیاز به بررسی» for creation/employer reply/referral, «جواب داده شده» for an internal reply, and «بسته شده» until either side reopens it. Department referral is limited to management, sales and support and its audit history is internal-only. Replies require text; each submitted message accepts up to five image/PDF/Word/Excel/ZIP files of at most 10 MB each. Selected Blob bytes are held only in current browser memory, are not persisted, uploaded, scanned or delivered to a backend, and user-created attachments disappear after refresh.
+
+Ticket `3004` is an explicit deterministic demonstration fixture for preview employer `user-1` (علی احمدی، `09123456789`). It contains an employer request, an internal Support reply and a small valid PDF attachment whose bytes are initialized from source on every application start. Its reappearance after refresh demonstrates fixture initialization only; it does not imply persistence for user-created tickets or attachments.
 
 ## Internal sent-SMS history
 

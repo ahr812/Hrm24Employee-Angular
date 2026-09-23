@@ -13,6 +13,9 @@ export const FISH24_TICKET_DEPARTMENTS: readonly { id: Fish24TicketDepartment; l
 export const TICKET_ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'zip'] as const;
 export const TICKET_MAX_FILES = 5;
 export const TICKET_MAX_FILE_BYTES = 10 * 1024 * 1024;
+export const FISH24_DEMO_TICKET_ID = 3004;
+export const FISH24_DEMO_EMPLOYER_ID = 'user-1';
+export const FISH24_DEMO_ATTACHMENT_BYTES = new TextEncoder().encode('%PDF-1.4\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n2 0 obj\n<< /Type /Pages /Kids [] /Count 0 >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF\n');
 
 export interface Fish24TicketAttachment { readonly id: number; readonly name: string; readonly size: number; readonly type: string; readonly blob: Blob; }
 export interface EmployerTicketMessage { readonly id: number; readonly authorName: string; readonly authorRole: string; readonly senderDisplay: string; readonly senderSide: Fish24TicketActorSide; readonly sentAt: string; readonly text: string; readonly attachments: readonly Fish24TicketAttachment[]; }
@@ -24,16 +27,18 @@ export interface TicketMutationResult { readonly ok: boolean; readonly error?: '
 
 const INTERNAL_ROLES: readonly Fish24RoleId[] = ['super-admin', 'sales-expert', 'support-expert'];
 const msg = (id: number, authorName: string, authorRole: string, senderSide: Fish24TicketActorSide, sentAt: string, text: string): EmployerTicketMessage => ({ id, authorName, authorRole, senderDisplay: authorName, senderSide, sentAt, text, attachments: [] });
+const demoSupportReply: EmployerTicketMessage = { id: 6, authorName: 'کارشناس پشتیبانی', authorRole: 'پشتیبانی', senderDisplay: 'کارشناس پشتیبانی', senderSide: 'internal', sentAt: '1405/06/18 12:15', text: 'درخواست شما بررسی شد. راهنمای نمونه برای مشاهده و دانلود به پاسخ پیوست شده است.', attachments: [{ id: 1, name: 'fish24-demo-support-reply.pdf', size: FISH24_DEMO_ATTACHMENT_BYTES.byteLength, type: 'application/pdf', blob: new Blob([FISH24_DEMO_ATTACHMENT_BYTES], { type: 'application/pdf' }) }] };
 
 @Injectable({ providedIn: 'root' })
 export class Fish24TicketPreviewService {
   private readonly distribution = inject(Fish24DocumentDistributionPreviewService);
-  private nextTicketId = 3100; private nextMessageId = 100; private nextAttachmentId = 1; private nextReferralId = 1;
+  private nextTicketId = 3100; private nextMessageId = 100; private nextAttachmentId = 10; private nextReferralId = 1;
   private readonly handledSubmissions = new Set<string>();
   private readonly state = signal<readonly EmployerTicketRecord[]>([
     { id: 3001, ownerEmployerId: '1001', employerName: 'مریم احمدی', employerMobile: '09121234567', companyName: 'مجموعه نمونه سپهر', subject: 'فیش حقوق مرداد ۱۴۰۵', workplace: 'مجموعه نمونه سپهر', origin: 'employerToSystem', status: 'نیاز به بررسی', createdAt: '1405/06/16 09:45', updatedAt: '1405/06/16 10:20', recipientDepartment: 'support', employeeName: null, employeeMobile: null, messages: [msg(1, 'مریم احمدی', 'کارفرما', 'employer', '1405/06/16 09:45', 'لطفاً وضعیت سند ارسالی را بررسی کنید.')], referrals: [] },
     { id: 3002, ownerEmployerId: '1002', employerName: 'رضا کریمی', employerMobile: '09129876543', companyName: 'مجموعه آزمایشی باران', subject: 'گواهی پرداخت پاداش', workplace: 'مجموعه آزمایشی باران', origin: 'employerToSystem', status: 'جواب داده شده', createdAt: '1405/05/30 11:05', updatedAt: '1405/05/30 14:10', recipientDepartment: 'sales', employeeName: null, employeeMobile: null, messages: [msg(2, 'رضا کریمی', 'کارفرما', 'employer', '1405/05/30 11:05', 'لطفاً نتیجه پردازش این سند را بررسی کنید.'), msg(3, 'کارشناس فروش', 'فروش', 'internal', '1405/05/30 14:10', 'بررسی انجام شد و نتیجه در پنل قابل مشاهده است.')], referrals: [] },
-    { id: 3003, ownerEmployerId: 'user-1', employerName: 'علی احمدی', employerMobile: '09123456789', companyName: 'مجموعه نمایشی نارنج', subject: 'پیش‌نمایش پرداخت شهریور', workplace: 'مجموعه نمایشی نارنج', origin: 'employerToSystem', status: 'بسته شده', createdAt: '1405/06/12 08:40', updatedAt: '1405/06/12 16:25', recipientDepartment: 'management', employeeName: null, employeeMobile: null, messages: [msg(4, 'علی احمدی', 'کارفرما', 'employer', '1405/06/12 08:40', 'لطفاً جزئیات این سند را بررسی کنید.')], referrals: [] }
+    { id: 3003, ownerEmployerId: 'user-1', employerName: 'علی احمدی', employerMobile: '09123456789', companyName: 'مجموعه نمایشی نارنج', subject: 'پیش‌نمایش پرداخت شهریور', workplace: 'مجموعه نمایشی نارنج', origin: 'employerToSystem', status: 'بسته شده', createdAt: '1405/06/12 08:40', updatedAt: '1405/06/12 16:25', recipientDepartment: 'management', employeeName: null, employeeMobile: null, messages: [msg(4, 'علی احمدی', 'کارفرما', 'employer', '1405/06/12 08:40', 'لطفاً جزئیات این سند را بررسی کنید.')], referrals: [] },
+    { id: FISH24_DEMO_TICKET_ID, ownerEmployerId: FISH24_DEMO_EMPLOYER_ID, employerName: 'علی احمدی', employerMobile: '09123456789', companyName: 'مجموعه نمایشی نارنج', subject: 'راهنمای دریافت سند ارسالی', workplace: 'مجموعه نمایشی نارنج', origin: 'employerToSystem', status: 'جواب داده شده', createdAt: '1405/06/18 10:30', updatedAt: '1405/06/18 12:15', recipientDepartment: 'support', employeeName: null, employeeMobile: null, messages: [msg(5, 'علی احمدی', 'کارفرما', 'employer', '1405/06/18 10:30', 'لطفاً درباره نحوه دریافت و مشاهده سند ارسالی راهنمایی کنید.'), demoSupportReply], referrals: [] }
   ]);
   readonly tickets = this.state.asReadonly();
   readonly needsReviewCount = computed(() => this.state().filter(ticket => ticket.status === 'نیاز به بررسی').length);
@@ -41,6 +46,7 @@ export class Fish24TicketPreviewService {
 
   internalTickets(role: Fish24RoleId): readonly EmployerTicketRecord[] { return this.isInternal(role) ? this.state() : []; }
   employerTickets(ownerId: string): readonly EmployerTicketPublicRecord[] { return this.state().filter(ticket => ticket.ownerEmployerId === ownerId).map(ticket => this.employerProjection(ticket)); }
+  answeredCountForEmployer(ownerId: string): number { return this.state().filter(ticket => ticket.ownerEmployerId === ownerId && ticket.status === 'جواب داده شده').length; }
   findDocument(id: number): EmployerDocumentRecord | undefined { return this.documents().find(document => document.id === id); }
   findTicket(id: number): EmployerTicketRecord | undefined { return this.state().find(ticket => ticket.id === id); }
   findInternalTicket(id: number, role: Fish24RoleId): EmployerTicketRecord | undefined { return this.isInternal(role) ? this.findTicket(id) : undefined; }
