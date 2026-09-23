@@ -4,6 +4,8 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { IconComponent } from '../../../../shared/ui/icon/icon.component';
 import { ToastService } from '../../../../shared/ui/toast/toast.service';
 import { EmployerTicketPreviewService } from './employer-ticket-preview.service';
+import { AuthService } from '../../../../core/auth/auth.service';
+import { Fish24TicketDepartment } from '../../../../core/fish24/tickets/fish24-ticket-preview.service';
 
 @Component({
   selector: 'app-employer-ticket-create',
@@ -39,7 +41,7 @@ import { EmployerTicketPreviewService } from './employer-ticket-preview.service'
                 <label for="ticket-create-department" class="mb-1.5 block text-sm font-bold text-foreground dark:text-slate-200">دپارتمان دریافت کننده</label>
                 <select id="ticket-create-department" name="ticketDepartment" [(ngModel)]="department" [attr.aria-invalid]="showDepartmentError()" [attr.aria-describedby]="showDepartmentError() ? 'ticket-create-department-error' : null" class="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-semibold text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
                   <option value="">انتخاب دپارتمان</option>
-                  <option value="پشتیبانی">پشتیبانی</option>
+                  <option value="management">مدیریت</option><option value="sales">فروش</option><option value="support">پشتیبانی</option>
                 </select>
                 @if (showDepartmentError()) { <p id="ticket-create-department-error" role="alert" class="mt-1.5 text-xs font-medium text-danger">دپارتمان دریافت کننده را انتخاب کنید.</p> }
               </div>
@@ -48,6 +50,7 @@ import { EmployerTicketPreviewService } from './employer-ticket-preview.service'
                 <textarea id="ticket-create-request" name="ticketRequest" [(ngModel)]="requestText" rows="6" [attr.aria-invalid]="showRequestError()" [attr.aria-describedby]="showRequestError() ? 'ticket-create-request-error' : null" class="w-full resize-y rounded-xl border border-border bg-background px-3 py-2.5 text-sm leading-7 text-foreground outline-none placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100" placeholder="درخواست خود را وارد کنید"></textarea>
                 @if (showRequestError()) { <p id="ticket-create-request-error" role="alert" class="mt-1.5 text-xs font-medium text-danger">درخواست را وارد کنید.</p> }
               </div>
+              <div><label for="ticket-create-files" class="mb-1.5 block text-sm font-bold">پیوست‌ها</label><input id="ticket-create-files" type="file" multiple accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.xls,.xlsx,.zip" (change)="selectFiles($event)" class="block w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm text-foreground file:ml-3 file:rounded-lg file:border-0 file:bg-primary/10 file:px-3 file:py-1.5 file:font-bold file:text-primary"><p class="mt-1 text-xs text-muted">حداکثر ۵ فایل، هر فایل تا ۱۰ مگابایت</p>@if (fileError()) {<p role="alert" class="mt-1 text-xs font-bold text-danger">{{ fileError() }}</p>}<div class="mt-2 flex flex-wrap gap-2">@for (file of files(); track file.name + file.size) {<span class="inline-flex items-center gap-2 rounded-lg border border-border px-2 py-1 text-xs">{{ file.name }} ({{ formatSize(file.size) }})<button type="button" (click)="removeFile($index)" class="text-danger">×</button></span>}</div></div>
             </div>
             <div class="mt-6 flex flex-col-reverse gap-2 border-t border-border pt-4 dark:border-slate-700 sm:flex-row sm:justify-end">
               <a routerLink="/fish24/employer/documents" class="inline-flex w-full items-center justify-center rounded-xl border border-border px-5 py-2.5 text-sm font-bold text-foreground hover:bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700 sm:w-auto">انصراف</a>
@@ -63,12 +66,16 @@ export class EmployerTicketCreateComponent {
   private readonly preview = inject(EmployerTicketPreviewService);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
+  private readonly auth = inject(AuthService);
   private readonly documentId = Number(inject(ActivatedRoute).snapshot.paramMap.get('id'));
 
   readonly document = this.preview.findDocument(this.documentId);
   readonly submitted = signal(false);
-  department = '';
+  department: Fish24TicketDepartment | '' = '';
   requestText = '';
+  readonly files = signal<readonly File[]>([]);
+  readonly fileError = signal('');
+  private submissionKey = `ticket-create-${Date.now()}-${Math.random()}`;
 
   constructor() {
     if (!this.document) {
@@ -88,7 +95,9 @@ export class EmployerTicketCreateComponent {
     this.submitted.set(true);
     if (this.showDepartmentError() || this.showRequestError()) return;
 
-    const ticketId = this.preview.createTicketFromDocument(this.documentId, this.department, this.requestText);
+    const attachmentError = this.preview.validateAttachments(this.files());
+    if (attachmentError) { this.fileError.set(attachmentError); return; }
+    const ticketId = this.preview.createTicketFromDocument(this.documentId, this.auth.currentUser()?.id ?? '', this.department as Fish24TicketDepartment, this.requestText, this.files(), this.submissionKey);
     if (ticketId === null) {
       void this.router.navigate(['/fish24/employer/documents']);
       return;
@@ -97,4 +106,8 @@ export class EmployerTicketCreateComponent {
     this.toast.show('تیکت در نسخه نمایشی ثبت شد.', 'success');
     void this.router.navigate(['/fish24/employer/tickets']);
   }
+
+  selectFiles(event: Event): void { const input = event.target as HTMLInputElement; const next = [...this.files(), ...Array.from(input.files ?? [])]; const error = this.preview.validateAttachments(next); this.fileError.set(error ?? ''); if (!error) this.files.set(next); input.value = ''; }
+  removeFile(index: number): void { this.files.set(this.files().filter((_, itemIndex) => itemIndex !== index)); this.fileError.set(''); }
+  formatSize(size: number): string { return size < 1024 * 1024 ? `${Math.ceil(size / 1024)} کیلوبایت` : `${(size / 1024 / 1024).toFixed(1)} مگابایت`; }
 }

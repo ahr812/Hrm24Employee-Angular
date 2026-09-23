@@ -28,6 +28,12 @@ export const FISH24_ADMIN_NAV_CONFIG: readonly Fish24NavItem[] = [
     permission: 'general-reports',
     children: [
       {
+        id: 'fish24-admin-ticket-list',
+        label: 'لیست تیکت‌ها',
+        permission: 'tickets-messages',
+        route: '/fish24/internal/tickets'
+      },
+      {
         id: 'fish24-admin-reports-general',
         label: 'گزارشات عمومی',
         icon: 'file-text',

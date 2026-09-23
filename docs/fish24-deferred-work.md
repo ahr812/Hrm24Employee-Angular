@@ -1,5 +1,9 @@
 # Fish24 deferred work
 
+## Shared ticket preview contract
+
+Employer and internal ticket screens use one in-memory preview source. Internal Administrator, Sales and Support share full visibility; employer access is restricted by the authenticated employer id at service and route-view boundaries. The lifecycle is «نیاز به بررسی» for creation/employer reply/referral, «جواب داده شده» for an internal reply, and «بسته شده» until either side reopens it. Department referral is limited to management, sales and support and its audit history is internal-only. Replies require text; each submitted message accepts up to five image/PDF/Word/Excel/ZIP files of at most 10 MB each. Selected Blob bytes are held only in current browser memory, are not persisted, uploaded, scanned or delivered to a backend, and disappear after refresh.
+
 ## Internal sent-SMS history
 
 The user intends to revisit this read-only page later. Delivery-status display and resend functionality remain deferred candidates and require future business decisions; no placeholder action or column is included now.

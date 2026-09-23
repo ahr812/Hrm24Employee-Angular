@@ -11,6 +11,7 @@ import { Fish24RolePreviewService } from '../../../core/fish24/dev/fish24-role-p
 import { getFish24NavigationConfig } from '../navigation/fish24-nav.config';
 import { Fish24NavItem } from '../navigation/nav-item.model';
 import { Fish24RoleId } from '../../../core/fish24/models/fish24-role.model';
+import { Fish24TicketPreviewService } from '../../../core/fish24/tickets/fish24-ticket-preview.service';
 
 interface NavItem {
   path: string;
@@ -59,6 +60,7 @@ interface NavItem {
                   class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-muted dark:text-slate-300 transition-all duration-200 hover:bg-primary/8 dark:hover:bg-primary/15 group">
                   <ui-icon [name]="item.icon || 'folder'" [size]="20" class="text-slate-500 dark:text-slate-400 group-hover:scale-110 transition-transform duration-200"></ui-icon>
                   <span class="font-extrabold text-sm flex-1">{{ item.label }}</span>
+                  @if (item.id === 'fish24-admin-tickets' && ticketService.needsReviewCount() > 0) {<span class="inline-flex min-w-5 items-center justify-center rounded-full bg-danger px-1.5 py-0.5 text-[10px] font-bold text-white">{{ ticketService.needsReviewCount() }}</span>}
                   <ui-icon 
                     [name]="'chevron-down'" 
                     [size]="18" 
@@ -149,6 +151,7 @@ interface NavItem {
                   [class.mobile-nav-active]="isGroupExpanded(item.id)">
                   <ui-icon [name]="item.icon || 'folder'" [size]="isTablet ? 40 : 28" class="text-blue-500 mobile-nav-icon transition-all duration-300"></ui-icon>
                   <span class="mobile-nav-label text-[13px] font-extrabold text-foreground dark:text-slate-200 text-center" [class.tablet-label]="isTablet">{{ item.label }}</span>
+                  @if (item.id === 'fish24-admin-tickets' && ticketService.needsReviewCount() > 0) {<span class="absolute left-2 top-2 inline-flex min-w-5 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold text-white">{{ ticketService.needsReviewCount() }}</span>}
                 </button>
                 
                 <!-- Mobile expanded children panel -->
@@ -292,6 +295,7 @@ export class SidebarComponent {
 
   protected permissionService = inject(Fish24PermissionService);
   protected previewRoleService = inject(Fish24RolePreviewService);
+  protected ticketService = inject(Fish24TicketPreviewService);
 
   unreadCount = this.dataService.unreadCount;
   unreadMessages = this.chatService.totalUnread;

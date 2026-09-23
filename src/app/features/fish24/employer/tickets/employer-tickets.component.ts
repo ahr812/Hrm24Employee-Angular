@@ -4,7 +4,8 @@ import { RouterLink } from '@angular/router';
 import { EscToCloseDirective } from '../../../../shared/directives/esc-to-close.directive';
 import { IconComponent } from '../../../../shared/ui/icon/icon.component';
 import { ToastService } from '../../../../shared/ui/toast/toast.service';
-import { EmployerTicketPreviewService, EmployerTicketRecord, EmployerTicketStatus } from './employer-ticket-preview.service';
+import { EmployerTicketPreviewService, EmployerTicketPublicRecord, EmployerTicketStatus } from './employer-ticket-preview.service';
+import { AuthService } from '../../../../core/auth/auth.service';
 
 type TicketStatusFilter = 'all' | EmployerTicketStatus;
 
@@ -40,7 +41,7 @@ type TicketStatusFilter = 'all' | EmployerTicketStatus;
             <label for="employer-ticket-status-filter" class="mb-1.5 block text-sm font-bold text-foreground dark:text-slate-200">وضعیت</label>
             <select id="employer-ticket-status-filter" name="ticketStatusFilter" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)" class="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-semibold text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
               <option value="all">همه</option>
-              <option value="درحال بررسی">درحال بررسی</option>
+              <option value="نیاز به بررسی">نیاز به بررسی</option><option value="جواب داده شده">جواب داده شده</option>
               <option value="بسته شده">بسته شده</option>
             </select>
           </div>
@@ -103,7 +104,7 @@ type TicketStatusFilter = 'all' | EmployerTicketStatus;
                         <a [routerLink]="['/fish24/employer/tickets', ticket.id]" [attr.aria-label]="'مشاهده تیکت ' + ticket.id" title="مشاهده تیکت" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-primary/30 text-primary transition-colors hover:bg-primary/10 focus:outline-none focus:ring-2 focus:ring-primary/25">
                           <ui-icon name="eye" [size]="17"></ui-icon>
                         </a>
-                        @if (ticket.status === 'درحال بررسی') {
+                        @if (ticket.status !== 'بسته شده') {
                           <button type="button" (click)="requestClose(ticket)" [attr.aria-label]="'بستن تیکت ' + ticket.id" title="بستن تیکت" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-danger/30 text-danger transition-colors hover:bg-danger/10 focus:outline-none focus:ring-2 focus:ring-danger/25">
                             <ui-icon name="lock" [size]="17"></ui-icon>
                           </button>
@@ -134,7 +135,7 @@ type TicketStatusFilter = 'all' | EmployerTicketStatus;
                 </dl>
                 <div class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
                   <a [routerLink]="['/fish24/employer/tickets', ticket.id]" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-primary/30 px-3 py-2 text-sm font-bold text-primary hover:bg-primary/10 focus:outline-none focus:ring-2 focus:ring-primary/25"><ui-icon name="eye" [size]="17"></ui-icon>مشاهده تیکت</a>
-                  @if (ticket.status === 'درحال بررسی') { <button type="button" (click)="requestClose(ticket)" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-danger/30 px-3 py-2 text-sm font-bold text-danger hover:bg-danger/10 focus:outline-none focus:ring-2 focus:ring-danger/25"><ui-icon name="lock" [size]="17"></ui-icon>بستن تیکت</button> }
+                  @if (ticket.status !== 'بسته شده') { <button type="button" (click)="requestClose(ticket)" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-danger/30 px-3 py-2 text-sm font-bold text-danger hover:bg-danger/10 focus:outline-none focus:ring-2 focus:ring-danger/25"><ui-icon name="lock" [size]="17"></ui-icon>بستن تیکت</button> }
                 </div>
               </article>
             }
@@ -168,10 +169,11 @@ type TicketStatusFilter = 'all' | EmployerTicketStatus;
 export class EmployerTicketsComponent {
   private readonly preview = inject(EmployerTicketPreviewService);
   private readonly toast = inject(ToastService);
+  private readonly auth = inject(AuthService);
   private readonly numberFormatter = new Intl.NumberFormat('fa-IR', { maximumFractionDigits: 0 });
 
-  readonly tickets = this.preview.tickets;
-  readonly ticketToClose = signal<EmployerTicketRecord | null>(null);
+  readonly tickets = computed(() => this.preview.employerTickets(this.auth.currentUser()?.id ?? ''));
+  readonly ticketToClose = signal<EmployerTicketPublicRecord | null>(null);
   readonly statusFilter = signal<TicketStatusFilter>('all');
   readonly titleQuery = signal('');
 
@@ -187,17 +189,15 @@ export class EmployerTicketsComponent {
     this.titleQuery.set('');
   }
 
-  fromLabel(ticket: EmployerTicketRecord): string {
+  fromLabel(ticket: EmployerTicketPublicRecord): string {
     return ticket.origin === 'employerToSystem' ? 'از شما به سامانه' : 'از کارمند به شما';
   }
 
-  statusClass(ticket: EmployerTicketRecord): string {
-    return ticket.status === 'درحال بررسی'
-      ? 'inline-flex shrink-0 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary'
-      : 'inline-flex shrink-0 rounded-full bg-muted/15 px-2.5 py-1 text-xs font-bold text-muted';
+  statusClass(ticket: EmployerTicketPublicRecord): string {
+    return ticket.status === 'نیاز به بررسی' ? 'inline-flex shrink-0 rounded-full bg-warning/15 px-2.5 py-1 text-xs font-bold text-warning' : ticket.status === 'جواب داده شده' ? 'inline-flex shrink-0 rounded-full bg-success/15 px-2.5 py-1 text-xs font-bold text-success' : 'inline-flex shrink-0 rounded-full bg-muted/15 px-2.5 py-1 text-xs font-bold text-muted';
   }
 
-  requestClose(ticket: EmployerTicketRecord): void {
+  requestClose(ticket: EmployerTicketPublicRecord): void {
     this.ticketToClose.set(ticket);
   }
 
@@ -208,7 +208,7 @@ export class EmployerTicketsComponent {
   confirmClose(): void {
     const ticket = this.ticketToClose();
     if (!ticket) return;
-    this.preview.closeTicket(ticket.id);
+    this.preview.closeForEmployer(ticket.id, this.auth.currentUser()?.id ?? '');
     this.ticketToClose.set(null);
     this.toast.show('وضعیت تیکت در نسخه نمایشی به «بسته شده» تغییر کرد.', 'success');
   }

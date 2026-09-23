@@ -1,0 +1,3 @@
+import { EmployerTicketRecord } from '../../../../core/fish24/tickets/fish24-ticket-preview.service';
+import { filterInternalTickets, validateInternalTicketFilters } from './internal-tickets.component';
+describe('internal ticket list filters',()=>{const row={id:1,status:'نیاز به بررسی',subject:'فیش حقوق',recipientDepartment:'support'} as EmployerTicketRecord;it('validates malformed persisted filters safely',()=>expect(validateInternalTicketFilters({status:'bad',title:4,department:'bad'})).toEqual({status:'all',title:'',department:'all'}));it('combines status title and department',()=>expect(filterInternalTickets([row],{status:'نیاز به بررسی',title:'حقوق',department:'support'})).toEqual([row]));});

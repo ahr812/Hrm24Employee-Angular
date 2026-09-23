@@ -1,101 +1,29 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { AuthService } from '../../../../core/auth/auth.service';
+import { EmployerTicketMessage, Fish24TicketAttachment, Fish24TicketPreviewService } from '../../../../core/fish24/tickets/fish24-ticket-preview.service';
 import { IconComponent } from '../../../../shared/ui/icon/icon.component';
 import { ToastService } from '../../../../shared/ui/toast/toast.service';
-import { EmployerTicketMessage, EmployerTicketPreviewService } from './employer-ticket-preview.service';
 
-@Component({
-  selector: 'app-employer-ticket-view',
-  standalone: true,
-  imports: [FormsModule, RouterLink, IconComponent],
-  template: `
-    @if (ticket(); as currentTicket) {
-      <div class="mx-auto max-w-5xl space-y-5 animate-fade-in-up sm:space-y-6" dir="rtl">
-        <header class="flex min-w-0 items-center gap-4">
-          <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 sm:h-14 sm:w-14"><ui-icon name="ticket" [size]="30" class="text-primary"></ui-icon></div>
-          <div class="min-w-0"><h1 class="text-2xl font-bold text-primary sm:text-3xl">مشاهده تیکت</h1><p class="mt-1 text-sm text-muted sm:text-base">گفت‌وگوی مرتبط با سند ارسالی</p></div>
-        </header>
-
-        <section class="rounded-2xl border border-border bg-surface p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:p-6" aria-labelledby="ticket-view-context-title">
-          <div class="mb-4 flex flex-col gap-3 border-b border-border pb-4 dark:border-slate-700 sm:flex-row sm:items-center sm:justify-between">
-            <h2 id="ticket-view-context-title" class="text-lg font-bold text-foreground dark:text-slate-100">مشخصات تیکت</h2>
-            <span [class]="currentTicket.status === 'درحال بررسی' ? 'inline-flex w-fit rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary' : 'inline-flex w-fit rounded-full bg-muted/15 px-3 py-1 text-xs font-bold text-muted'">{{ currentTicket.status }}</span>
-          </div>
-          <dl class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div class="rounded-xl border border-border bg-background/60 p-3 dark:border-slate-700 dark:bg-slate-900/40"><dt class="text-xs text-muted">موضوع</dt><dd class="mt-1.5 break-words text-sm font-bold text-foreground dark:text-slate-100">{{ currentTicket.subject }}</dd></div>
-            <div class="rounded-xl border border-border bg-background/60 p-3 dark:border-slate-700 dark:bg-slate-900/40"><dt class="text-xs text-muted">محل کار</dt><dd class="mt-1.5 break-words text-sm font-bold text-foreground dark:text-slate-100">{{ currentTicket.workplace }}</dd></div>
-          </dl>
-        </section>
-
-        <section class="rounded-2xl border border-border bg-surface p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:p-6" aria-labelledby="ticket-conversation-title">
-          <div class="mb-5 flex items-center gap-3"><div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary"><ui-icon name="message-square" [size]="20"></ui-icon></div><div><h2 id="ticket-conversation-title" class="text-lg font-bold text-foreground dark:text-slate-100">گفت‌وگوی تیکت</h2><p class="mt-0.5 text-xs text-muted">پیام‌ها به‌ترتیب زمانی نمایش داده می‌شوند.</p></div></div>
-          <ol class="space-y-4">
-            @for (message of currentTicket.messages; track message.id) {
-              <li [class]="messageContainerClass(message)">
-                <article [class]="messageCardClass(message)">
-                  <div class="flex flex-col gap-1 border-b border-current/10 pb-2 sm:flex-row sm:items-center sm:justify-between"><h3 class="text-sm font-bold">{{ message.senderDisplay }}</h3><time class="text-xs opacity-75" dir="ltr">{{ message.sentAt }}</time></div>
-                  <p class="mt-3 whitespace-pre-wrap break-words text-sm leading-7">{{ message.text }}</p>
-                </article>
-              </li>
-            }
-          </ol>
-        </section>
-
-        @if (currentTicket.status === 'درحال بررسی') {
-          <section class="rounded-2xl border border-border bg-surface p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:p-6" aria-labelledby="ticket-reply-title">
-            <h2 id="ticket-reply-title" class="text-lg font-bold text-foreground dark:text-slate-100">ثبت پاسخ</h2>
-            <form (ngSubmit)="submitReply()" novalidate class="mt-4">
-              <label for="employer-ticket-reply" class="mb-1.5 block text-sm font-bold text-foreground dark:text-slate-200">متن پاسخ</label>
-              <textarea id="employer-ticket-reply" name="ticketReply" [(ngModel)]="replyText" rows="5" [attr.aria-invalid]="showReplyError()" [attr.aria-describedby]="showReplyError() ? 'employer-ticket-reply-error' : null" class="w-full resize-y rounded-xl border border-border bg-background px-3 py-2.5 text-sm leading-7 text-foreground outline-none placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/15 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100" placeholder="پاسخ خود را وارد کنید"></textarea>
-              @if (showReplyError()) { <p id="employer-ticket-reply-error" role="alert" class="mt-1.5 text-xs font-medium text-danger">متن پاسخ را وارد کنید.</p> }
-              <div class="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><a routerLink="/fish24/employer/tickets" class="inline-flex w-full items-center justify-center rounded-xl border border-border px-5 py-2.5 text-sm font-bold text-foreground hover:bg-background dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700 sm:w-auto">بازگشت به لیست</a><button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-white hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary/30 sm:w-auto"><ui-icon name="send" [size]="17"></ui-icon>ثبت</button></div>
-            </form>
-          </section>
-        } @else {
-          <div class="flex justify-end"><a routerLink="/fish24/employer/tickets" class="inline-flex w-full items-center justify-center rounded-xl border border-border bg-surface px-5 py-2.5 text-sm font-bold text-foreground shadow-sm hover:bg-background dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 sm:w-auto">بازگشت به لیست</a></div>
-        }
-      </div>
-    }
-  `
-})
+@Component({ selector: 'app-employer-ticket-view', standalone: true, imports: [FormsModule, RouterLink, IconComponent], template: `
+@if (ticket(); as t) {<div class="mx-auto max-w-6xl space-y-4" dir="rtl">
+  <header class="card flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between"><div><div class="flex items-center gap-2"><h1 class="text-xl font-extrabold sm:text-2xl">{{ t.subject }}</h1><span [class]="statusClass(t.status)">{{ t.status }}</span></div><p class="mt-1 text-sm text-muted">تیکت #{{ t.id }} · ایجاد {{ t.createdAt }} · بروزرسانی {{ t.updatedAt }}</p></div><div class="flex flex-wrap gap-2"><a routerLink="/fish24/employer/tickets" class="secondary">بازگشت به فهرست</a><button type="button" (click)="toggleClosed()" [class]="t.status === 'بسته شده' ? 'primary' : 'danger'">{{ t.status === 'بسته شده' ? 'بازگشایی تیکت' : 'بستن تیکت' }}</button></div></header>
+  <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
+    <main class="space-y-4"><section class="card p-4 sm:p-5"><h2 class="mb-4 text-lg font-extrabold">گفت‌وگو</h2><ol class="space-y-3">@for (message of t.messages; track message.id) {<li [class]="message.senderSide === 'employer' ? 'flex justify-start' : 'flex justify-end'"><article [class]="message.senderSide === 'employer' ? 'message employer' : 'message internal'"><div class="flex flex-wrap items-center justify-between gap-2"><div><strong>{{ message.authorName }}</strong><span class="mr-2 text-xs text-muted">{{ message.authorRole }}</span></div><time class="text-xs text-muted" dir="ltr">{{ message.sentAt }}</time></div><p class="mt-3 whitespace-pre-wrap break-words leading-7">{{ message.text }}</p>@if (message.attachments.length) {<div class="mt-3 grid gap-2 sm:grid-cols-2">@for (file of message.attachments; track file.id) {<button type="button" (click)="download(message, file)" class="attachment"><ui-icon [name]="file.type.startsWith('image/') ? 'image' : 'paperclip'" [size]="18"></ui-icon><span class="min-w-0 flex-1 truncate text-right">{{ file.name }}</span><small>{{ size(file.size) }}</small></button>}</div>}</article></li>}</ol></section>
+    @if (t.status !== 'بسته شده') {<section class="card p-4 sm:p-5"><h2 class="text-lg font-extrabold">ثبت پاسخ</h2><form class="mt-3 space-y-3" (submit)="submit($event)"><textarea [(ngModel)]="replyText" name="reply" rows="5" class="input h-auto py-3" placeholder="متن پاسخ را بنویسید..."></textarea><input type="file" multiple accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.xls,.xlsx,.zip" (change)="selectFiles($event)" class="input">@if (error()) {<p role="alert" class="text-sm font-bold text-danger">{{ error() }}</p>}<div class="flex flex-wrap gap-2">@for(file of files(); track file.name + file.size){<span class="file-chip">{{ file.name }} <button type="button" (click)="remove($index)">×</button></span>}</div><button type="submit" class="primary" [disabled]="submitting()">ارسال پاسخ</button></form></section>} @else {<section class="card p-5 text-center"><ui-icon name="lock" [size]="26" class="mx-auto text-muted"></ui-icon><p class="mt-2 font-bold">این تیکت بسته است و امکان ثبت پاسخ ندارد.</p><button type="button" (click)="toggleClosed()" class="primary mt-3">بازگشایی تیکت</button></section>}
+    </main>
+    <aside class="card h-fit p-4"><h2 class="text-lg font-extrabold">اطلاعات تیکت</h2><dl class="mt-3 space-y-3 text-sm"><div><dt>کارفرما</dt><dd>{{ t.employerName }}</dd></div><div><dt>شرکت / کارگاه</dt><dd>{{ t.companyName || '—' }}</dd></div><div><dt>موبایل</dt><dd dir="ltr">{{ t.employerMobile }}</dd></div><div><dt>دریافت‌کننده</dt><dd>{{ service.departmentLabel(t.recipientDepartment) }}</dd></div></dl></aside>
+  </div>
+</div>}
+`, styles: [`.card{border:1px solid rgb(var(--color-border));border-radius:1rem;background:rgb(var(--color-surface));box-shadow:0 1px 3px rgb(15 23 42/.08)}.input{width:100%;min-height:2.75rem;border:1px solid rgb(var(--color-border));border-radius:.75rem;background:rgb(var(--color-background));padding-inline:.75rem}.primary,.secondary,.danger{display:inline-flex;min-height:2.65rem;align-items:center;justify-content:center;border-radius:.75rem;padding-inline:1rem;font-size:.85rem;font-weight:700}.primary{background:rgb(var(--color-primary));color:white}.danger{background:rgb(var(--color-danger));color:white}.secondary{border:1px solid rgb(var(--color-border))}.message{width:100%;max-width:46rem;border:1px solid rgb(var(--color-border));border-radius:1rem;padding:1rem}.employer{background:rgb(var(--color-background)/.65)}.internal{background:rgb(var(--color-primary)/.08);border-color:rgb(var(--color-primary)/.2)}.attachment{display:flex;align-items:center;gap:.5rem;border:1px solid rgb(var(--color-border));border-radius:.75rem;padding:.6rem}.file-chip{border:1px solid rgb(var(--color-border));border-radius:.6rem;padding:.35rem .6rem;font-size:.75rem}.file-chip button{color:rgb(var(--color-danger));margin-right:.4rem}dt{color:rgb(var(--color-muted));font-size:.75rem}dd{margin-top:.25rem;font-weight:700}`] })
 export class EmployerTicketViewComponent {
-  private readonly preview = inject(EmployerTicketPreviewService);
-  private readonly router = inject(Router);
-  private readonly toast = inject(ToastService);
-  private readonly ticketId = Number(inject(ActivatedRoute).snapshot.paramMap.get('id'));
-
-  readonly ticket = computed(() => this.preview.tickets().find((ticket) => ticket.id === this.ticketId));
-  readonly replyAttempted = signal(false);
-  replyText = '';
-
-  constructor() {
-    if (!this.preview.findTicket(this.ticketId)) {
-      queueMicrotask(() => void this.router.navigate(['/fish24/employer/tickets']));
-    }
-  }
-
-  showReplyError(): boolean {
-    return this.replyAttempted() && this.replyText.trim().length === 0;
-  }
-
-  submitReply(): void {
-    this.replyAttempted.set(true);
-    const ticket = this.ticket();
-    if (!ticket || ticket.status !== 'درحال بررسی' || this.showReplyError()) return;
-    this.preview.replyToTicket(ticket.id, this.replyText);
-    this.replyText = '';
-    this.replyAttempted.set(false);
-    this.toast.show('پاسخ در نسخه نمایشی ثبت شد.', 'success');
-  }
-
-  messageContainerClass(message: EmployerTicketMessage): string {
-    return message.senderSide === 'employer' ? 'flex justify-start' : 'flex justify-end';
-  }
-
-  messageCardClass(message: EmployerTicketMessage): string {
-    return message.senderSide === 'employer'
-      ? 'w-full max-w-2xl rounded-2xl border border-primary/20 bg-primary/5 p-4 text-foreground dark:border-primary/30 dark:bg-primary/10 dark:text-slate-100'
-      : 'w-full max-w-2xl rounded-2xl border border-border bg-background/70 p-4 text-foreground dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-100';
-  }
+  readonly service = inject(Fish24TicketPreviewService); private readonly auth = inject(AuthService); private readonly router = inject(Router); private readonly toast = inject(ToastService); private readonly id = Number(inject(ActivatedRoute).snapshot.paramMap.get('id'));
+  private readonly ownerId = this.auth.currentUser()?.id ?? ''; readonly ticket = computed(() => this.service.findEmployerTicket(this.id, this.ownerId)); readonly files = signal<readonly File[]>([]); readonly error = signal(''); readonly submitting = signal(false); replyText = ''; private submissionKey = this.key();
+  constructor(){ if(!this.service.findEmployerTicket(this.id,this.ownerId)) queueMicrotask(()=>void this.router.navigate(['/fish24/employer/tickets'])); }
+  submit(event: Event): void { event.preventDefault(); if(this.submitting()) return; const validation=this.service.validateAttachments(this.files()); if(!this.replyText.trim()||validation){this.error.set(validation??'متن پاسخ الزامی است.');return;} this.submitting.set(true); const result=this.service.employerReply(this.id,this.ownerId,this.replyText,this.files(),this.submissionKey); this.submitting.set(false); if(!result.ok){this.error.set(result.error==='closed'?'تیکت بسته است.':'پاسخ ثبت نشد.');return;} this.replyText='';this.files.set([]);this.error.set('');this.submissionKey=this.key();this.toast.show('پاسخ در پیش‌نمایش ثبت شد.','success'); }
+  toggleClosed(): void { const t=this.ticket(); if(!t)return; const result=t.status==='بسته شده'?this.service.reopenForEmployer(t.id,this.ownerId):this.service.closeForEmployer(t.id,this.ownerId); if(result.ok)this.toast.show(t.status==='بسته شده'?'تیکت بازگشایی شد.':'تیکت بسته شد.','success'); }
+  selectFiles(event:Event):void{const input=event.target as HTMLInputElement;const next=[...this.files(),...Array.from(input.files??[])];const error=this.service.validateAttachments(next);this.error.set(error??'');if(!error)this.files.set(next);input.value='';} remove(index:number):void{this.files.set(this.files().filter((_,i)=>i!==index));this.error.set('');}
+  download(message:EmployerTicketMessage,file:Fish24TicketAttachment):void{const blob=this.service.attachmentBlob(this.id,message.id,file.id,{ownerId:this.ownerId});if(!blob)return;const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),0);}
+  size(value:number):string{return value<1048576?`${Math.ceil(value/1024)} کیلوبایت`:`${(value/1048576).toFixed(1)} مگابایت`;} statusClass(status:string):string{return `inline-flex rounded-full px-3 py-1 text-xs font-bold ${status==='نیاز به بررسی'?'bg-warning/15 text-warning':status==='جواب داده شده'?'bg-success/15 text-success':'bg-muted/15 text-muted'}`;} private key():string{return `employer-reply-${Date.now()}-${Math.random()}`;}
 }
