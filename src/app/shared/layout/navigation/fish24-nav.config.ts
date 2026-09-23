@@ -28,12 +28,6 @@ export const FISH24_ADMIN_NAV_CONFIG: readonly Fish24NavItem[] = [
     permission: 'general-reports',
     children: [
       {
-        id: 'fish24-admin-ticket-list',
-        label: 'لیست تیکت‌ها',
-        permission: 'tickets-messages',
-        route: '/fish24/internal/tickets'
-      },
-      {
         id: 'fish24-admin-reports-general',
         label: 'گزارشات عمومی',
         icon: 'file-text',
@@ -117,13 +111,19 @@ export const FISH24_ADMIN_NAV_CONFIG: readonly Fish24NavItem[] = [
   },
   {
     id: 'fish24-admin-tickets',
-    label: 'تیکت ها و پیام ها',
+    label: 'تیکت و پیام',
     icon: 'message-circle',
     permission: 'tickets-messages',
     children: [
       {
+        id: 'fish24-admin-ticket-list',
+        label: 'لیست تیکت‌ها',
+        permission: 'tickets-messages',
+        route: '/fish24/internal/tickets'
+      },
+      {
         id: 'fish24-admin-sms-history',
-        label: 'لیست پیام کوتاه',
+        label: 'لیست پیامک‌ها',
         permission: 'tickets-messages',
         route: '/fish24/internal/sms-history'
       }
