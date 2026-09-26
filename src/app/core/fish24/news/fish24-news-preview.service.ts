@@ -1,5 +1,6 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import { Fish24RoleId } from '../models/fish24-role.model';
+import { Fish24NewsCommentPreviewService } from './fish24-news-comment-preview.service';
 
 export interface Fish24NewsCategory {
   readonly id: number;
@@ -30,7 +31,6 @@ export interface Fish24NewsItem {
   readonly metaDescription: string;
   readonly order: number;
   readonly active: boolean;
-  readonly commentCount: number;
   readonly likeCount: number;
   readonly viewCount: number;
 }
@@ -38,7 +38,7 @@ export interface Fish24NewsItem {
 export type NewsMutationResult<T = void> = { readonly ok: true; readonly value: T } | { readonly ok: false; readonly error: string };
 type Mutable<T> = { -readonly [Key in keyof T]: T[Key] };
 export type CategoryDraft = Mutable<Omit<Fish24NewsCategory, 'id'>>;
-export type NewsDraft = Mutable<Omit<Fish24NewsItem, 'id' | 'createdAt' | 'commentCount' | 'likeCount' | 'viewCount'>>;
+export type NewsDraft = Mutable<Omit<Fish24NewsItem, 'id' | 'createdAt' | 'likeCount' | 'viewCount'>>;
 
 const INTERNAL_ROLES: readonly Fish24RoleId[] = ['super-admin', 'sales-expert', 'support-expert'];
 const IMAGE_MAX_BYTES = 5 * 1024 * 1024;
@@ -46,6 +46,7 @@ const IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 @Injectable({ providedIn: 'root' })
 export class Fish24NewsPreviewService {
+  private readonly comments = inject(Fish24NewsCommentPreviewService);
   private nextCategoryId = 10;
   private nextNewsId = 500;
   private readonly categoryState = signal<readonly Fish24NewsCategory[]>([
@@ -55,8 +56,8 @@ export class Fish24NewsPreviewService {
     { id: 4, name: 'دسته آماده انتشار', slug: 'ready-to-publish', shortDescription: 'دسته خالی نمایشی', order: 3, imageUrl: '', imageAlt: '', imageTitle: '', keywords: '', metaDescription: '', active: true }
   ]);
   private readonly newsState = signal<readonly Fish24NewsItem[]>([
-    { id: 401, createdAt: '1405/06/28', title: 'راهنمای استفاده از خدمات جدید Fish24', slug: 'راهنمای-خدمات-جدید-fish24', shortDescription: 'مروری کوتاه بر امکانات تازه پنل', contentHtml: '<h2>امکانات تازه</h2><p>در این نسخه، <strong>مدیریت اسناد</strong> و گزارش‌ها ساده‌تر شده است.</p><blockquote>این رکورد فقط داده نمایشی پیش‌نمایش است.</blockquote>', categoryIds: [1, 2], mainImageUrl: '/images/dashboard-mockup.png', imageAlt: 'نمای پنل Fish24', imageTitle: 'خدمات جدید Fish24', keywords: 'Fish24, خدمات', metaDescription: 'معرفی قابلیت‌های تازه سامانه', order: 0, active: true, commentCount: 3, likeCount: 12, viewCount: 248 },
-    { id: 402, createdAt: '1405/06/20', title: 'بخشنامه نمونه محاسبات حقوق', slug: 'sample-payroll-circular', shortDescription: 'نمونه خبر غیرفعال برای بررسی روابط دسته‌بندی', contentHtml: '<h2>بخشنامه نمونه</h2><p>این خبر غیرفعال است و فقط در پیش‌نمایش داخلی دیده می‌شود.</p>', categoryIds: [2, 3], mainImageUrl: '/images/logo.png', imageAlt: 'نشان Fish24', imageTitle: 'بخشنامه نمونه', keywords: 'بخشنامه, حقوق', metaDescription: 'بخشنامه نمایشی', order: 1, active: false, commentCount: 0, likeCount: 4, viewCount: 91 }
+    { id: 401, createdAt: '1405/06/28', title: 'راهنمای استفاده از خدمات جدید Fish24', slug: 'راهنمای-خدمات-جدید-fish24', shortDescription: 'مروری کوتاه بر امکانات تازه پنل', contentHtml: '<h2>امکانات تازه</h2><p>در این نسخه، <strong>مدیریت اسناد</strong> و گزارش‌ها ساده‌تر شده است.</p><blockquote>این رکورد فقط داده نمایشی پیش‌نمایش است.</blockquote>', categoryIds: [1, 2], mainImageUrl: '/images/dashboard-mockup.png', imageAlt: 'نمای پنل Fish24', imageTitle: 'خدمات جدید Fish24', keywords: 'Fish24, خدمات', metaDescription: 'معرفی قابلیت‌های تازه سامانه', order: 0, active: true, likeCount: 12, viewCount: 248 },
+    { id: 402, createdAt: '1405/06/20', title: 'بخشنامه نمونه محاسبات حقوق', slug: 'sample-payroll-circular', shortDescription: 'نمونه خبر غیرفعال برای بررسی روابط دسته‌بندی', contentHtml: '<h2>بخشنامه نمونه</h2><p>این خبر غیرفعال است و فقط در پیش‌نمایش داخلی دیده می‌شود.</p>', categoryIds: [2, 3], mainImageUrl: '/images/logo.png', imageAlt: 'نشان Fish24', imageTitle: 'بخشنامه نمونه', keywords: 'بخشنامه, حقوق', metaDescription: 'بخشنامه نمایشی', order: 1, active: false, likeCount: 4, viewCount: 91 }
   ]);
 
   readonly categories = computed(() => this.stableOrder(this.categoryState()));
@@ -69,6 +70,7 @@ export class Fish24NewsPreviewService {
   newsItem(id: number): Fish24NewsItem | undefined { return this.newsState().find(item => item.id === id); }
   categoryNames(ids: readonly number[]): readonly string[] { return ids.map(id => this.category(id)?.name).filter((name): name is string => Boolean(name)); }
   categoryNewsCount(id: number): number { return this.newsState().filter(item => item.categoryIds.includes(id)).length; }
+  approvedCommentCount(newsId: number): number { return this.comments.approvedCount(newsId); }
 
   normalizeSlug(value: string): string {
     return value.trim().toLocaleLowerCase('fa-IR').replace(/ي/g, 'ی').replace(/ك/g, 'ک')
@@ -115,7 +117,7 @@ export class Fish24NewsPreviewService {
     if (!this.canManage(role)) return this.failure('مجوز ایجاد خبر را ندارید.');
     const validated = this.validateNews(draft);
     if (!validated.ok) return validated;
-    const item: Fish24NewsItem = { ...validated.value, id: this.nextNewsId++, createdAt: this.todayJalali(), commentCount: 0, likeCount: 0, viewCount: 0 };
+    const item: Fish24NewsItem = { ...validated.value, id: this.nextNewsId++, createdAt: this.todayJalali(), likeCount: 0, viewCount: 0 };
     this.newsState.update(items => [...items, item]);
     return { ok: true, value: item };
   }
@@ -144,6 +146,7 @@ export class Fish24NewsPreviewService {
     if (!this.canManage(role)) return this.failure('مجوز حذف خبر را ندارید.');
     if (!this.newsItem(id)) return this.failure('خبر یافت نشد.');
     this.newsState.update(items => items.filter(item => item.id !== id));
+    this.comments.removeForNews(id);
     return { ok: true, value: undefined };
   }
 

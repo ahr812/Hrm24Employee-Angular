@@ -65,6 +65,13 @@ describe('Fish24NewsPreviewService', () => {
     expect(service.newsItem(result.value.id)).toBeUndefined();
   });
 
+  it('derives approved-only comment counts and cascades comments on news deletion', () => {
+    expect(service.approvedCommentCount(401)).toBe(2);
+    expect(service.approvedCommentCount(402)).toBe(0);
+    expect(service.deleteNews('super-admin', 401).ok).toBeTrue();
+    expect(service.approvedCommentCount(401)).toBe(0);
+  });
+
   it('sanitizes executable markup and unsafe URLs while preserving supported structure', () => {
     const html = service.sanitizeHtml('<h2>تیتر</h2><p onclick="evil()" style="color: red; text-align: center">متن</p><script>alert(1)</script><a href="javascript:alert(1)">پیوند</a><table><tr><td>سلول</td></tr></table>');
     expect(html).toContain('<h2>تیتر</h2>');

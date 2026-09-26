@@ -169,7 +169,8 @@ export const FISH24_ADMIN_NAV_CONFIG: readonly Fish24NavItem[] = [
     permission: 'news-management',
     children: [
       { id: 'fish24-admin-news-list', label: 'مدیریت اخبار', permission: 'news-management', route: '/fish24/internal/news' },
-      { id: 'fish24-admin-news-categories', label: 'دسته‌بندی اخبار', permission: 'news-management', route: '/fish24/internal/news/categories' }
+      { id: 'fish24-admin-news-categories', label: 'دسته‌بندی اخبار', permission: 'news-management', route: '/fish24/internal/news/categories' },
+      { id: 'fish24-admin-news-comments', label: 'مدیریت دیدگاه‌ها', permission: 'news-management', route: '/fish24/internal/news/comments' }
     ]
   },
   {
