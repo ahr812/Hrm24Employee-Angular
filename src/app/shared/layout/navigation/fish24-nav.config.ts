@@ -174,13 +174,6 @@ export const FISH24_ADMIN_NAV_CONFIG: readonly Fish24NavItem[] = [
     ]
   },
   {
-    id: 'fish24-admin-faq',
-    label: 'سوالات متداول',
-    icon: 'help-circle',
-    permission: 'faq-management'
-    // Future: route: '/fish24/admin/faq'
-  },
-  {
     id: 'fish24-admin-subscribers',
     label: 'مشترکین',
     icon: 'mail',
@@ -191,8 +184,15 @@ export const FISH24_ADMIN_NAV_CONFIG: readonly Fish24NavItem[] = [
     id: 'fish24-admin-settings',
     label: 'تنظیمات سایت',
     icon: 'settings',
-    permission: 'site-settings'
-    // Future: route: '/fish24/admin/settings'
+    permission: 'faq-management',
+    children: [
+      {
+        id: 'fish24-admin-settings-faqs',
+        label: 'سؤالات متداول',
+        permission: 'faq-management',
+        route: '/fish24/internal/faqs'
+      }
+    ]
   },
   {
     id: 'fish24-admin-geographic',

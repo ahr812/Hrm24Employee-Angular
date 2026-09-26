@@ -26,3 +26,18 @@ describe('Fish24 internal ticket navigation', () => {
     }
   });
 });
+
+describe('Fish24 FAQ navigation', () => {
+  it('places FAQ management under site settings for every internal role', () => {
+    const group = FISH24_ADMIN_NAV_CONFIG.find(item => item.id === 'fish24-admin-settings')!;
+    const faq = group.children?.find(item => item.id === 'fish24-admin-settings-faqs');
+    expect(group.label).toBe('تنظیمات سایت');
+    expect(faq?.label).toBe('سؤالات متداول');
+    expect(faq?.route).toBe('/fish24/internal/faqs');
+    for (const role of ['super-admin', 'sales-expert', 'support-expert'] as const) {
+      const capabilities: readonly string[] = ROLE_CAPABILITIES[role];
+      expect(capabilities).toContain(group.permission!);
+      expect(capabilities).toContain(faq?.permission!);
+    }
+  });
+});
