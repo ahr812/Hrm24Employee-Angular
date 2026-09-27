@@ -51,7 +51,6 @@ export const ROLE_CAPABILITIES: Record<Fish24RoleId, readonly Fish24Permission[]
   'support-expert': [
     FISH24_PERMISSIONS.dashboard,
     FISH24_PERMISSIONS.generalReports,
-    FISH24_PERMISSIONS.userReports,
     FISH24_PERMISSIONS.ticketReports,
     FISH24_PERMISSIONS.userManagement,
     FISH24_PERMISSIONS.ticketsMessages,

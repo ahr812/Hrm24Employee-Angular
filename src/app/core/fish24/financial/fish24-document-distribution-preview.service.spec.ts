@@ -85,7 +85,7 @@ describe('Fish24DocumentDistributionPreviewService', () => {
 
   it('retains the original uploaded blob and keeps pricing recalculation separate from payment history', () => {
     const source = new Blob(['original-pdf'], { type: 'application/pdf' });
-    const registered = service.registerUnpaidSend({ id: 'original-file', createdAt: '1405/06/20', employerId: 'user-1', employerName: 'کارفرما', employerMobile: '09123456789', companyId: 101, companyName: 'مجموعه نمونه سپهر', title: 'سند اصلی', expiresAt: '1405/07/20', durationMonths: 1, userType: 'حقیقی', hasFreeCredit: false, pageCount: 1, smsEnabled: true, recipientMobiles: ['09123456789'], sourceFileName: 'original.pdf', sourceFile: source });
+    const registered = service.registerUnpaidSend({ id: 'original-file', createdAt: '1405/06/20', employerId: 'user-1', employerName: 'کارفرما', employerMobile: '09123456789', companyId: 101, companyName: 'مجموعه نمونه سپهر', title: 'سند اصلی', expiresAt: '1405/07/20', durationMonths: 1, userType: 'حقیقی', hasFreeCredit: false, pageCount: 1, smsEnabled: true, recipientMobiles: ['09123456789'], sourceFileName: 'original.pdf', sourceFile: source, uploadedAt: '1405/06/20', sourceFileSizeBytes: source.size });
     expect(registered.send?.sourceFile).toBe(source);
     expect(service.confirmPayment('original-file').ok).toBeTrue();
     const balanceAfterPayment = wallet.balance('user-1');

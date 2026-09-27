@@ -38,8 +38,8 @@ export const FISH24_ADMIN_NAV_CONFIG: readonly Fish24NavItem[] = [
         id: 'fish24-admin-reports-users',
         label: 'گزارشات کاربران',
         icon: 'users',
-        permission: 'user-reports'
-        // Future: route: '/fish24/admin/reports/users'
+        permission: 'user-reports',
+        route: '/fish24/internal/reports/users'
       },
       {
         id: 'fish24-admin-reports-tickets',

@@ -63,8 +63,8 @@ describe('Fish24PermissionService', () => {
       expect(service.hasPermission(supportUser, FISH24_PERMISSIONS.generalReports)).toBe(true);
     });
 
-    it('support-expert should have userReports', () => {
-      expect(service.hasPermission(supportUser, FISH24_PERMISSIONS.userReports)).toBe(true);
+    it('support-expert should NOT have userReports', () => {
+      expect(service.hasPermission(supportUser, FISH24_PERMISSIONS.userReports)).toBe(false);
     });
 
     it('support-expert should have ticketReports', () => {

@@ -55,3 +55,14 @@ describe('Fish24 geography navigation',()=>{
     expect(ROLE_CAPABILITIES['support-expert'] as readonly string[]).not.toContain(group.permission!);
   });
 });
+
+describe('Fish24 user reports navigation', () => {
+  it('routes the user report only for Administrator and Sales', () => {
+    const group = FISH24_ADMIN_NAV_CONFIG.find(item => item.id === 'fish24-admin-reports')!;
+    const report = group.children?.find(item => item.id === 'fish24-admin-reports-users')!;
+    expect(report.route).toBe('/fish24/internal/reports/users');
+    expect(ROLE_CAPABILITIES['super-admin'] as readonly string[]).toContain(report.permission!);
+    expect(ROLE_CAPABILITIES['sales-expert'] as readonly string[]).toContain(report.permission!);
+    expect(ROLE_CAPABILITIES['support-expert'] as readonly string[]).not.toContain(report.permission!);
+  });
+});

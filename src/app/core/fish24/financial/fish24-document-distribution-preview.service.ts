@@ -25,6 +25,8 @@ export interface Fish24DocumentSend {
   readonly recipientMobiles: readonly string[];
   readonly sourceFileName: string;
   readonly sourceFile: Blob | null;
+  readonly uploadedAt: string | null;
+  readonly sourceFileSizeBytes: number | null;
   readonly isPaid: boolean;
   readonly paidAmountRial: number | null;
   readonly employeeAccessActive: boolean;
@@ -42,11 +44,11 @@ export interface Fish24DistributionResult {
 }
 
 const SEEDS: readonly Fish24DocumentSendInput[] = [
-  { id: '2001', createdAt: '1405/06/20', employerId: '1001', employerName: 'مریم احمدی', employerMobile: '09121234567', companyId: 101, companyName: 'مجموعه نمونه سپهر', title: 'فیش حقوق مرداد ۱۴۰۵', expiresAt: '1405/09/20', durationMonths: 3, userType: 'حقوقی', hasFreeCredit: false, pageCount: 3, smsEnabled: true, recipientMobiles: ['09123456789', '09120000022', '09120000033'], sourceFileName: 'payslip-1405-05.pdf', sourceFile: null },
-  { id: '2002', createdAt: '1405/06/18', employerId: '1002', employerName: 'رضا کریمی', employerMobile: '09129876543', companyId: 102, companyName: 'مجموعه آزمایشی باران', title: 'گواهی پرداخت پاداش', expiresAt: '1405/07/18', durationMonths: 1, userType: 'حقوقی', hasFreeCredit: true, pageCount: 2, smsEnabled: true, recipientMobiles: ['09123456789', '09120000044'], sourceFileName: 'bonus-certificate.pdf', sourceFile: null },
-  { id: '2003', createdAt: '1405/06/16', employerId: '1001', employerName: 'مریم احمدی', employerMobile: '09121234567', companyId: 101, companyName: 'مجموعه نمونه سپهر', title: 'فیش حقوق تیر ۱۴۰۵', expiresAt: '1405/07/16', durationMonths: 1, userType: 'حقوقی', hasFreeCredit: false, pageCount: 4, smsEnabled: true, recipientMobiles: ['09123456789', '09120000055', '09120000066', '09120000077'], sourceFileName: 'payslip-1405-04.pdf', sourceFile: null },
-  { id: '2004', createdAt: '1405/06/12', employerId: '1007', employerName: 'حامد اکبری', employerMobile: '09123334455', companyId: 103, companyName: 'مجموعه نمایشی نارنج', title: 'صورت‌حساب همکاری', expiresAt: '1406/06/12', durationMonths: 12, userType: 'حقوقی', hasFreeCredit: false, pageCount: 2, smsEnabled: true, recipientMobiles: ['09123456789', '09120000088'], sourceFileName: 'cooperation-statement.pdf', sourceFile: null },
-  { id: '2006', createdAt: '1405/06/12', employerId: 'user-1', employerName: 'علی احمدی', employerMobile: '09123456789', companyId: 103, companyName: 'مجموعه نمایشی نارنج', title: 'پیش‌نمایش پرداخت شهریور', expiresAt: '1405/07/12', durationMonths: 1, userType: 'حقیقی', hasFreeCredit: false, pageCount: 3, smsEnabled: true, recipientMobiles: ['09120000011', '09120000022', '09120000033'], sourceFileName: 'preview-shahrivar.pdf', sourceFile: null }
+  { id: '2001', createdAt: '1405/06/20', employerId: '1001', employerName: 'مریم احمدی', employerMobile: '09121234567', companyId: 101, companyName: 'مجموعه نمونه سپهر', title: 'فیش حقوق مرداد ۱۴۰۵', expiresAt: '1405/09/20', durationMonths: 3, userType: 'حقوقی', hasFreeCredit: false, pageCount: 3, smsEnabled: true, recipientMobiles: ['09123456789', '09120000022', '09120000033'], sourceFileName: 'payslip-1405-05.pdf', sourceFile: null, uploadedAt: null, sourceFileSizeBytes: null },
+  { id: '2002', createdAt: '1405/06/18', employerId: '1002', employerName: 'رضا کریمی', employerMobile: '09129876543', companyId: 102, companyName: 'مجموعه آزمایشی باران', title: 'گواهی پرداخت پاداش', expiresAt: '1405/07/18', durationMonths: 1, userType: 'حقوقی', hasFreeCredit: true, pageCount: 2, smsEnabled: true, recipientMobiles: ['09123456789', '09120000044'], sourceFileName: 'bonus-certificate.pdf', sourceFile: null, uploadedAt: null, sourceFileSizeBytes: null },
+  { id: '2003', createdAt: '1405/06/16', employerId: '1001', employerName: 'مریم احمدی', employerMobile: '09121234567', companyId: 101, companyName: 'مجموعه نمونه سپهر', title: 'فیش حقوق تیر ۱۴۰۵', expiresAt: '1405/07/16', durationMonths: 1, userType: 'حقوقی', hasFreeCredit: false, pageCount: 4, smsEnabled: true, recipientMobiles: ['09123456789', '09120000055', '09120000066', '09120000077'], sourceFileName: 'payslip-1405-04.pdf', sourceFile: null, uploadedAt: null, sourceFileSizeBytes: null },
+  { id: '2004', createdAt: '1405/06/12', employerId: '1007', employerName: 'حامد اکبری', employerMobile: '09123334455', companyId: 103, companyName: 'مجموعه نمایشی نارنج', title: 'صورت‌حساب همکاری', expiresAt: '1406/06/12', durationMonths: 12, userType: 'حقوقی', hasFreeCredit: false, pageCount: 2, smsEnabled: true, recipientMobiles: ['09123456789', '09120000088'], sourceFileName: 'cooperation-statement.pdf', sourceFile: null, uploadedAt: null, sourceFileSizeBytes: null },
+  { id: '2006', createdAt: '1405/06/12', employerId: 'user-1', employerName: 'علی احمدی', employerMobile: '09123456789', companyId: 103, companyName: 'مجموعه نمایشی نارنج', title: 'پیش‌نمایش پرداخت شهریور', expiresAt: '1405/07/12', durationMonths: 1, userType: 'حقیقی', hasFreeCredit: false, pageCount: 3, smsEnabled: true, recipientMobiles: ['09120000011', '09120000022', '09120000033'], sourceFileName: 'preview-shahrivar.pdf', sourceFile: null, uploadedAt: null, sourceFileSizeBytes: null }
 ];
 
 @Injectable({ providedIn: 'root' })

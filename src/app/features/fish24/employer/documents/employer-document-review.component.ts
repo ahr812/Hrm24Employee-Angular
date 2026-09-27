@@ -291,7 +291,8 @@ export class EmployerDocumentReviewComponent implements OnInit {
       expiresAt: state.expirationPreview, durationMonths: this.durationMonths(state.hostingOptionId),
       userType: 'حقیقی', hasFreeCredit: false, pageCount: state.pageResults.length,
       smsEnabled: true, recipientMobiles: state.pageResults.flatMap(page => page.mobile ? [page.mobile] : []),
-      sourceFileName: state.fileName, sourceFile: state.sourceFile
+      sourceFileName: state.fileName, sourceFile: state.sourceFile,
+      uploadedAt: state.receiptIssueDate, sourceFileSizeBytes: state.sourceFile.size
     });
     const result = registration.ok ? this.distribution.confirmPayment(state.operationId) : registration;
     this.finalActionMessage.set(result.ok

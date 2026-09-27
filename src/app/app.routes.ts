@@ -7,6 +7,7 @@ import { ticketsMessagesGuard } from './core/fish24/permissions/tickets-messages
 import { newsManagementGuard } from './core/fish24/permissions/news-management.guard';
 import { faqManagementGuard } from './core/fish24/permissions/faq-management.guard';
 import { geographicManagementGuard } from './core/fish24/permissions/geographic-management.guard';
+import { userReportsGuard } from './core/fish24/permissions/user-reports.guard';
 
 export const routes: Routes = [
   { path: 'login', loadComponent: () => import('./features/auth/login/login.component').then(m => m.LoginComponent), canActivate: [guestGuard] },
@@ -37,6 +38,7 @@ export const routes: Routes = [
   { path: 'fish24/internal/geography/provinces', data:{kind:'province'}, loadComponent: () => import('./features/fish24/internal/geography/internal-geography.component').then(m => m.InternalGeographyComponent), canActivate: [authGuard, geographicManagementGuard] },
   { path: 'fish24/internal/geography/counties', data:{kind:'county'}, loadComponent: () => import('./features/fish24/internal/geography/internal-geography.component').then(m => m.InternalGeographyComponent), canActivate: [authGuard, geographicManagementGuard] },
   { path: 'fish24/internal/geography/cities', data:{kind:'city'}, loadComponent: () => import('./features/fish24/internal/geography/internal-geography.component').then(m => m.InternalGeographyComponent), canActivate: [authGuard, geographicManagementGuard] },
+  { path: 'fish24/internal/reports/users', loadComponent: () => import('./features/fish24/internal/reports/internal-user-reports.component').then(m => m.InternalUserReportsComponent), canActivate: [authGuard, userReportsGuard] },
   { path: 'fish24/employer/dashboard', loadComponent: () => import('./features/fish24/employer/dashboard/employer-dashboard.component').then(m => m.EmployerDashboardComponent), canActivate: [authGuard] },
   { path: 'fish24/employer/profile', loadComponent: () => import('./features/fish24/employer/profile/employer-profile.component').then(m => m.EmployerProfileComponent), canActivate: [authGuard] },
   { path: 'fish24/employer/change-password', loadComponent: () => import('./features/fish24/employer/change-password/employer-change-password.component').then(m => m.EmployerChangePasswordComponent), canActivate: [authGuard] },
