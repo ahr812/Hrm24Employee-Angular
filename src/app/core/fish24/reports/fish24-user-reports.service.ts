@@ -2,9 +2,11 @@ import { Inject, Injectable, InjectionToken, inject } from '@angular/core';
 import { BusinessUserPreviewService, BusinessUserRecord } from '../../../features/fish24/internal/users/business-user-preview.service';
 import { Fish24DocumentDistributionPreviewService, Fish24DocumentSend } from '../financial/fish24-document-distribution-preview.service';
 import { Fish24ReportPeriod, Fish24ReportPeriodBounds, currentTehranJalaliDate, dateInFish24Range, fish24ReportPeriodBounds, tehranSaturdayWeekday } from './fish24-report-calendar';
+import { Fish24UserReportDemoSeedService } from './fish24-user-report-demo-seed.service';
 
 export interface Fish24ReportsClock { now(): Date; }
 export const FISH24_REPORTS_CLOCK = new InjectionToken<Fish24ReportsClock>('FISH24_REPORTS_CLOCK', { factory: () => ({ now: () => new Date() }) });
+export const FISH24_USER_REPORT_DEMO_ENABLED = new InjectionToken<boolean>('FISH24_USER_REPORT_DEMO_ENABLED', { factory: () => true });
 
 export type Fish24ComparativeMetricId = 'employerRegistrations' | 'employeeRegistrations' | 'uploadedFiles' | 'uploadedBytes';
 
@@ -31,7 +33,13 @@ export interface Fish24UserReportSnapshot {
 export class Fish24UserReportsService {
   private readonly users = inject(BusinessUserPreviewService);
   private readonly distributions = inject(Fish24DocumentDistributionPreviewService);
-  constructor(@Inject(FISH24_REPORTS_CLOCK) private readonly clock: Fish24ReportsClock) {}
+  private readonly demoSeed = inject(Fish24UserReportDemoSeedService);
+  constructor(
+    @Inject(FISH24_REPORTS_CLOCK) private readonly clock: Fish24ReportsClock,
+    @Inject(FISH24_USER_REPORT_DEMO_ENABLED) demoEnabled: boolean
+  ) {
+    if (demoEnabled) this.demoSeed.initialize(this.clock.now());
+  }
 
   comparative(id: Fish24ComparativeMetricId, period: Fish24ReportPeriod): Fish24ComparativeReportMetric {
     const now = this.clock.now();

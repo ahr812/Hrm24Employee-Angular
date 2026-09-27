@@ -4,6 +4,7 @@ import { Fish24RolePreviewService } from '../dev/fish24-role-preview.service';
 import { Fish24WalletPreviewService, Fish24WalletTransaction } from './fish24-wallet-preview.service';
 import { Fish24PermissionService } from '../permissions/fish24-permission.service';
 import { FISH24_PERMISSIONS } from '../permissions/fish24-permissions';
+import { createFish24DemoPdf } from './fish24-demo-document-file';
 
 export type Fish24SendUserType = 'حقیقی' | 'حقوقی';
 
@@ -34,6 +35,11 @@ export interface Fish24DocumentSend {
 
 export interface Fish24DocumentSendInput extends Omit<Fish24DocumentSend, 'isPaid' | 'paidAmountRial' | 'employeeAccessActive'> {}
 
+export interface Fish24DocumentSendDemoSeed extends Fish24DocumentSendInput {
+  readonly isPaid: boolean;
+  readonly employeeAccessActive: boolean;
+}
+
 export interface Fish24DistributionResult {
   readonly ok: boolean;
   readonly existing: boolean;
@@ -43,12 +49,14 @@ export interface Fish24DistributionResult {
   readonly error?: 'not-found' | 'forbidden' | 'already-paid' | 'invalid-distribution' | 'receipt-unavailable' | 'wallet-not-found' | 'insufficient-funds' | 'invalid-amount';
 }
 
+const LEGACY_DEMO_FILES = [0, 240, 520, 860, 1180].map((padding, index) => createFish24DemoPdf(`Fish24 legacy demo ${index + 1}`, padding));
+const legacyUpload = (file: Blob, uploadedAt: string) => ({ sourceFile: file, uploadedAt, sourceFileSizeBytes: file.size });
 const SEEDS: readonly Fish24DocumentSendInput[] = [
-  { id: '2001', createdAt: '1405/06/20', employerId: '1001', employerName: 'مریم احمدی', employerMobile: '09121234567', companyId: 101, companyName: 'مجموعه نمونه سپهر', title: 'فیش حقوق مرداد ۱۴۰۵', expiresAt: '1405/09/20', durationMonths: 3, userType: 'حقوقی', hasFreeCredit: false, pageCount: 3, smsEnabled: true, recipientMobiles: ['09123456789', '09120000022', '09120000033'], sourceFileName: 'payslip-1405-05.pdf', sourceFile: null, uploadedAt: null, sourceFileSizeBytes: null },
-  { id: '2002', createdAt: '1405/06/18', employerId: '1002', employerName: 'رضا کریمی', employerMobile: '09129876543', companyId: 102, companyName: 'مجموعه آزمایشی باران', title: 'گواهی پرداخت پاداش', expiresAt: '1405/07/18', durationMonths: 1, userType: 'حقوقی', hasFreeCredit: true, pageCount: 2, smsEnabled: true, recipientMobiles: ['09123456789', '09120000044'], sourceFileName: 'bonus-certificate.pdf', sourceFile: null, uploadedAt: null, sourceFileSizeBytes: null },
-  { id: '2003', createdAt: '1405/06/16', employerId: '1001', employerName: 'مریم احمدی', employerMobile: '09121234567', companyId: 101, companyName: 'مجموعه نمونه سپهر', title: 'فیش حقوق تیر ۱۴۰۵', expiresAt: '1405/07/16', durationMonths: 1, userType: 'حقوقی', hasFreeCredit: false, pageCount: 4, smsEnabled: true, recipientMobiles: ['09123456789', '09120000055', '09120000066', '09120000077'], sourceFileName: 'payslip-1405-04.pdf', sourceFile: null, uploadedAt: null, sourceFileSizeBytes: null },
-  { id: '2004', createdAt: '1405/06/12', employerId: '1007', employerName: 'حامد اکبری', employerMobile: '09123334455', companyId: 103, companyName: 'مجموعه نمایشی نارنج', title: 'صورت‌حساب همکاری', expiresAt: '1406/06/12', durationMonths: 12, userType: 'حقوقی', hasFreeCredit: false, pageCount: 2, smsEnabled: true, recipientMobiles: ['09123456789', '09120000088'], sourceFileName: 'cooperation-statement.pdf', sourceFile: null, uploadedAt: null, sourceFileSizeBytes: null },
-  { id: '2006', createdAt: '1405/06/12', employerId: 'user-1', employerName: 'علی احمدی', employerMobile: '09123456789', companyId: 103, companyName: 'مجموعه نمایشی نارنج', title: 'پیش‌نمایش پرداخت شهریور', expiresAt: '1405/07/12', durationMonths: 1, userType: 'حقیقی', hasFreeCredit: false, pageCount: 3, smsEnabled: true, recipientMobiles: ['09120000011', '09120000022', '09120000033'], sourceFileName: 'preview-shahrivar.pdf', sourceFile: null, uploadedAt: null, sourceFileSizeBytes: null }
+  { id: '2001', createdAt: '1405/06/20', employerId: '1001', employerName: 'مریم احمدی', employerMobile: '09121234567', companyId: 101, companyName: 'مجموعه نمونه سپهر', title: 'فیش حقوق مرداد ۱۴۰۵', expiresAt: '1405/09/20', durationMonths: 3, userType: 'حقوقی', hasFreeCredit: false, pageCount: 3, smsEnabled: true, recipientMobiles: ['09123456789', '09120000022', '09120000033'], sourceFileName: 'payslip-1405-05.pdf', ...legacyUpload(LEGACY_DEMO_FILES[0], '1405/06/20') },
+  { id: '2002', createdAt: '1405/06/18', employerId: '1002', employerName: 'رضا کریمی', employerMobile: '09129876543', companyId: 102, companyName: 'مجموعه آزمایشی باران', title: 'گواهی پرداخت پاداش', expiresAt: '1405/07/18', durationMonths: 1, userType: 'حقوقی', hasFreeCredit: true, pageCount: 2, smsEnabled: true, recipientMobiles: ['09123456789', '09120000044'], sourceFileName: 'bonus-certificate.pdf', ...legacyUpload(LEGACY_DEMO_FILES[1], '1405/06/18') },
+  { id: '2003', createdAt: '1405/06/16', employerId: '1001', employerName: 'مریم احمدی', employerMobile: '09121234567', companyId: 101, companyName: 'مجموعه نمونه سپهر', title: 'فیش حقوق تیر ۱۴۰۵', expiresAt: '1405/07/16', durationMonths: 1, userType: 'حقوقی', hasFreeCredit: false, pageCount: 4, smsEnabled: true, recipientMobiles: ['09123456789', '09120000055', '09120000066', '09120000077'], sourceFileName: 'payslip-1405-04.pdf', ...legacyUpload(LEGACY_DEMO_FILES[2], '1405/06/16') },
+  { id: '2004', createdAt: '1405/06/12', employerId: '1007', employerName: 'حامد اکبری', employerMobile: '09123334455', companyId: 103, companyName: 'مجموعه نمایشی نارنج', title: 'صورت‌حساب همکاری', expiresAt: '1406/06/12', durationMonths: 12, userType: 'حقوقی', hasFreeCredit: false, pageCount: 2, smsEnabled: true, recipientMobiles: ['09123456789', '09120000088'], sourceFileName: 'cooperation-statement.pdf', ...legacyUpload(LEGACY_DEMO_FILES[3], '1405/06/12') },
+  { id: '2006', createdAt: '1405/06/12', employerId: 'user-1', employerName: 'علی احمدی', employerMobile: '09123456789', companyId: 103, companyName: 'مجموعه نمایشی نارنج', title: 'پیش‌نمایش پرداخت شهریور', expiresAt: '1405/07/12', durationMonths: 1, userType: 'حقیقی', hasFreeCredit: false, pageCount: 3, smsEnabled: true, recipientMobiles: ['09120000011', '09120000022', '09120000033'], sourceFileName: 'preview-shahrivar.pdf', ...legacyUpload(LEGACY_DEMO_FILES[4], '1405/06/12') }
 ];
 
 @Injectable({ providedIn: 'root' })
@@ -90,6 +98,23 @@ export class Fish24DocumentDistributionPreviewService {
     const send: Fish24DocumentSend = { ...input, isPaid: false, paidAmountRial: null, employeeAccessActive: false };
     this.sendsState.update(sends => [send, ...sends]);
     return { ok: true, existing: false, send, receipt: receiptResult.receipt };
+  }
+
+  seedDemoSends(seeds: readonly Fish24DocumentSendDemoSeed[]): void {
+    const existingIds = new Set(this.sendsState().map(send => send.id));
+    const additions: Fish24DocumentSend[] = [];
+    for (const seed of seeds) {
+      if (existingIds.has(seed.id) || !this.validDistribution(seed)) continue;
+      const receipt = this.pricing.createInternalReceipt(this.receiptInput(seed)).receipt;
+      additions.push({
+        ...seed,
+        isPaid: seed.isPaid,
+        paidAmountRial: seed.isPaid ? receipt?.breakdown.totalRial ?? null : null,
+        employeeAccessActive: seed.isPaid && seed.employeeAccessActive
+      });
+      existingIds.add(seed.id);
+    }
+    if (additions.length) this.sendsState.update(sends => [...additions, ...sends]);
   }
 
   confirmPayment(id: string): Fish24DistributionResult {

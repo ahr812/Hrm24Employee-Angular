@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { BusinessUserPreviewService } from '../../../features/fish24/internal/users/business-user-preview.service';
 import { Fish24DocumentDistributionPreviewService } from '../financial/fish24-document-distribution-preview.service';
-import { FISH24_REPORTS_CLOCK, Fish24UserReportsService } from './fish24-user-reports.service';
+import { FISH24_REPORTS_CLOCK, FISH24_USER_REPORT_DEMO_ENABLED, Fish24UserReportsService } from './fish24-user-reports.service';
 
 describe('Fish24UserReportsService', () => {
   let reports: Fish24UserReportsService;
@@ -11,7 +11,8 @@ describe('Fish24UserReportsService', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({ providers: [
       Fish24UserReportsService,
-      { provide: FISH24_REPORTS_CLOCK, useValue: { now: () => new Date('2026-09-14T08:00:00Z') } }
+      { provide: FISH24_REPORTS_CLOCK, useValue: { now: () => new Date('2026-09-14T08:00:00Z') } },
+      { provide: FISH24_USER_REPORT_DEMO_ENABLED, useValue: false }
     ] });
     reports = TestBed.inject(Fish24UserReportsService);
     users = TestBed.inject(BusinessUserPreviewService);

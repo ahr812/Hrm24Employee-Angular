@@ -13,6 +13,7 @@ export interface BusinessUserRecord {
   readonly fullName: string | null;
   readonly nationalId: string | null;
   readonly companyName: string;
+  readonly workplaceIds: readonly number[];
   readonly email: string;
   readonly birthDate?: string;
   readonly description?: string;
@@ -59,13 +60,14 @@ export interface BusinessUserRecord {
   readonly newsletterEmail: boolean;
 }
 
-type BusinessUserSeed = Pick<BusinessUserRecord,
+export type BusinessUserSeed = Pick<BusinessUserRecord,
   'id' | 'mobile' | 'joinedAt' | 'fullName' | 'nationalId' | 'companyName' | 'roles' |
   'userType' | 'hasFreeCredit' | 'freeCreditExpiresAt' | 'rank' | 'lastOtpAt' |
   'otpCount' | 'hasSentDocuments' | 'isActive' | 'employerApproval'> & Partial<BusinessUserRecord>;
 
 function createUser(seed: BusinessUserSeed): BusinessUserRecord {
   return {
+    workplaceIds: [],
     email: '',
     ticketAccess: true,
     refundRequestAllowed: false,
@@ -140,6 +142,15 @@ export class BusinessUserPreviewService {
 
   findUser(userId: number): BusinessUserRecord | null {
     return this.users().find(user => user.id === userId) ?? null;
+  }
+
+  seedDemoUsers(seeds: readonly BusinessUserSeed[]): void {
+    const existingIds = new Set(this.users().map(user => user.id));
+    const existingMobiles = new Set(this.users().map(user => user.mobile));
+    const additions = seeds
+      .filter(seed => !existingIds.has(seed.id) && !existingMobiles.has(seed.mobile))
+      .map(createUser);
+    if (additions.length) this.users.update(users => [...users, ...additions]);
   }
 
   addEmployee(input: {

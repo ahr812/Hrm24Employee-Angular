@@ -28,6 +28,12 @@ export const FISH24_USER_REPORT_PERIOD_DEFAULTS: Fish24UserReportPeriodPreferenc
 const LIST_ID = 'internal-user-reports-dashboard-periods';
 const VALID_PERIODS = new Set(FISH24_REPORT_PERIODS.map(period => period.id));
 
+function formatMegabytes(value: number): string {
+  if (value === 0) return '۰ MB';
+  if (value < 10_000) return '< ۰٫۰۱ MB';
+  return `${new Intl.NumberFormat('fa-IR', { maximumFractionDigits: 2 }).format(value / 1_000_000)} MB`;
+}
+
 export function validateFish24UserReportPeriods(value: unknown): Fish24UserReportPeriodPreferences | null {
   if (typeof value !== 'object' || value === null) return null;
   const candidate = value as Partial<Fish24UserReportPeriodPreferences>;
@@ -50,7 +56,7 @@ export function validateFish24UserReportPeriods(value: unknown): Fish24UserRepor
           <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary"><ui-icon name="bar-chart-2" [size]="25" /></span>
           <div><h1 class="text-2xl font-black text-foreground dark:text-slate-100 sm:text-3xl">گزارشات کاربران</h1><p class="mt-1 text-sm text-muted">نمای تحلیلی اولیه بر پایه داده‌های مشترک پیش‌نمایش فیش۲۴</p></div>
         </div>
-        <span class="w-fit rounded-full border border-warning/30 bg-warning/10 px-3 py-1.5 text-xs font-bold text-warning">پیش‌نمایش فرانت‌اند • تا {{ displayDate() }}</span>
+        <span class="w-fit rounded-full border border-warning/30 bg-warning/10 px-3 py-1.5 text-xs font-bold text-warning">داده‌های نمایشی چرخان • تا {{ displayDate() }}</span>
       </header>
 
       <section aria-labelledby="users-report-heading" class="space-y-3">
@@ -96,7 +102,7 @@ export function validateFish24UserReportPeriods(value: unknown): Fish24UserRepor
         </article>
       </section>
 
-      <aside class="flex gap-2 rounded-xl border border-primary/20 bg-primary/5 p-3 text-xs leading-6 text-muted dark:bg-primary/10"><ui-icon name="info" [size]="17" class="mt-1 shrink-0 text-primary"/><p>این داشبورد نخستین نسخه و مبتنی بر داده‌های حافظه‌ای پیش‌نمایش است؛ آمار پایدار تولید و تاریخچه حذف‌شده را ادعا نمی‌کند.</p></aside>
+      <aside class="flex gap-2 rounded-xl border border-primary/20 bg-primary/5 p-3 text-xs leading-6 text-muted dark:bg-primary/10"><ui-icon name="info" [size]="17" class="mt-1 shrink-0 text-primary"/><p>این داشبورد از داده‌های نمایشی چرخان و حافظه‌ای استفاده می‌کند؛ این داده‌ها سابقه واقعی یا آمار پایدار محیط تولید نیستند.</p></aside>
 
       <ng-template #comparisonCard let-id="id" let-title="title" let-icon="icon" let-metric="metric" let-volume="volume">
         <article class="report-card min-w-0">
@@ -156,10 +162,7 @@ export class InternalUserReportsComponent {
   }
   count(value: number): string { return new Intl.NumberFormat('fa-IR').format(value); }
   bytes(value: number): string {
-    if (value === 0) return '۰ MB';
-    const mb = value / 1_000_000;
-    if (mb < 0.01) return '< ۰٫۰۱ MB';
-    return `${new Intl.NumberFormat('fa-IR', { maximumFractionDigits: 2 }).format(mb)} MB`;
+    return formatMegabytes(value);
   }
   comparisonChart(title: string, metric: Fish24ComparativeReportMetric, volume: boolean): Highcharts.Options {
     const values = metric.previous === null ? [metric.current] : [metric.previous, metric.current];
@@ -168,10 +171,10 @@ export class InternalUserReportsComponent {
       chart: { type: 'column', backgroundColor: 'transparent', animation: false, spacing: [10, 2, 4, 2] },
       title: { text: undefined }, credits: { enabled: true }, legend: { enabled: false },
       xAxis: { categories, lineColor: '#cbd5e1', labels: { style: { fontFamily: 'Vazirmatn', color: '#64748b', fontSize: '11px' } } },
-      yAxis: { min: 0, allowDecimals: volume, title: { text: volume ? 'مگابایت' : 'تعداد', style: { fontFamily: 'Vazirmatn', color: '#64748b' } }, labels: { formatter: function () { const numeric = Number(this.value); return volume ? (numeric / 1_000_000).toLocaleString('fa-IR', { maximumFractionDigits: 2 }) : numeric.toLocaleString('fa-IR'); }, style: { fontFamily: 'Vazirmatn', color: '#64748b' } } },
+      yAxis: { min: 0, allowDecimals: volume, title: { text: volume ? 'مگابایت' : 'تعداد', style: { fontFamily: 'Vazirmatn', color: '#64748b' } }, labels: { formatter: function () { const numeric = Number(this.value); return volume ? formatMegabytes(numeric).replace(' MB', '') : numeric.toLocaleString('fa-IR'); }, style: { fontFamily: 'Vazirmatn', color: '#64748b' } } },
       tooltip: { formatter: function () { const numeric = this.y ?? 0; const rendered = volume ? `${(numeric / 1_000_000).toLocaleString('fa-IR', { maximumFractionDigits: 2 })} MB<br/><b>${numeric.toLocaleString('fa-IR')} بایت</b>` : `<b>${numeric.toLocaleString('fa-IR')}</b>`; return `${this.key}<br/>${rendered}`; }, style: { fontFamily: 'Vazirmatn', direction: 'rtl' } },
       accessibility: { enabled: true, description: `مقایسه ${title} در دوره جاری و دوره قبل.`, point: { valueSuffix: volume ? ' بایت' : '' } },
-      plotOptions: { column: { borderRadius: 5, maxPointWidth: 54, dataLabels: { enabled: true, formatter: function () { const numeric = this.y ?? 0; return volume ? `${(numeric / 1_000_000).toLocaleString('fa-IR', { maximumFractionDigits: 2 })} MB` : numeric.toLocaleString('fa-IR'); }, style: { fontFamily: 'Vazirmatn', textOutline: 'none', color: '#64748b', fontSize: '10px' } } } },
+      plotOptions: { column: { borderRadius: 5, maxPointWidth: 54, dataLabels: { enabled: true, formatter: function () { const numeric = this.y ?? 0; return volume ? formatMegabytes(numeric) : numeric.toLocaleString('fa-IR'); }, style: { fontFamily: 'Vazirmatn', textOutline: 'none', color: '#64748b', fontSize: '10px' } } } },
       series: [{ type: 'column', name: title, color: '#0f8fa8', data: values }]
     };
   }
