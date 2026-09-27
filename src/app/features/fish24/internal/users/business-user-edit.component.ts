@@ -7,6 +7,7 @@ import { Fish24RolePreviewService } from '../../../../core/fish24/dev/fish24-rol
 import { Fish24PermissionService } from '../../../../core/fish24/permissions/fish24-permission.service';
 import { FISH24_PERMISSIONS } from '../../../../core/fish24/permissions/fish24-permissions';
 import { BusinessUserPreviewService, BusinessUserRole, UserRank } from './business-user-preview.service';
+import { Fish24GeographyService } from '../../../../core/fish24/geography/fish24-geography.service';
 
 type ImageField = 'profile' | 'national-card' | 'official-newspaper' | 'vat-certificate';
 
@@ -56,9 +57,9 @@ type ImageField = 'profile' | 'national-card' | 'official-newspaper' | 'vat-cert
               <div class="file-box"><span class="field-label">عکس</span><div class="file-preview">@if (profileImage()) {<img [src]="profileImage()" alt="پیش‌نمایش عکس کاربر" class="h-full w-full object-cover">} @else {<ui-icon name="image" [size]="30" class="text-muted"></ui-icon>}</div><input id="edit-user-photo" type="file" accept="image/*" (change)="selectImage($event, 'profile')" class="file-input"></div>
               <div class="file-box"><span class="field-label">عکس کارت ملی</span><div class="file-preview">@if (nationalCardImage()) {<img [src]="nationalCardImage()" alt="پیش‌نمایش کارت ملی" class="h-full w-full object-cover">} @else {<ui-icon name="image" [size]="30" class="text-muted"></ui-icon>}</div><input id="edit-national-card" type="file" accept="image/*" (change)="selectImage($event, 'national-card')" class="file-input"></div>
               <div><label for="edit-user-landline" class="field-label">تلفن ثابت</label><input id="edit-user-landline" formControlName="landline" type="text" dir="ltr" class="field-input"></div>
-              <div><label for="edit-user-province" class="field-label">استان</label><select id="edit-user-province" formControlName="province" class="field-input">@for (item of provinces; track item) {<option [value]="item">{{ item }}</option>}</select></div>
-              <div><label for="edit-user-county" class="field-label">شهرستان</label><select id="edit-user-county" formControlName="county" class="field-input">@for (item of counties; track item) {<option [value]="item">{{ item }}</option>}</select></div>
-              <div><label for="edit-user-city" class="field-label">شهر</label><select id="edit-user-city" formControlName="city" class="field-input">@for (item of cities; track item) {<option [value]="item">{{ item }}</option>}</select></div>
+              <div><label for="edit-user-province" class="field-label">استان</label><select id="edit-user-province" formControlName="province" class="field-input">@for (item of provinceOptions(); track item) {<option [value]="item">{{ item }}</option>}</select></div>
+              <div><label for="edit-user-county" class="field-label">شهرستان</label><select id="edit-user-county" formControlName="county" class="field-input"><option value="">انتخاب کنید</option>@for (item of countyOptions(); track item) {<option [value]="item">{{ item }}</option>}</select></div>
+              <div><label for="edit-user-city" class="field-label">شهر</label><select id="edit-user-city" formControlName="city" class="field-input"><option value="">انتخاب کنید</option>@for (item of cityOptions(); track item) {<option [value]="item">{{ item }}</option>}</select></div>
               <div><label for="edit-user-type" class="field-label">نوع کاربر</label><select id="edit-user-type" formControlName="userType" class="field-input"><option value="حقیقی">حقیقی</option><option value="حقوقی">حقوقی</option></select></div>
               <div><label for="edit-user-gender" class="field-label">جنسیت</label><select id="edit-user-gender" formControlName="gender" class="field-input"><option value="مرد">مرد</option><option value="زن">زن</option></select></div>
             </div>
@@ -133,11 +134,9 @@ export class BusinessUserEditComponent {
   private readonly userService = inject(BusinessUserPreviewService);
   private readonly rolePreviewService = inject(Fish24RolePreviewService);
   private readonly permissionService = inject(Fish24PermissionService);
+  private readonly geography = inject(Fish24GeographyService);
 
   readonly ranks: readonly UserRank[] = [1, 2, 3, 4, 5];
-  readonly provinces = ['تهران', 'البرز'] as const;
-  readonly counties = ['تهران', 'کرج'] as const;
-  readonly cities = ['تهران', 'کرج'] as const;
   readonly submitted = signal(false);
   readonly mobileConflict = signal(false);
   readonly profileImage = signal<string | null>(null);
@@ -161,7 +160,19 @@ export class BusinessUserEditComponent {
       this.officialNewspaperImage.set(user.officialNewspaperImage);
       this.vatCertificateImage.set(user.vatCertificateImage);
     }
+    this.form.controls.province.valueChanges.subscribe(() => {
+      const county = this.form.controls.county.value;
+      if (county && !this.countyOptions().includes(county)) this.form.patchValue({county:'',city:''},{emitEvent:false});
+    });
+    this.form.controls.county.valueChanges.subscribe(() => {
+      const city = this.form.controls.city.value;
+      if (city && !this.cityOptions().includes(city)) this.form.controls.city.setValue('',{emitEvent:false});
+    });
   }
+
+  provinceOptions(): readonly string[] { return this.geography.provinceOptions(this.form.controls.province.value).map(item => item.name); }
+  countyOptions(): readonly string[] { return this.geography.countyOptions(this.form.controls.province.value, this.form.controls.county.value).map(item => item.name); }
+  cityOptions(): readonly string[] { return this.geography.cityOptions(this.form.controls.county.value, this.form.controls.city.value).map(item => item.name); }
 
   hasError(controlName: string): boolean {
     const control = this.form.get(controlName);
@@ -276,9 +287,9 @@ export class BusinessUserEditComponent {
       invoiceRecipientMobile: [user?.invoiceRecipientMobile ?? '', Validators.pattern(optionalMobile)],
       invoiceAddress: [user?.invoiceAddress ?? ''],
       landline: [user?.landline ?? ''],
-      province: [user?.province ?? 'تهران'],
-      county: [user?.county ?? 'تهران'],
-      city: [user?.city ?? 'تهران'],
+      province: [this.geography.resolveProvinceName(user?.province ?? 'تهران'), Validators.required],
+      county: [this.geography.resolveCountyName(user?.county ?? 'تهران'), Validators.required],
+      city: [this.geography.resolveCityName(user?.city ?? 'تهران'), Validators.required],
       userType: [user?.userType ?? 'حقیقی'],
       gender: [user?.gender ?? 'مرد'],
       companyName: [user?.companyName ?? ''],

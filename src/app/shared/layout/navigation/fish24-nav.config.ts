@@ -202,21 +202,21 @@ export const FISH24_ADMIN_NAV_CONFIG: readonly Fish24NavItem[] = [
     children: [
       {
         id: 'fish24-admin-geographic-provinces',
-        label: 'استان ها',
-        permission: 'geographic-management'
-        // Future: route: '/fish24/admin/geographic/provinces'
+        label: 'استان‌ها',
+        permission: 'geographic-management',
+        route: '/fish24/internal/geography/provinces'
+      },
+      {
+        id: 'fish24-admin-geographic-counties',
+        label: 'شهرستان‌ها',
+        permission: 'geographic-management',
+        route: '/fish24/internal/geography/counties'
       },
       {
         id: 'fish24-admin-geographic-cities',
-        label: 'شهرستان ها',
-        permission: 'geographic-management'
-        // Future: route: '/fish24/admin/geographic/cities'
-      },
-      {
-        id: 'fish24-admin-geographic-regions',
         label: 'شهرها',
-        permission: 'geographic-management'
-        // Future: route: '/fish24/admin/geographic/regions'
+        permission: 'geographic-management',
+        route: '/fish24/internal/geography/cities'
       }
     ]
   }

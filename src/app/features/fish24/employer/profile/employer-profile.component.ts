@@ -1,6 +1,7 @@
 import { NgClass } from '@angular/common';
-import { Component, isDevMode, signal } from '@angular/core';
+import { Component, inject, isDevMode, signal } from '@angular/core';
 import { IconComponent } from '../../../../shared/ui/icon/icon.component';
+import { Fish24GeographyService } from '../../../../core/fish24/geography/fish24-geography.service';
 
 type EmployerProfilePreviewState = 'approved' | 'unapproved';
 
@@ -175,8 +176,9 @@ const INITIAL_EMPLOYER_PROFILE: EmployerProfileFormModel = {
                           [value]="profileFieldValue(field.key)"
                           (change)="onProfileFieldInput(field.key, $event)"
                           class="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-semibold text-right text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 disabled:cursor-default disabled:opacity-100 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:disabled:text-slate-100">
-                          @for (option of field.options ?? []; track option) {
-                            <option [value]="option">{{ option }}</option>
+                          @if (isGeographyField(field.key)) {<option value="">انتخاب کنید</option>}
+                          @for (option of optionsForField(field); track option) {
+                            <option [value]="option">{{ optionLabel(field.key, option) }}</option>
                           }
                         </select>
                       } @else {
@@ -223,6 +225,7 @@ const INITIAL_EMPLOYER_PROFILE: EmployerProfileFormModel = {
   `
 })
 export class EmployerProfileComponent {
+  readonly geography = inject(Fish24GeographyService);
   readonly isDevelopmentPreviewAvailable = isDevMode();
   readonly profilePreviewState = signal<EmployerProfilePreviewState>('approved');
   readonly savedProfile = signal<EmployerProfileFormModel>({ ...INITIAL_EMPLOYER_PROFILE });
@@ -249,9 +252,9 @@ export class EmployerProfileComponent {
         icon: 'map-pin',
         fields: [
           { id: 'landline', key: 'landline', label: 'تلفن ثابت', inputMode: 'tel', direction: 'ltr' },
-          { id: 'province', key: 'province', label: 'استان', control: 'select', options: ['تهران', 'البرز'] },
-          { id: 'county', key: 'county', label: 'شهرستان', control: 'select', options: ['تهران', 'کرج'] },
-          { id: 'city', key: 'city', label: 'شهر', control: 'select', options: ['تهران', 'کرج'] },
+          { id: 'province', key: 'province', label: 'استان', control: 'select' },
+          { id: 'county', key: 'county', label: 'شهرستان', control: 'select' },
+          { id: 'city', key: 'city', label: 'شهر', control: 'select' },
           { id: 'user-type', key: 'userType', label: 'نوع کاربر', control: 'select', options: ['حقیقی', 'حقوقی'] },
           { id: 'gender', key: 'gender', label: 'جنسیت', control: 'select', options: ['مرد', 'زن'] }
         ]
@@ -300,13 +303,31 @@ export class EmployerProfileComponent {
     }
 
     this.draftProfile[key] = value;
+    if (key === 'province') { this.draftProfile.county = ''; this.draftProfile.city = ''; }
+    if (key === 'county') this.draftProfile.city = '';
     this.saveFeedbackVisible.set(false);
   }
 
   profileFieldValue(key: EmployerProfileFieldKey): string {
-    return this.profilePreviewState() === 'approved'
+    const value = this.profilePreviewState() === 'approved'
       ? this.savedProfile()[key]
       : this.draftProfile[key];
+    if (key === 'province') return this.geography.resolveProvinceName(value);
+    if (key === 'county') return this.geography.resolveCountyName(value);
+    if (key === 'city') return this.geography.resolveCityName(value);
+    return value;
+  }
+
+  isGeographyField(key: EmployerProfileFieldKey): boolean { return key === 'province' || key === 'county' || key === 'city'; }
+  optionsForField(field: EmployerProfileField): readonly string[] {
+    if (field.key === 'province') return this.geography.provinceOptions(this.profileFieldValue('province')).map(item => item.name);
+    if (field.key === 'county') return this.geography.countyOptions(this.profileFieldValue('province'), this.profileFieldValue('county')).map(item => item.name);
+    if (field.key === 'city') return this.geography.cityOptions(this.profileFieldValue('county'), this.profileFieldValue('city')).map(item => item.name);
+    return field.options ?? [];
+  }
+  optionLabel(key: EmployerProfileFieldKey, name: string): string {
+    const id = key === 'province' ? this.geography.provinceIdByName(name) : key === 'county' ? this.geography.countyIdByName(name) : key === 'city' ? this.geography.cityIdByName(name) : null;
+    return id && !this.geography.effectivelyAvailable(key as 'province'|'county'|'city', id) ? `${name} (غیرفعال/غیرقابل انتخاب جدید)` : name;
   }
 
   onProfileFieldInput(key: EmployerProfileFieldKey, event: Event): void {
@@ -320,6 +341,11 @@ export class EmployerProfileComponent {
     if (this.profilePreviewState() !== 'unapproved') {
       return;
     }
+
+    const provinceId = this.geography.provinceIdByName(this.draftProfile.province);
+    const countyId = this.geography.countyIdByName(this.draftProfile.county);
+    const cityId = this.geography.cityIdByName(this.draftProfile.city);
+    if (!provinceId || !countyId || !cityId || this.geography.provinceForCounty(countyId)?.id !== provinceId || this.geography.countyForCity(cityId)?.id !== countyId) return;
 
     this.savedProfile.set({ ...this.draftProfile });
     this.saveFeedbackVisible.set(true);

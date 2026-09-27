@@ -41,3 +41,17 @@ describe('Fish24 FAQ navigation', () => {
     }
   });
 });
+
+describe('Fish24 geography navigation',()=>{
+  it('exposes all three management routes only to roles with geographic management',()=>{
+    const group=FISH24_ADMIN_NAV_CONFIG.find(item=>item.id==='fish24-admin-geographic')!;
+    expect(group.children?.map(item=>[item.label,item.route])).toEqual([
+      ['استان‌ها','/fish24/internal/geography/provinces'],
+      ['شهرستان‌ها','/fish24/internal/geography/counties'],
+      ['شهرها','/fish24/internal/geography/cities']
+    ]);
+    expect(ROLE_CAPABILITIES['super-admin'] as readonly string[]).toContain(group.permission!);
+    expect(ROLE_CAPABILITIES['sales-expert'] as readonly string[]).toContain(group.permission!);
+    expect(ROLE_CAPABILITIES['support-expert'] as readonly string[]).not.toContain(group.permission!);
+  });
+});
