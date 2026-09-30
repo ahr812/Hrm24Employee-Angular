@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import type * as Highcharts from 'highcharts';
 import { HighchartsChartDirective } from 'highcharts-angular';
@@ -62,8 +62,8 @@ export function validateFish24UserReportPeriods(value: unknown): Fish24UserRepor
       <section aria-labelledby="users-report-heading" class="space-y-3">
         <div class="section-title"><ui-icon name="users" [size]="20" /><h2 id="users-report-heading">کاربران</h2></div>
         <div class="grid gap-4 xl:grid-cols-2">
-          <ng-container [ngTemplateOutlet]="comparisonCard" [ngTemplateOutletContext]="{ id: 'employerRegistrations', title: 'کارفرمایان ثبت‌شده', icon: 'briefcase', metric: employerMetric(), volume: false }" />
-          <ng-container [ngTemplateOutlet]="comparisonCard" [ngTemplateOutletContext]="{ id: 'employeeRegistrations', title: 'کارمندان ثبت‌شده', icon: 'users', metric: employeeMetric(), volume: false }" />
+          <ng-container [ngTemplateOutlet]="comparisonCard" [ngTemplateOutletContext]="{ id: 'employerRegistrations', title: 'کارفرمایان ثبت‌شده', icon: 'briefcase', metric: employerMetric(), chart: employerChartOptions(), volume: false }" />
+          <ng-container [ngTemplateOutlet]="comparisonCard" [ngTemplateOutletContext]="{ id: 'employeeRegistrations', title: 'کارمندان ثبت‌شده', icon: 'users', metric: employeeMetric(), chart: employeeChartOptions(), volume: false }" />
         </div>
         <div class="grid grid-cols-2 gap-3">
           <article class="snapshot-card"><ui-icon name="briefcase" [size]="21" class="text-warning"/><div><p class="snapshot-value">{{ count(snapshot().inactiveEmployers) }}</p><p class="snapshot-label">کارفرمای غیرفعال فعلی</p></div></article>
@@ -74,8 +74,8 @@ export function validateFish24UserReportPeriods(value: unknown): Fish24UserRepor
       <section aria-labelledby="uploads-report-heading" class="space-y-3">
         <div class="section-title"><ui-icon name="folder-open" [size]="20" /><h2 id="uploads-report-heading">فایل‌های بارگذاری‌شده</h2></div>
         <div class="grid gap-4 xl:grid-cols-2">
-          <ng-container [ngTemplateOutlet]="comparisonCard" [ngTemplateOutletContext]="{ id: 'uploadedFiles', title: 'تعداد فایل‌های بارگذاری‌شده', icon: 'file-text', metric: uploadCountMetric(), volume: false }" />
-          <ng-container [ngTemplateOutlet]="comparisonCard" [ngTemplateOutletContext]="{ id: 'uploadedBytes', title: 'حجم فایل‌های بارگذاری‌شده', icon: 'cloud', metric: uploadBytesMetric(), volume: true }" />
+          <ng-container [ngTemplateOutlet]="comparisonCard" [ngTemplateOutletContext]="{ id: 'uploadedFiles', title: 'تعداد فایل‌های بارگذاری‌شده', icon: 'file-text', metric: uploadCountMetric(), chart: uploadCountChartOptions(), volume: false }" />
+          <ng-container [ngTemplateOutlet]="comparisonCard" [ngTemplateOutletContext]="{ id: 'uploadedBytes', title: 'حجم فایل‌های بارگذاری‌شده', icon: 'cloud', metric: uploadBytesMetric(), chart: uploadBytesChartOptions(), volume: true }" />
         </div>
         @if (uploadOmittedCount() > 0) {
           <aside class="flex gap-2 rounded-xl border border-warning/25 bg-warning/10 p-3 text-xs leading-6 text-muted"><ui-icon name="info" [size]="17" class="mt-1 shrink-0 text-warning"/><p>{{ count(uploadOmittedCount()) }} رکورد تاریخی فاقد زمان بارگذاری و اندازه واقعی فایل است و بدون حدس‌زدن از آمار بارگذاری کنار گذاشته شده است.</p></aside>
@@ -92,7 +92,7 @@ export function validateFish24UserReportPeriods(value: unknown): Fish24UserRepor
           <div>
             <h3 class="card-title">وضعیت دسترسی فعلی کارکنان به اسناد</h3>
             <p class="mt-1 text-xs leading-6 text-muted">جمع دو گروه برابر با کل افراد یکتای دارای نقش کارمند است.</p>
-            <div highchartsChart [options]="coverageChart()" class="chart chart--coverage" aria-label="نمودار توزیع کارکنان دارای سند فعال و بدون سند فعال"></div>
+            <div highchartsChart [options]="coverageChart()" (chartInstance)="watchChart($event)" class="chart chart--coverage" aria-label="نمودار توزیع کارکنان دارای سند فعال و بدون سند فعال"></div>
           </div>
           <dl class="space-y-2.5">
             <div class="legend-row"><span class="legend-dot bg-primary"></span><dt>دارای حداقل یک سند فعال</dt><dd>{{ count(snapshot().employeesWithActiveDocuments) }}</dd></div>
@@ -104,7 +104,7 @@ export function validateFish24UserReportPeriods(value: unknown): Fish24UserRepor
 
       <aside class="flex gap-2 rounded-xl border border-primary/20 bg-primary/5 p-3 text-xs leading-6 text-muted dark:bg-primary/10"><ui-icon name="info" [size]="17" class="mt-1 shrink-0 text-primary"/><p>این داشبورد از داده‌های نمایشی چرخان و حافظه‌ای استفاده می‌کند؛ این داده‌ها سابقه واقعی یا آمار پایدار محیط تولید نیستند.</p></aside>
 
-      <ng-template #comparisonCard let-id="id" let-title="title" let-icon="icon" let-metric="metric" let-volume="volume">
+      <ng-template #comparisonCard let-id="id" let-title="title" let-icon="icon" let-metric="metric" let-chart="chart" let-volume="volume">
         <article class="report-card min-w-0">
           <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div class="flex items-center gap-2"><span class="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary"><ui-icon [name]="icon" [size]="19"/></span><h3 class="card-title">{{ title }}</h3></div>
@@ -116,24 +116,34 @@ export function validateFish24UserReportPeriods(value: unknown): Fish24UserRepor
             <div class="metric-value"><span>دوره جاری</span><strong>{{ volume ? bytes(metric.current) : count(metric.current) }}</strong><small>{{ metric.bounds.current.label }}</small></div>
             @if (metric.previous !== null) { <div class="metric-value metric-value--previous"><span>دوره قبل</span><strong>{{ volume ? bytes(metric.previous) : count(metric.previous) }}</strong><small>{{ metric.bounds.previous?.label }}</small></div> }
           </div>
-          <div highchartsChart [options]="comparisonChart(title, metric, volume)" class="chart" [attr.aria-label]="'نمودار مقایسه‌ای ' + title"></div>
+          @if (hasComparisonData(metric)) {
+            <div highchartsChart [options]="chart" (chartInstance)="watchChart($event)" class="chart" [attr.aria-label]="'نمودار مقایسه‌ای ' + title"></div>
+          } @else {
+            <div class="chart chart-empty" role="status"><ui-icon name="bar-chart-2" [size]="28"/><span>در این دوره داده‌ای برای نمایش ثبت نشده است.</span></div>
+          }
         </article>
       </ng-template>
     </main>
   `,
   styles: [`
-    .section-title{display:flex;align-items:center;gap:.5rem;color:rgb(var(--color-primary));font-weight:900;font-size:1.1rem}.report-card{border:1px solid rgb(var(--color-border));border-radius:1rem;background:rgb(var(--color-surface));padding:1rem;box-shadow:0 1px 3px rgb(15 23 42/.06)}:host-context(.dark) .report-card{border-color:#334155;background:#1e293b}.card-title{font-size:.95rem;font-weight:900;color:rgb(var(--color-foreground))}:host-context(.dark) .card-title{color:#f1f5f9}.snapshot-card{display:flex;min-width:0;align-items:center;gap:.75rem;border:1px solid rgb(var(--color-border));border-radius:1rem;background:rgb(var(--color-surface));padding:.9rem}:host-context(.dark) .snapshot-card{border-color:#334155;background:#1e293b}.snapshot-value{font-size:1.55rem;line-height:1;font-weight:900;color:rgb(var(--color-foreground))}:host-context(.dark) .snapshot-value{color:#f8fafc}.snapshot-label{margin-top:.35rem;font-size:.72rem;font-weight:700;color:rgb(var(--color-muted));line-height:1.35rem}.period-control{display:flex;max-width:100%;overflow-x:auto;border:1px solid rgb(var(--color-border));border-radius:.65rem;padding:.15rem}:host-context(.dark) .period-control{border-color:#475569}.period-control button{min-width:2.45rem;border-radius:.5rem;padding:.35rem .5rem;font-size:.7rem;font-weight:800;color:rgb(var(--color-muted))}.period-control button.period-active{background:rgb(var(--color-primary));color:white}.metric-value{border-radius:.75rem;background:rgb(var(--color-primary)/.06);padding:.65rem}.metric-value span,.metric-value small{display:block;font-size:.65rem;color:rgb(var(--color-muted))}.metric-value strong{display:block;margin:.25rem 0;font-size:1.15rem;font-weight:900;color:rgb(var(--color-foreground));direction:ltr;text-align:right}:host-context(.dark) .metric-value strong{color:#f8fafc}.metric-value--previous{background:#94a3b81c}.chart{display:block;width:100%;height:220px;margin-top:.5rem}.chart--coverage{height:260px}.legend-row{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:.5rem;border:1px solid rgb(var(--color-border));border-radius:.75rem;padding:.65rem;font-size:.75rem;color:rgb(var(--color-muted))}:host-context(.dark) .legend-row{border-color:#334155}.legend-row dd{font-size:1rem;font-weight:900;color:rgb(var(--color-foreground))}:host-context(.dark) .legend-row dd{color:#f8fafc}.legend-dot{width:.6rem;height:.6rem;border-radius:999px}@media(min-width:640px){.report-card{padding:1.25rem}.card-title{font-size:1rem}.snapshot-label{font-size:.82rem}.period-control button{font-size:.75rem}.chart{height:240px}}
+    .section-title{display:flex;align-items:center;gap:.5rem;color:rgb(var(--color-primary));font-weight:900;font-size:1.1rem}.report-card{border:1px solid rgb(var(--color-border));border-radius:1rem;background:rgb(var(--color-surface));padding:1rem;box-shadow:0 1px 3px rgb(15 23 42/.06)}:host-context(.dark) .report-card{border-color:#334155;background:#1e293b}.card-title{font-size:.95rem;font-weight:900;color:rgb(var(--color-foreground))}:host-context(.dark) .card-title{color:#f1f5f9}.snapshot-card{display:flex;min-width:0;align-items:center;gap:.75rem;border:1px solid rgb(var(--color-border));border-radius:1rem;background:rgb(var(--color-surface));padding:.9rem}:host-context(.dark) .snapshot-card{border-color:#334155;background:#1e293b}.snapshot-value{font-size:1.55rem;line-height:1;font-weight:900;color:rgb(var(--color-foreground))}:host-context(.dark) .snapshot-value{color:#f8fafc}.snapshot-label{margin-top:.35rem;font-size:.72rem;font-weight:700;color:rgb(var(--color-muted));line-height:1.35rem}.period-control{display:flex;max-width:100%;overflow-x:auto;border:1px solid rgb(var(--color-border));border-radius:.65rem;padding:.15rem}:host-context(.dark) .period-control{border-color:#475569}.period-control button{min-width:2.45rem;border-radius:.5rem;padding:.35rem .5rem;font-size:.7rem;font-weight:800;color:rgb(var(--color-muted))}.period-control button.period-active{background:rgb(var(--color-primary));color:white}.metric-value{border-radius:.75rem;background:rgb(var(--color-primary)/.06);padding:.65rem}.metric-value span,.metric-value small{display:block;font-size:.65rem;color:rgb(var(--color-muted))}.metric-value strong{display:block;margin:.25rem 0;font-size:1.15rem;font-weight:900;color:rgb(var(--color-foreground));direction:ltr;text-align:right}:host-context(.dark) .metric-value strong{color:#f8fafc}.metric-value--previous{background:#94a3b81c}.chart{display:block;width:100%;height:220px;margin-top:.5rem}.chart--coverage{height:260px}.chart-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.6rem;border:1px dashed rgb(var(--color-border));border-radius:.75rem;color:rgb(var(--color-muted));font-size:.75rem;font-weight:700}:host-context(.dark) .chart-empty{border-color:#475569}.legend-row{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:.5rem;border:1px solid rgb(var(--color-border));border-radius:.75rem;padding:.65rem;font-size:.75rem;color:rgb(var(--color-muted))}:host-context(.dark) .legend-row{border-color:#334155}.legend-row dd{font-size:1rem;font-weight:900;color:rgb(var(--color-foreground))}:host-context(.dark) .legend-row dd{color:#f8fafc}.legend-dot{width:.6rem;height:.6rem;border-radius:999px}@media(min-width:640px){.report-card{padding:1.25rem}.card-title{font-size:1rem}.snapshot-label{font-size:.82rem}.period-control button{font-size:.75rem}.chart{height:240px}}
   `]
 })
 export class InternalUserReportsComponent {
   private readonly reports = inject(Fish24UserReportsService);
   private readonly preferences = inject(InternalListPreferencesService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly chartObservers = new Map<Highcharts.Chart, ResizeObserver>();
   readonly reportPeriods = FISH24_REPORT_PERIODS;
   readonly periods = signal(this.preferences.loadFilters(LIST_ID, FISH24_USER_REPORT_PERIOD_DEFAULTS, validateFish24UserReportPeriods));
   readonly employerMetric = computed(() => this.reports.comparative('employerRegistrations', this.periods().employerRegistrations));
   readonly employeeMetric = computed(() => this.reports.comparative('employeeRegistrations', this.periods().employeeRegistrations));
   readonly uploadCountMetric = computed(() => this.reports.comparative('uploadedFiles', this.periods().uploadedFiles));
   readonly uploadBytesMetric = computed(() => this.reports.comparative('uploadedBytes', this.periods().uploadedBytes));
+  readonly employerChartOptions = computed(() => this.comparisonChart('کارفرمایان ثبت‌شده', this.employerMetric(), false));
+  readonly employeeChartOptions = computed(() => this.comparisonChart('کارمندان ثبت‌شده', this.employeeMetric(), false));
+  readonly uploadCountChartOptions = computed(() => this.comparisonChart('تعداد فایل‌های بارگذاری‌شده', this.uploadCountMetric(), false));
+  readonly uploadBytesChartOptions = computed(() => this.comparisonChart('حجم فایل‌های بارگذاری‌شده', this.uploadBytesMetric(), true));
   readonly uploadOmittedCount = computed(() => Math.max(this.uploadCountMetric().omittedRecordCount, this.uploadBytesMetric().omittedRecordCount));
   readonly snapshot = computed(() => this.reports.snapshot());
   readonly displayDate = computed(() => this.reports.currentJalaliDate().replace(/\d/g, digit => '۰۱۲۳۴۵۶۷۸۹'[Number(digit)]));
@@ -154,6 +164,13 @@ export class InternalUserReportsComponent {
     };
   });
 
+  constructor() {
+    this.destroyRef.onDestroy(() => {
+      for (const observer of this.chartObservers.values()) observer.disconnect();
+      this.chartObservers.clear();
+    });
+  }
+
   selectedPeriod(id: Fish24ComparativeMetricId): Fish24ReportPeriod { return this.periods()[id]; }
   setPeriod(id: Fish24ComparativeMetricId, period: Fish24ReportPeriod): void {
     const next = { ...this.periods(), [id]: period };
@@ -164,8 +181,19 @@ export class InternalUserReportsComponent {
   bytes(value: number): string {
     return formatMegabytes(value);
   }
+  hasComparisonData(metric: Fish24ComparativeReportMetric): boolean {
+    return metric.current > 0 || (metric.previous ?? 0) > 0;
+  }
+  watchChart(chart: Highcharts.Chart): void {
+    if (this.chartObservers.has(chart) || typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(() => chart.reflow());
+    observer.observe(chart.container.parentElement ?? chart.container);
+    this.chartObservers.set(chart, observer);
+  }
   comparisonChart(title: string, metric: Fish24ComparativeReportMetric, volume: boolean): Highcharts.Options {
-    const values = metric.previous === null ? [metric.current] : [metric.previous, metric.current];
+    const values = metric.previous === null
+      ? [{ y: metric.current, color: '#0f8fa8' }]
+      : [{ y: metric.previous, color: '#94a3b8' }, { y: metric.current, color: '#0f8fa8' }];
     const categories = metric.previous === null ? ['کل تا امروز'] : ['دوره قبل', 'دوره جاری'];
     return {
       chart: { type: 'column', backgroundColor: 'transparent', animation: false, spacing: [10, 2, 4, 2] },
@@ -174,8 +202,8 @@ export class InternalUserReportsComponent {
       yAxis: { min: 0, allowDecimals: volume, title: { text: volume ? 'مگابایت' : 'تعداد', style: { fontFamily: 'Vazirmatn', color: '#64748b' } }, labels: { formatter: function () { const numeric = Number(this.value); return volume ? formatMegabytes(numeric).replace(' MB', '') : numeric.toLocaleString('fa-IR'); }, style: { fontFamily: 'Vazirmatn', color: '#64748b' } } },
       tooltip: { formatter: function () { const numeric = this.y ?? 0; const rendered = volume ? `${(numeric / 1_000_000).toLocaleString('fa-IR', { maximumFractionDigits: 2 })} MB<br/><b>${numeric.toLocaleString('fa-IR')} بایت</b>` : `<b>${numeric.toLocaleString('fa-IR')}</b>`; return `${this.key}<br/>${rendered}`; }, style: { fontFamily: 'Vazirmatn', direction: 'rtl' } },
       accessibility: { enabled: true, description: `مقایسه ${title} در دوره جاری و دوره قبل.`, point: { valueSuffix: volume ? ' بایت' : '' } },
-      plotOptions: { column: { borderRadius: 5, maxPointWidth: 54, dataLabels: { enabled: true, formatter: function () { const numeric = this.y ?? 0; return volume ? formatMegabytes(numeric) : numeric.toLocaleString('fa-IR'); }, style: { fontFamily: 'Vazirmatn', textOutline: 'none', color: '#64748b', fontSize: '10px' } } } },
-      series: [{ type: 'column', name: title, color: '#0f8fa8', data: values }]
+      plotOptions: { column: { animation: false, borderRadius: 5, maxPointWidth: 54, dataLabels: { enabled: true, formatter: function () { const numeric = this.y ?? 0; if (numeric === 0) return undefined; return volume ? formatMegabytes(numeric) : numeric.toLocaleString('fa-IR'); }, style: { fontFamily: 'Vazirmatn', textOutline: 'none', color: '#64748b', fontSize: '10px' } } } },
+      series: [{ type: 'column', name: title, data: values }]
     };
   }
 }
