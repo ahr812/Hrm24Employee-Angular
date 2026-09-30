@@ -28,6 +28,32 @@ export const FISH24_USER_REPORT_PERIOD_DEFAULTS: Fish24UserReportPeriodPreferenc
 const LIST_ID = 'internal-user-reports-dashboard-periods';
 const VALID_PERIODS = new Set(FISH24_REPORT_PERIODS.map(period => period.id));
 
+const REPORT_TOOLTIP_OPTIONS: Highcharts.TooltipOptions = {
+  useHTML: true,
+  padding: 10,
+  borderRadius: 8,
+  borderWidth: 1,
+  borderColor: '#475569',
+  backgroundColor: 'rgba(15, 23, 42, 0.96)',
+  shadow: false,
+  style: {
+    color: '#f8fafc',
+    fontFamily: 'Vazirmatn',
+    fontSize: '12px',
+    direction: 'rtl',
+    textAlign: 'right',
+    whiteSpace: 'nowrap'
+  }
+};
+
+function escapeTooltipText(value: string): string {
+  return value.replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]!);
+}
+
+function reportTooltip(title: string, lines: readonly string[]): string {
+  return `<div dir="rtl" style="display:inline-grid;gap:2px;white-space:nowrap;text-align:right;line-height:1.7"><strong>${escapeTooltipText(title)}</strong>${lines.map(line => `<span>${escapeTooltipText(line)}</span>`).join('')}</div>`;
+}
+
 function formatMegabytes(value: number): string {
   if (value === 0) return '۰ MB';
   if (value < 10_000) return '< ۰٫۰۱ MB';
@@ -154,7 +180,14 @@ export class InternalUserReportsComponent {
       chart: { type: 'pie', backgroundColor: 'transparent', animation: false, spacing: [4, 4, 4, 4] },
       title: { text: hasPopulation ? this.count(data.totalEmployees) : 'بدون داده', verticalAlign: 'middle', y: 8, style: { fontFamily: 'Vazirmatn', fontWeight: '800', color: '#64748b' } },
       subtitle: { text: hasPopulation ? 'کارمند یکتا' : '', verticalAlign: 'middle', y: 29, style: { fontFamily: 'Vazirmatn', color: '#94a3b8' } },
-      credits: { enabled: true }, legend: { enabled: false }, tooltip: { pointFormat: '<b>{point.y:,.0f}</b> کارمند' },
+      credits: { enabled: true }, legend: { enabled: false },
+      tooltip: {
+        ...REPORT_TOOLTIP_OPTIONS,
+        formatter: function () {
+          const value = (this.y ?? 0).toLocaleString('fa-IR');
+          return reportTooltip(String(this.key), [`${value} کارمند`]);
+        }
+      },
       accessibility: { enabled: true, description: 'تعداد کارکنان دارای حداقل یک سند فعال در برابر کارکنان بدون سند فعال.', point: { valueSuffix: ' کارمند' } },
       plotOptions: { pie: { innerSize: '68%', borderWidth: 0, dataLabels: { enabled: false }, states: { inactive: { opacity: 1 } } } },
       series: [{ type: 'pie', name: 'کارکنان', data: hasPopulation ? [
@@ -200,7 +233,19 @@ export class InternalUserReportsComponent {
       title: { text: undefined }, credits: { enabled: true }, legend: { enabled: false },
       xAxis: { categories, lineColor: '#cbd5e1', labels: { style: { fontFamily: 'Vazirmatn', color: '#64748b', fontSize: '11px' } } },
       yAxis: { min: 0, allowDecimals: volume, title: { text: volume ? 'مگابایت' : 'تعداد', style: { fontFamily: 'Vazirmatn', color: '#64748b' } }, labels: { formatter: function () { const numeric = Number(this.value); return volume ? formatMegabytes(numeric).replace(' MB', '') : numeric.toLocaleString('fa-IR'); }, style: { fontFamily: 'Vazirmatn', color: '#64748b' } } },
-      tooltip: { formatter: function () { const numeric = this.y ?? 0; const rendered = volume ? `${(numeric / 1_000_000).toLocaleString('fa-IR', { maximumFractionDigits: 2 })} MB<br/><b>${numeric.toLocaleString('fa-IR')} بایت</b>` : `<b>${numeric.toLocaleString('fa-IR')}</b>`; return `${this.key}<br/>${rendered}`; }, style: { fontFamily: 'Vazirmatn', direction: 'rtl' } },
+      tooltip: {
+        ...REPORT_TOOLTIP_OPTIONS,
+        formatter: function () {
+          const numeric = this.y ?? 0;
+          const lines = volume
+            ? [
+                `\u2066${(numeric / 1_000_000).toLocaleString('fa-IR', { maximumFractionDigits: 2 })} MB\u2069`,
+                `${numeric.toLocaleString('fa-IR')} بایت`
+              ]
+            : [numeric.toLocaleString('fa-IR')];
+          return reportTooltip(String(this.key), lines);
+        }
+      },
       accessibility: { enabled: true, description: `مقایسه ${title} در دوره جاری و دوره قبل.`, point: { valueSuffix: volume ? ' بایت' : '' } },
       plotOptions: { column: { animation: false, borderRadius: 5, maxPointWidth: 54, dataLabels: { enabled: true, formatter: function () { const numeric = this.y ?? 0; if (numeric === 0) return undefined; return volume ? formatMegabytes(numeric) : numeric.toLocaleString('fa-IR'); }, style: { fontFamily: 'Vazirmatn', textOutline: 'none', color: '#64748b', fontSize: '10px' } } } },
       series: [{ type: 'column', name: title, data: values }]

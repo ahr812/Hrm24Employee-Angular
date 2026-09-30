@@ -50,6 +50,24 @@ describe('InternalUserReports chart rendering', () => {
     expect(data[1].color).toBe('#0f8fa8');
   });
 
+  it('uses naturally measured RTL HTML tooltips for comparison and coverage charts', () => {
+    const component = TestBed.createComponent(InternalUserReportsComponent).componentInstance;
+    const comparisonTooltip = component.employerChartOptions().tooltip!;
+    const coverageTooltip = component.coverageChart().tooltip!;
+    expect(comparisonTooltip.useHTML).toBeTrue();
+    expect(coverageTooltip.useHTML).toBeTrue();
+    expect((comparisonTooltip.style as Record<string, unknown>)['whiteSpace']).toBe('nowrap');
+    expect((coverageTooltip.style as Record<string, unknown>)['direction']).toBe('rtl');
+
+    const comparisonMarkup = (comparisonTooltip.formatter as Function).call({ key: 'دوره قبل', y: 123456 }, comparisonTooltip) as string;
+    const coverageMarkup = (coverageTooltip.formatter as Function).call({ key: 'دارای سند فعال', y: 12 }, coverageTooltip) as string;
+    expect(comparisonMarkup).toContain('<div dir="rtl"');
+    expect(comparisonMarkup).toContain('display:inline-grid');
+    expect(comparisonMarkup).not.toContain('<br');
+    expect(coverageMarkup).toContain('دارای سند فعال');
+    expect(coverageMarkup).toContain('۱۲');
+  });
+
   it('renders positive-height SVG marks in all four monthly comparison charts', async () => {
     const fixture = TestBed.createComponent(InternalUserReportsComponent);
     fixture.nativeElement.style.display = 'block';
