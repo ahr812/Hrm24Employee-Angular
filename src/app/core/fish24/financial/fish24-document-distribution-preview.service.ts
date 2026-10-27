@@ -49,14 +49,16 @@ export interface Fish24DistributionResult {
   readonly error?: 'not-found' | 'forbidden' | 'already-paid' | 'invalid-distribution' | 'receipt-unavailable' | 'wallet-not-found' | 'insufficient-funds' | 'invalid-amount';
 }
 
-const LEGACY_DEMO_FILES = [0, 240, 520, 860, 1180].map((padding, index) => createFish24DemoPdf(`Fish24 legacy demo ${index + 1}`, padding));
+const LEGACY_DEMO_FILES = [0, 240, 520, 860, 1040, 1180].map((padding, index) => createFish24DemoPdf(`Fish24 legacy demo ${index + 1}`, padding));
 const legacyUpload = (file: Blob, uploadedAt: string) => ({ sourceFile: file, uploadedAt, sourceFileSizeBytes: file.size });
 const SEEDS: readonly Fish24DocumentSendInput[] = [
   { id: '2001', createdAt: '1405/06/20', employerId: '1001', employerName: 'مریم احمدی', employerMobile: '09121234567', companyId: 101, companyName: 'مجموعه نمونه سپهر', title: 'فیش حقوق مرداد ۱۴۰۵', expiresAt: '1405/09/20', durationMonths: 3, userType: 'حقوقی', hasFreeCredit: false, pageCount: 3, smsEnabled: true, recipientMobiles: ['09123456789', '09120000022', '09120000033'], sourceFileName: 'payslip-1405-05.pdf', ...legacyUpload(LEGACY_DEMO_FILES[0], '1405/06/20') },
   { id: '2002', createdAt: '1405/06/18', employerId: '1002', employerName: 'رضا کریمی', employerMobile: '09129876543', companyId: 102, companyName: 'مجموعه آزمایشی باران', title: 'گواهی پرداخت پاداش', expiresAt: '1405/07/18', durationMonths: 1, userType: 'حقوقی', hasFreeCredit: true, pageCount: 2, smsEnabled: true, recipientMobiles: ['09123456789', '09120000044'], sourceFileName: 'bonus-certificate.pdf', ...legacyUpload(LEGACY_DEMO_FILES[1], '1405/06/18') },
   { id: '2003', createdAt: '1405/06/16', employerId: '1001', employerName: 'مریم احمدی', employerMobile: '09121234567', companyId: 101, companyName: 'مجموعه نمونه سپهر', title: 'فیش حقوق تیر ۱۴۰۵', expiresAt: '1405/07/16', durationMonths: 1, userType: 'حقوقی', hasFreeCredit: false, pageCount: 4, smsEnabled: true, recipientMobiles: ['09123456789', '09120000055', '09120000066', '09120000077'], sourceFileName: 'payslip-1405-04.pdf', ...legacyUpload(LEGACY_DEMO_FILES[2], '1405/06/16') },
   { id: '2004', createdAt: '1405/06/12', employerId: '1007', employerName: 'حامد اکبری', employerMobile: '09123334455', companyId: 103, companyName: 'مجموعه نمایشی نارنج', title: 'صورت‌حساب همکاری', expiresAt: '1406/06/12', durationMonths: 12, userType: 'حقوقی', hasFreeCredit: false, pageCount: 2, smsEnabled: true, recipientMobiles: ['09123456789', '09120000088'], sourceFileName: 'cooperation-statement.pdf', ...legacyUpload(LEGACY_DEMO_FILES[3], '1405/06/12') },
-  { id: '2006', createdAt: '1405/06/12', employerId: 'user-1', employerName: 'علی احمدی', employerMobile: '09123456789', companyId: 103, companyName: 'مجموعه نمایشی نارنج', title: 'پیش‌نمایش پرداخت شهریور', expiresAt: '1405/07/12', durationMonths: 1, userType: 'حقیقی', hasFreeCredit: false, pageCount: 3, smsEnabled: true, recipientMobiles: ['09120000011', '09120000022', '09120000033'], sourceFileName: 'preview-shahrivar.pdf', ...legacyUpload(LEGACY_DEMO_FILES[4], '1405/06/12') }
+  // Explicit prior-year demonstration send paired with wallet debit 4010; not verified historical activity.
+  { id: '2010', createdAt: '1404/07/22', employerId: '1001', employerName: 'مریم احمدی', employerMobile: '09121234567', companyId: 101, companyName: 'مجموعه نمونه سپهر', title: 'نمونه گزارش مالی سال قبل', expiresAt: '1405/01/22', durationMonths: 1, userType: 'حقوقی', hasFreeCredit: false, pageCount: 2, smsEnabled: true, recipientMobiles: ['09123456789', '09120000022'], sourceFileName: 'financial-report-prior-year.pdf', ...legacyUpload(LEGACY_DEMO_FILES[4], '1404/07/22') },
+  { id: '2006', createdAt: '1405/06/12', employerId: 'user-1', employerName: 'علی احمدی', employerMobile: '09123456789', companyId: 103, companyName: 'مجموعه نمایشی نارنج', title: 'پیش‌نمایش پرداخت شهریور', expiresAt: '1405/07/12', durationMonths: 1, userType: 'حقیقی', hasFreeCredit: false, pageCount: 3, smsEnabled: true, recipientMobiles: ['09120000011', '09120000022', '09120000033'], sourceFileName: 'preview-shahrivar.pdf', ...legacyUpload(LEGACY_DEMO_FILES[5], '1405/06/12') }
 ];
 
 @Injectable({ providedIn: 'root' })
@@ -65,11 +67,11 @@ export class Fish24DocumentDistributionPreviewService {
   private readonly wallets = inject(Fish24WalletPreviewService);
   private readonly roles = inject(Fish24RolePreviewService);
   private readonly permissions = inject(Fish24PermissionService);
-  private readonly sendsState = signal<readonly Fish24DocumentSend[]>(SEEDS.map((seed, index) => ({
+  private readonly sendsState = signal<readonly Fish24DocumentSend[]>(SEEDS.map(seed => ({
     ...seed,
-    isPaid: index < 4,
+    isPaid: seed.id !== '2006',
     paidAmountRial: null,
-    employeeAccessActive: index < 4
+    employeeAccessActive: seed.id !== '2006'
   })));
   private readonly inFlight = new Set<string>();
 

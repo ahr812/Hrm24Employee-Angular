@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./out-tsc/financial-spec",
+    "types": ["jasmine"]
+  },
+  "include": [
+    "src/app/core/fish24/financial/fish24-document-pricing-preview.service.spec.ts",
+    "src/app/core/fish24/financial/fish24-document-distribution-preview.service.spec.ts",
+    "src/app/core/fish24/reports/fish24-financial-reports.service.spec.ts",
+    "src/app/core/fish24/reports/fish24-report-calendar.spec.ts",
+    "src/app/core/fish24/permissions/financial-reports.guard.spec.ts",
+    "src/app/shared/ui/data-list/internal-list-preferences.service.spec.ts",
+    "src/**/*.d.ts"
+  ]
+}
