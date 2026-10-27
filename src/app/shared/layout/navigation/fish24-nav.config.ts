@@ -52,8 +52,8 @@ export const FISH24_ADMIN_NAV_CONFIG: readonly Fish24NavItem[] = [
         id: 'fish24-admin-reports-financial',
         label: 'گزارشات مالی',
         icon: 'trending-up',
-        permission: 'financial-reports'
-        // Future: route: '/fish24/admin/reports/financial'
+        permission: 'financial-reports',
+        route: '/fish24/internal/reports/financial'
       }
     ]
   },

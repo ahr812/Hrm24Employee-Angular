@@ -83,18 +83,21 @@ describe('Fish24DocumentDistributionPreviewService', () => {
     expect(wallet.transactions().length).toBe(transactionsBefore);
   });
 
-  it('retains the original uploaded blob and keeps pricing recalculation separate from payment history', () => {
+  it('pays the stored receipt amount after tariff deactivation and keeps the receipt immutable', () => {
     const source = new Blob(['original-pdf'], { type: 'application/pdf' });
     const registered = service.registerUnpaidSend({ id: 'original-file', createdAt: '1405/06/20', employerId: 'user-1', employerName: 'کارفرما', employerMobile: '09123456789', companyId: 101, companyName: 'مجموعه نمونه سپهر', title: 'سند اصلی', expiresAt: '1405/07/20', durationMonths: 1, userType: 'حقیقی', hasFreeCredit: false, pageCount: 1, smsEnabled: true, recipientMobiles: ['09123456789'], sourceFileName: 'original.pdf', sourceFile: source, uploadedAt: '1405/06/20', sourceFileSizeBytes: source.size });
     expect(registered.send?.sourceFile).toBe(source);
-    expect(service.confirmPayment('original-file').ok).toBeTrue();
-    const balanceAfterPayment = wallet.balance('user-1');
-    const transaction = wallet.transactions().find(item => item.operationId === 'original-file');
+    const storedReceipt = JSON.stringify(registered.receipt);
+    const storedAmount = registered.receipt!.breakdown.totalRial;
     const setting = pricing.pricingSettings().find(item => item.id === 12)!;
-    const result = pricing.savePricing({ startDate: setting.startDate, endDate: setting.endDate, smsUnitPriceRial: String(setting.smsUnitPriceRial + 1), postalUnitPriceRial: String(setting.postalUnitPriceRial), page1Rial: String(setting.pagePricesRial[1] + 1), page3Rial: String(setting.pagePricesRial[3]), page6Rial: String(setting.pagePricesRial[6]), page12Rial: String(setting.pagePricesRial[12]), file1Rial: '0', file3Rial: '0', file6Rial: '0', file12Rial: '0', personnel1Rial: '0', personnel3Rial: '0', personnel6Rial: '0', personnel12Rial: '0', isActive: true }, setting.id);
-    expect(result.ok).toBeTrue();
-    expect(wallet.balance('user-1')).toBe(balanceAfterPayment);
-    expect(wallet.transactions().find(item => item.operationId === 'original-file')).toEqual(transaction);
+    expect(pricing.togglePricing(setting.id).ok).toBeTrue();
+    const balanceBefore = wallet.balance('user-1')!;
+    const paid = service.confirmPayment('original-file');
+    expect(paid.ok).toBeTrue();
+    expect(paid.transaction?.amountRial).toBe(storedAmount);
+    expect(wallet.balance('user-1')).toBe(balanceBefore - storedAmount);
+    expect(JSON.stringify(service.receiptFor('original-file'))).toBe(storedReceipt);
+    expect(pricing.savePricing({ startDate: setting.startDate, endDate: setting.endDate, smsUnitPriceRial: String(setting.smsUnitPriceRial + 1), postalUnitPriceRial: String(setting.postalUnitPriceRial), page1Rial: String(setting.pagePricesRial[1] + 1), page3Rial: String(setting.pagePricesRial[3]), page6Rial: String(setting.pagePricesRial[6]), page12Rial: String(setting.pagePricesRial[12]), file1Rial: '0', file3Rial: '0', file6Rial: '0', file12Rial: '0', personnel1Rial: '0', personnel3Rial: '0', personnel6Rial: '0', personnel12Rial: '0', isActive: true }, setting.id).protectedSetting?.id).toBe(12);
     expect(service.findSend('original-file')?.sourceFileName).toBe('original.pdf');
   });
 });

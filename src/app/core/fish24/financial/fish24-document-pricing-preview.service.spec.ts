@@ -80,35 +80,31 @@ describe('Fish24DocumentPricingPreviewService', () => {
     expect(smsFree.breakdown).toEqual({ pageUnitPriceRial: 100, pageChargeRial: 200, smsUnitPriceRial: 0, smsChargeRial: 0, totalRial: 200 });
   });
 
-  it('preserves the recorded SMS metadata of a historical fixture during recalculation', () => {
-    const historical = service.quote({ sourceOperationId: 'legacy-without-sms', issueDate: '1405/06/01', pageCount: 2, durationMonths: 1, smsEnabled: false }).receipt!;
-    service['receiptsState'].set([historical]);
+  it('blocks editing and deletion when even one unpaid receipt references the tariff', () => {
+    service.createInternalReceipt({ sourceOperationId: 'unpaid-fixture', issueDate: '1405/06/01', pageCount: 2, durationMonths: 1, smsEnabled: true });
     const setting = service.pricingSettings().find(record => record.id === 12)!;
-    expect(service.savePricing(draftFrom(setting, { page1Rial: '210000' }), setting.id).ok).toBeTrue();
-    expect(service.internalReceipts()[0].smsEnabled).toBeFalse();
-    expect(service.internalReceipts()[0].breakdown.smsChargeRial).toBe(0);
+    const receiptBefore = JSON.stringify(service.internalReceipts()[0]);
+    expect(service.savePricing(draftFrom(setting, { page1Rial: '210000' }), setting.id).protectedSetting?.id).toBe(12);
+    expect(service.deletePricing(setting.id).protectedSetting?.id).toBe(12);
+    expect(JSON.stringify(service.internalReceipts()[0])).toBe(receiptBefore);
   });
 
-  it('recalculates historical test receipts from immutable metadata and remains idempotent', () => {
-    service.createInternalReceipt({ sourceOperationId: 'historical-fixture', issueDate: '1405/06/01', pageCount: 3, durationMonths: 1, smsEnabled: true });
-    const setting = service.pricingSettings().find(record => record.id === 12)!;
-    const edited = draftFrom(setting, { page1Rial: '300000', smsUnitPriceRial: '20000' });
-    expect(service.savePricing(edited, setting.id).ok).toBeTrue();
-    const once = service.internalReceipts()[0];
-    expect(once.breakdown.totalRial).toBe(960_000);
-    expect(service.savePricing(edited, setting.id).ok).toBeTrue();
-    expect(service.internalReceipts()[0]).toEqual(once);
+  it('allows deactivation and reactivation of a used tariff without changing issued receipts', () => {
+    service.createInternalReceipt({ sourceOperationId: 'immutable-fixture', issueDate: '1405/06/01', pageCount: 3, durationMonths: 1, smsEnabled: true });
+    const receiptBefore = JSON.stringify(service.internalReceipts()[0]);
+    expect(service.togglePricing(12).ok).toBeTrue();
+    expect(service.pricingSettings().find(record => record.id === 12)?.isActive).toBeFalse();
+    expect(JSON.stringify(service.internalReceipts()[0])).toBe(receiptBefore);
+    expect(service.togglePricing(12).ok).toBeTrue();
+    expect(JSON.stringify(service.internalReceipts()[0])).toBe(receiptBefore);
   });
 
-  it('rejects atomically a mutation that would orphan a dependent receipt', () => {
-    service.createInternalReceipt({ sourceOperationId: 'orphan-fixture', issueDate: '1405/06/01', pageCount: 1, durationMonths: 1, smsEnabled: false });
-    const settingsBefore = service.pricingSettings();
-    const receiptsBefore = service.internalReceipts();
-    const result = service.togglePricing(12);
-    expect(result.ok).toBeFalse();
-    expect(result.orphanedReceipt?.sourceOperationId).toBe('orphan-fixture');
-    expect(service.pricingSettings()).toBe(settingsBefore);
-    expect(service.internalReceipts()).toBe(receiptsBefore);
+  it('keeps an unused tariff editable and deletable under overlap rules', () => {
+    expect(service.savePricing({ ...validDraft('1406/01/01', '1406/12/29'), isActive: false }, null).ok).toBeTrue();
+    const unused = service.pricingSettings().find(record => record.startDate === '1406/01/01')!;
+    expect(service.savePricing(draftFrom(unused, { page1Rial: '321000' }), unused.id).ok).toBeTrue();
+    expect(service.deletePricing(unused.id).ok).toBeTrue();
+    expect(service.pricingSettings().some(record => record.id === unused.id)).toBeFalse();
   });
 
   it('does not involve wallet top-up invoices in pricing changes and preserves their VAT behavior', () => {

@@ -40,4 +40,12 @@ VAT is included in the authoritative transaction gross amount for newly issued t
 
 The corrected demo snapshots above are persisted fixture values. Reads, refreshes, exports and later VAT activation changes do not recalculate them.
 
-A VAT setting cannot be edited or deleted when an existing current or legacy formal invoice falls inside its current inclusive date range. Deactivation remains allowed and only changes whether that setting applies to future issuance. Document-pricing receipt recalculation remains a separate contract and is not changed by this rule.
+A VAT setting cannot be edited or deleted when an existing current or legacy formal invoice falls inside its current inclusive date range. Deactivation remains allowed and only changes whether that setting applies to future issuance.
+
+## Document-pricing receipt lifecycle
+
+An issued document receipt is an immutable pricing snapshot. Its tariff reference, plan, page and SMS metadata, unit prices, breakdown and final amount never change when a tariff is edited, activated, deactivated or deleted. Any tariff referenced by a paid or unpaid receipt is protected from editing and deletion at the service boundary. Deactivation remains allowed, affects only new receipt issuance and does not prevent an existing unpaid receipt from being paid at its stored total. Payment debits that stored total and does not resolve a replacement tariff.
+
+## Financial reports preview
+
+The financial report combines every valid numbered current and legacy formal invoice and uses each stored final gross amount and issue date. It never includes internal document receipts or recalculates VAT. Paid/distributed send reporting uses only a successful document-distribution wallet debit joined by operation ID to a send that is both paid and distributed; upload and receipt dates are not substitutes for a missing completion event. Current demo sends `2002`, `2003` and `2004` have no authoritative debit event and are explicitly omitted rather than backfilled. Discount usage remains deferred, so all six discount indicators intentionally contain no figures or controls.

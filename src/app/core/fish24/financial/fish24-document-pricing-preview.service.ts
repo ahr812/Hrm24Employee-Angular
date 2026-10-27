@@ -63,7 +63,7 @@ export interface PricingMutationResult {
   readonly ok: boolean;
   readonly fieldErrors: Readonly<Record<string, string>>;
   readonly conflict?: DocumentPricingRecord;
-  readonly orphanedReceipt?: InternalDocumentReceipt;
+  readonly protectedSetting?: DocumentPricingRecord;
 }
 
 export interface ReceiptCreationResult {
@@ -132,20 +132,34 @@ export class Fish24DocumentPricingPreviewService {
   }
 
   savePricing(draft: DocumentPricingDraft, editingId: number | null): PricingMutationResult {
+    const current = this.settingsState();
+    const existing = editingId === null ? null : current.find(setting => setting.id === editingId) ?? null;
+    if (editingId !== null && !existing) return { ok: false, fieldErrors: {} };
+    if (existing && this.isPricingUsed(existing.id)) {
+      return { ok: false, fieldErrors: {}, protectedSetting: existing };
+    }
     const validated = this.validateDraft(draft);
     if (!validated.ok || !validated.record) return { ok: false, fieldErrors: validated.fieldErrors };
-    const current = this.settingsState();
     const nextId = editingId ?? Math.max(0, ...current.map(setting => setting.id)) + 1;
     const candidate = { ...validated.record, id: nextId };
     const conflict = candidate.isActive
       ? current.find(setting => setting.isActive && setting.id !== editingId && pricingPeriodsOverlap(candidate, setting))
       : undefined;
     if (conflict) return { ok: false, fieldErrors: {}, conflict };
-    const exists = editingId !== null && current.some(setting => setting.id === editingId);
-    const nextSettings = exists
+    const nextSettings = existing
       ? current.map(setting => setting.id === editingId ? candidate : setting)
       : [candidate, ...current];
-    return this.commitPricingState(nextSettings);
+    this.settingsState.set(nextSettings);
+    return { ok: true, fieldErrors: {} };
+  }
+
+  deletePricing(id: number): PricingMutationResult {
+    const current = this.settingsState();
+    const target = current.find(setting => setting.id === id);
+    if (!target) return { ok: false, fieldErrors: {} };
+    if (this.isPricingUsed(id)) return { ok: false, fieldErrors: {}, protectedSetting: target };
+    this.settingsState.set(current.filter(setting => setting.id !== id));
+    return { ok: true, fieldErrors: {} };
   }
 
   togglePricing(id: number): PricingMutationResult {
@@ -156,19 +170,12 @@ export class Fish24DocumentPricingPreviewService {
       const conflict = current.find(setting => setting.isActive && setting.id !== id && pricingPeriodsOverlap(target, setting));
       if (conflict) return { ok: false, fieldErrors: {}, conflict };
     }
-    return this.commitPricingState(current.map(setting => setting.id === id ? { ...setting, isActive: !setting.isActive } : setting));
+    this.settingsState.set(current.map(setting => setting.id === id ? { ...setting, isActive: !setting.isActive } : setting));
+    return { ok: true, fieldErrors: {} };
   }
 
-  private commitPricingState(settings: readonly DocumentPricingRecord[]): PricingMutationResult {
-    const recalculated: InternalDocumentReceipt[] = [];
-    for (const receipt of this.receiptsState()) {
-      const next = this.calculateReceipt(receipt, settings);
-      if (!next) return { ok: false, fieldErrors: {}, orphanedReceipt: receipt };
-      recalculated.push(next);
-    }
-    this.settingsState.set(settings);
-    this.receiptsState.set(recalculated);
-    return { ok: true, fieldErrors: {} };
+  isPricingUsed(id: number): boolean {
+    return this.receiptsState().some(receipt => receipt.appliedPricingId === id);
   }
 
   private calculateReceipt(input: InternalDocumentReceiptInput, settings: readonly DocumentPricingRecord[]): InternalDocumentReceipt | null {
