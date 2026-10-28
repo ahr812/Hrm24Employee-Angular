@@ -2,6 +2,7 @@ import { Injectable, signal } from '@angular/core';
 import { Fish24RoleId } from '../../../../core/fish24/models/fish24-role.model';
 import { normalizeFish24Digits } from '../../../../core/fish24/financial/fish24-financial-preview.service';
 import { BusinessUserRecord } from '../users/business-user-preview.service';
+import { addJalaliDays, currentTehranJalaliDate, fish24ReportPeriodBounds, tehranSaturdayWeekday } from '../../../../core/fish24/reports/fish24-report-calendar';
 
 export type InternalSmsSource = 'user-direct' | 'user-group' | 'invoice-direct' | 'transaction-direct';
 export type InternalSmsSenderRole = 'super-admin' | 'sales-expert' | 'support-expert';
@@ -30,17 +31,22 @@ interface CompletedMockSmsInput {
 
 // Explicit preview-only records. They represent in-scope internal-panel sends,
 // not production history and not the customer data shown in the legacy screenshot.
+function reportDemoSms(now:Date):readonly InternalSentSmsRecord[]{const today=currentTehranJalaliDate(now);const previous=fish24ReportPeriodBounds('month',today,tehranSaturdayWeekday(now)).previous!.start!;const row=(id:string,sentAt:string,senderRole:InternalSmsSenderRole,employerId:string,mobile:string,name:string):InternalSentSmsRecord=>({id,sentAt,employerId,mobile,employerName:name,employerCompanyName:null,message:'پیام دستی نمایشی گزارشات عمومی',senderRole,source:'user-direct',submissionKey:`report-${id}`});return[
+  row('5004',today,'super-admin','1001','09121234567','مریم احمدی'),row('5005',today,'sales-expert','1002','09129876543','رضا کریمی'),row('5006',today,'support-expert','1007','09123334455','حامد اکبری'),row('5007',today,'super-admin','1002','09129876543','رضا کریمی'),
+  row('5008',previous,'sales-expert','1001','09121234567','مریم احمدی'),row('5009',addJalaliDays(previous,1),'support-expert','1007','09123334455','حامد اکبری')
+];}
 const PREVIEW_HISTORY: readonly InternalSentSmsRecord[] = [
   { id: '5003', sentAt: '1405/06/22', employerId: '1001', mobile: '09121234567', employerName: 'مریم احمدی', employerCompanyName: 'مجموعه نمونه سپهر', message: 'درخواست شما در پنل داخلی بررسی شد. در صورت نیاز به راهنمایی بیشتر با تیم پشتیبانی در تماس باشید.', senderRole: 'support-expert', source: 'user-direct', submissionKey: 'preview-5003' },
   { id: '5002', sentAt: '1405/06/21', employerId: '1002', mobile: '09129876543', employerName: 'رضا کریمی', employerCompanyName: 'شرکت راهکار نوین', message: 'اطلاعات حساب کاربری شما در پیش‌نمایش پنل داخلی بررسی شد.', senderRole: 'sales-expert', source: 'user-group', submissionKey: 'preview-5002' },
-  { id: '5001', sentAt: '1405/06/20', employerId: '1007', mobile: '09123334455', employerName: 'حامد اکبری', employerCompanyName: 'کارگاه توسعه پارس', message: 'فاکتور شماره 00022343 در فهرست فاکتورهای رسمی قابل مشاهده است.', senderRole: 'super-admin', source: 'invoice-direct', submissionKey: 'preview-5001' }
+  { id: '5001', sentAt: '1405/06/20', employerId: '1007', mobile: '09123334455', employerName: 'حامد اکبری', employerCompanyName: 'کارگاه توسعه پارس', message: 'فاکتور شماره 00022343 در فهرست فاکتورهای رسمی قابل مشاهده است.', senderRole: 'super-admin', source: 'invoice-direct', submissionKey: 'preview-5001' },
+  ...reportDemoSms(new Date())
 ];
 
 @Injectable({ providedIn: 'root' })
 export class InternalSmsHistoryPreviewService {
   private readonly recordsState = signal<readonly InternalSentSmsRecord[]>(PREVIEW_HISTORY);
   private submissionSequence = 0;
-  private recordSequence = 5003;
+  private recordSequence = 5009;
 
   readonly records = this.recordsState.asReadonly();
 

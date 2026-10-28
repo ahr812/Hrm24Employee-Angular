@@ -76,3 +76,5 @@ describe('Fish24 ticket reports navigation', () => {
     for(const role of ['super-admin','sales-expert','support-expert'] as const) expect(ROLE_CAPABILITIES[role] as readonly string[]).toContain(report.permission!);
   });
 });
+
+describe('Fish24 general reports navigation',()=>{it('routes the general report for every internal role',()=>{const group=FISH24_ADMIN_NAV_CONFIG.find(item=>item.id==='fish24-admin-reports')!;const report=group.children?.find(item=>item.id==='fish24-admin-reports-general')!;expect(report.route).toBe('/fish24/internal/reports/general');for(const role of ['super-admin','sales-expert','support-expert'] as const)expect(ROLE_CAPABILITIES[role] as readonly string[]).toContain(report.permission!);});});

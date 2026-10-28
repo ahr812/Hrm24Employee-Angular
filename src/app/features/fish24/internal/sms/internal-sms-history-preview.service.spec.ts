@@ -11,7 +11,7 @@ describe('InternalSmsHistoryPreviewService', () => {
   });
 
   it('starts with explicit internal-panel preview records only', () => {
-    expect(service.records().length).toBe(3);
+    expect(service.records().length).toBe(9);
     expect(service.records().every(record => ['user-direct', 'user-group', 'invoice-direct'].includes(record.source))).toBeTrue();
     expect(service.records().some(record => record.message.includes('OTP'))).toBeFalse();
   });

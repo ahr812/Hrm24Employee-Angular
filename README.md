@@ -1,5 +1,9 @@
 # سامانه جامع منابع انسانی کارکنان (HRM24 Employee Panel)
 
+## Fish24 general reports preview
+
+The internal general report at `/fish24/internal/reports/general` is available to all three internal preview roles. It combines current active news by original creation date, timestamped view/like events, current comment moderation state and per-recipient manual internal SMS history. See `docs/fish24-general-reports-demo-data.md` for fixture reconciliation and focused verification.
+
 ## Fish24 ticket reports preview
 
 The internal ticket report is available at `/fish24/internal/reports/tickets` for Administrator, Sales, and Support preview roles. It aggregates the shared ticket service, persists the created-ticket period per signed-in user, and keeps current-status metrics independent of that period. See `docs/fish24-ticket-reports-demo-data.md` for the rolling MOCK coverage and focused runtime-test command.

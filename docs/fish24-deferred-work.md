@@ -1,5 +1,12 @@
 # Fish24 deferred work
 
+## General reports
+
+- Revisit automatic document-notification SMS reporting and its separation from manual SMS.
+- SEO reporting requires authoritative Search Console impressions, clicks and CTR.
+- Unique-audience measurement requires an explicit identity and deduplication contract.
+- Real backend engagement collection and backend authorization remain deferred.
+
 ## Ticket reports
 
 - Department filtering and department-level ticket reporting are deferred.

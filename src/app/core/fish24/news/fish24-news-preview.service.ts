@@ -1,6 +1,8 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Fish24RoleId } from '../models/fish24-role.model';
 import { Fish24NewsCommentPreviewService } from './fish24-news-comment-preview.service';
+import { Fish24NewsEngagementPreviewService } from './fish24-news-engagement-preview.service';
+import { addJalaliDays, currentTehranJalaliDate, fish24ReportPeriodBounds, tehranSaturdayWeekday } from '../reports/fish24-report-calendar';
 
 export interface Fish24NewsCategory {
   readonly id: number;
@@ -47,6 +49,7 @@ const IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 @Injectable({ providedIn: 'root' })
 export class Fish24NewsPreviewService {
   private readonly comments = inject(Fish24NewsCommentPreviewService);
+  private readonly engagement = inject(Fish24NewsEngagementPreviewService);
   private nextCategoryId = 10;
   private nextNewsId = 500;
   private readonly categoryState = signal<readonly Fish24NewsCategory[]>([
@@ -57,7 +60,8 @@ export class Fish24NewsPreviewService {
   ]);
   private readonly newsState = signal<readonly Fish24NewsItem[]>([
     { id: 401, createdAt: '1405/06/28', title: 'راهنمای استفاده از خدمات جدید Fish24', slug: 'راهنمای-خدمات-جدید-fish24', shortDescription: 'مروری کوتاه بر امکانات تازه پنل', contentHtml: '<h2>امکانات تازه</h2><p>در این نسخه، <strong>مدیریت اسناد</strong> و گزارش‌ها ساده‌تر شده است.</p><blockquote>این رکورد فقط داده نمایشی پیش‌نمایش است.</blockquote>', categoryIds: [1, 2], mainImageUrl: '/images/dashboard-mockup.png', imageAlt: 'نمای پنل Fish24', imageTitle: 'خدمات جدید Fish24', keywords: 'Fish24, خدمات', metaDescription: 'معرفی قابلیت‌های تازه سامانه', order: 0, active: true, likeCount: 12, viewCount: 248 },
-    { id: 402, createdAt: '1405/06/20', title: 'بخشنامه نمونه محاسبات حقوق', slug: 'sample-payroll-circular', shortDescription: 'نمونه خبر غیرفعال برای بررسی روابط دسته‌بندی', contentHtml: '<h2>بخشنامه نمونه</h2><p>این خبر غیرفعال است و فقط در پیش‌نمایش داخلی دیده می‌شود.</p>', categoryIds: [2, 3], mainImageUrl: '/images/logo.png', imageAlt: 'نشان Fish24', imageTitle: 'بخشنامه نمونه', keywords: 'بخشنامه, حقوق', metaDescription: 'بخشنامه نمایشی', order: 1, active: false, likeCount: 4, viewCount: 91 }
+    { id: 402, createdAt: '1405/06/20', title: 'بخشنامه نمونه محاسبات حقوق', slug: 'sample-payroll-circular', shortDescription: 'نمونه خبر غیرفعال برای بررسی روابط دسته‌بندی', contentHtml: '<h2>بخشنامه نمونه</h2><p>این خبر غیرفعال است و فقط در پیش‌نمایش داخلی دیده می‌شود.</p>', categoryIds: [2, 3], mainImageUrl: '/images/logo.png', imageAlt: 'نشان Fish24', imageTitle: 'بخشنامه نمونه', keywords: 'بخشنامه, حقوق', metaDescription: 'بخشنامه نمایشی', order: 1, active: false, likeCount: 4, viewCount: 91 },
+    ...this.reportDemoNews(new Date())
   ]);
 
   readonly categories = computed(() => this.stableOrder(this.categoryState()));
@@ -147,6 +151,7 @@ export class Fish24NewsPreviewService {
     if (!this.newsItem(id)) return this.failure('خبر یافت نشد.');
     this.newsState.update(items => items.filter(item => item.id !== id));
     this.comments.removeForNews(id);
+    this.engagement.removeForNews(id);
     return { ok: true, value: undefined };
   }
 
@@ -212,4 +217,9 @@ export class Fish24NewsPreviewService {
   private stableOrder<T extends { readonly order: number; readonly id: number }>(items: readonly T[]): readonly T[] { return [...items].sort((a, b) => a.order - b.order || a.id - b.id); }
   private failure<T>(error: string): NewsMutationResult<T> { return { ok: false, error }; }
   private todayJalali(): string { return new Intl.DateTimeFormat('fa-IR-u-ca-persian', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()).replace(/\u200e/g, '').replace(/[۰-۹]/g, digit => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit))); }
+  private reportDemoNews(now:Date):readonly Fish24NewsItem[]{const today=currentTehranJalaliDate(now);const previous=fish24ReportPeriodBounds('month',today,tehranSaturdayWeekday(now)).previous!.start!;const base={shortDescription:'پوشش نمایشی گزارشات عمومی',contentHtml:'<p>این خبر فقط داده نمایشی گزارش است.</p>',categoryIds:[1],mainImageUrl:'',imageAlt:'',imageTitle:'',keywords:'گزارش',metaDescription:'',likeCount:0,viewCount:0};return[
+    {...base,id:403,createdAt:today,title:'خبر فعال دوره جاری',slug:'general-report-current-active',order:3,active:true},
+    {...base,id:404,createdAt:previous,title:'خبر فعال دوره قبل',slug:'general-report-previous-active',order:4,active:true},
+    {...base,id:405,createdAt:today,title:'خبر غیرفعال دوره جاری',slug:'general-report-current-inactive',order:5,active:false}
+  ];}
 }

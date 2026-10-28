@@ -31,8 +31,8 @@ export const FISH24_ADMIN_NAV_CONFIG: readonly Fish24NavItem[] = [
         id: 'fish24-admin-reports-general',
         label: 'گزارشات عمومی',
         icon: 'file-text',
-        permission: 'general-reports'
-        // Future: route: '/fish24/admin/reports/general'
+        permission: 'general-reports',
+        route: '/fish24/internal/reports/general'
       },
       {
         id: 'fish24-admin-reports-users',

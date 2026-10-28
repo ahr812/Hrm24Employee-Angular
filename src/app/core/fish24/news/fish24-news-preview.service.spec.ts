@@ -59,9 +59,9 @@ describe('Fish24NewsPreviewService', () => {
     expect(result.ok).toBeTrue();
     if (!result.ok) return;
     expect(result.value.active).toBeTrue();
-    expect(service.categoryNewsCount(1)).toBe(2);
+    expect(service.categoryNewsCount(1)).toBe(5);
     expect(service.deleteNews('support-expert', result.value.id).ok).toBeTrue();
-    expect(service.categoryNewsCount(1)).toBe(1);
+    expect(service.categoryNewsCount(1)).toBe(4);
     expect(service.newsItem(result.value.id)).toBeUndefined();
   });
 
