@@ -1,6 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Fish24DocumentDistributionPreviewService, Fish24DocumentSend } from '../../../../core/fish24/financial/fish24-document-distribution-preview.service';
 import { normalizeFish24Digits, normalizeJalaliDate } from '../../../../core/fish24/financial/fish24-financial-preview.service';
 import { Fish24TransactionPreviewService } from '../../../../core/fish24/financial/fish24-transaction-preview.service';
@@ -14,17 +15,18 @@ import { ToastService } from '../../../../shared/ui/toast/toast.service';
 import { BusinessUserPreviewService, BusinessUserRecord } from '../users/business-user-preview.service';
 import { Fish24RolePreviewService } from '../../../../core/fish24/dev/fish24-role-preview.service';
 import { InternalSmsHistoryPreviewService } from '../sms/internal-sms-history-preview.service';
+import { EMPLOYER_ACTION_ID_PARAM, EMPLOYER_ACTION_SOURCE_PARAM, readEmployerNavigation, resetForEmployerNavigation } from '../users/employer-list-navigation';
 
 type StatusFilter = 'all' | 'success' | 'failed';
 type DirectionFilter = 'all' | Fish24TransactionDirection;
 type InvoiceFilter = 'all' | 'with' | 'without';
-interface TransactionFilters { readonly name: string; readonly mobile: string; readonly company: string; readonly amount: string; readonly trackingCode: string; readonly status: StatusFilter; readonly fromTimestamp: string; readonly toTimestamp: string; readonly direction: DirectionFilter; readonly exactDebit: string; readonly exactCredit: string; readonly invoice: InvoiceFilter; }
+interface TransactionFilters { readonly employerId: string; readonly name: string; readonly mobile: string; readonly company: string; readonly amount: string; readonly trackingCode: string; readonly status: StatusFilter; readonly fromTimestamp: string; readonly toTimestamp: string; readonly direction: DirectionFilter; readonly exactDebit: string; readonly exactCredit: string; readonly invoice: InvoiceFilter; }
 interface ManualDraft { employerId: string; amountRial: string; direction: Fish24TransactionDirection; }
 type ConfirmKind = 'manual' | 'issue-invoice' | 'delete-invoice';
 interface PendingAction { readonly kind: ConfirmKind; readonly transactionId?: string; }
 
 const LIST_ID = 'internal-transactions';
-const FILTER_DEFAULTS: TransactionFilters = { name: '', mobile: '', company: '', amount: '', trackingCode: '', status: 'all', fromTimestamp: '', toTimestamp: '', direction: 'all', exactDebit: '', exactCredit: '', invoice: 'all' };
+const FILTER_DEFAULTS: TransactionFilters = { employerId: 'all', name: '', mobile: '', company: '', amount: '', trackingCode: '', status: 'all', fromTimestamp: '', toTimestamp: '', direction: 'all', exactDebit: '', exactCredit: '', invoice: 'all' };
 const COLUMNS: readonly InternalListColumn<Fish24WalletTransaction>[] = [
   { id: 'id', label: 'شناسه', value: row => row.id, minWidth: '7rem', ltr: true },
   { id: 'invoice', label: 'شماره فاکتور رسمی', value: row => row.formalInvoiceNumber ?? '', minWidth: '10rem', ltr: true },
@@ -57,7 +59,7 @@ function validateStoredFilters(value: unknown): TransactionFilters | null {
   const status: StatusFilter = item.status === 'success' || item.status === 'failed' ? item.status : 'all';
   const direction: DirectionFilter = item.direction === 'debit' || item.direction === 'credit' ? item.direction : 'all';
   const invoice: InvoiceFilter = item.invoice === 'with' || item.invoice === 'without' ? item.invoice : 'all';
-  return { name: text(item.name), mobile: normalizeFish24Digits(text(item.mobile)).replace(/\D/g, '').slice(0, 11), company: text(item.company), amount: storedAmount(item.amount), trackingCode: text(item.trackingCode), status, fromTimestamp: storedTimestamp(item.fromTimestamp), toTimestamp: storedTimestamp(item.toTimestamp, true), direction, exactDebit: storedAmount(item.exactDebit), exactCredit: storedAmount(item.exactCredit), invoice };
+  return { employerId: typeof item.employerId === 'string' ? item.employerId : 'all', name: text(item.name), mobile: normalizeFish24Digits(text(item.mobile)).replace(/\D/g, '').slice(0, 11), company: text(item.company), amount: storedAmount(item.amount), trackingCode: text(item.trackingCode), status, fromTimestamp: storedTimestamp(item.fromTimestamp), toTimestamp: storedTimestamp(item.toTimestamp, true), direction, exactDebit: storedAmount(item.exactDebit), exactCredit: storedAmount(item.exactCredit), invoice };
 }
 
 @Component({
@@ -69,6 +71,7 @@ function validateStoredFilters(value: unknown): TransactionFilters | null {
     <section class="card p-3 sm:p-5" aria-labelledby="transaction-filter-title">
       <div class="mb-3 flex flex-wrap items-center justify-between gap-3"><div class="flex items-center gap-2"><ui-icon name="search" [size]="19" class="text-primary"></ui-icon><h2 id="transaction-filter-title" class="text-lg font-extrabold">جستجو</h2></div><button type="button" (click)="openManual()" class="primary"><ui-icon name="plus" [size]="17"></ui-icon>تراکنش دستی</button></div>
       <form class="grid grid-cols-1 items-end gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6" (submit)="applyFilters($event)">
+        <div><label class="label">کارفرما</label><select [(ngModel)]="draft.employerId" name="employerFilter" class="input"><option value="all">همه کارفرماها</option>@for (employer of employers(); track employer.id) {<option [value]="employer.id">{{ employer.fullName || employer.mobile }} — {{ employer.companyName }}</option>}</select></div>
         <div><label class="label">نام</label><input [(ngModel)]="draft.name" name="name" class="input"></div>
         <div><label class="label">موبایل</label><input [(ngModel)]="draft.mobile" name="mobile" inputmode="numeric" dir="ltr" class="input text-left"></div>
         <div><label class="label">شرکت</label><input [(ngModel)]="draft.company" name="company" class="input"></div>
@@ -118,8 +121,14 @@ export class InternalTransactionsComponent {
   private readonly distribution = inject(Fish24DocumentDistributionPreviewService); private readonly users = inject(BusinessUserPreviewService);
   private readonly preferences = inject(InternalListPreferencesService); private readonly xlsx = inject(PlainXlsxService);
   private readonly toast = inject(ToastService); private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly rolePreview = inject(Fish24RolePreviewService); private readonly smsHistory = inject(InternalSmsHistoryPreviewService);
-  private readonly restored = this.preferences.loadFilters(LIST_ID, FILTER_DEFAULTS, validateStoredFilters);
+  private readonly restoredPreference = this.preferences.loadFilters(LIST_ID, FILTER_DEFAULTS, validateStoredFilters);
+  private readonly restored: TransactionFilters = {
+    ...this.restoredPreference,
+    employerId: this.restoredPreference.employerId === 'all' || this.users.users().some(user => user.roles.includes('employer') && String(user.id) === this.restoredPreference.employerId)
+      ? this.restoredPreference.employerId : 'all'
+  };
   readonly columns = COLUMNS; readonly defaultColumns = COLUMNS.map(column => column.id);
   readonly selectedColumns = signal<readonly string[]>(this.preferences.load(LIST_ID, this.defaultColumns, this.defaultColumns));
   readonly visibleColumns = computed(() => this.columns.filter(column => this.selectedColumns().includes(column.id)));
@@ -135,6 +144,34 @@ export class InternalTransactionsComponent {
   readonly manualOpen = signal(false); readonly manualError = signal(''); manualDraft: ManualDraft = { employerId: '', amountRial: '', direction: 'debit' };
   private manualRequestId = ''; readonly pending = signal<PendingAction | null>(null); readonly submitting = signal(false);
   readonly smsRow = signal<Fish24WalletTransaction | null>(null); smsText = ''; private smsSubmissionKey = ''; readonly receiptRow = signal<Fish24WalletTransaction | null>(null); readonly accountModal = signal<Fish24WalletTransaction | null>(null);
+
+  constructor() {
+    this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe(params => {
+      const request = readEmployerNavigation(params, this.employers().map(employer => String(employer.id)));
+      if (request.kind === 'absent') return;
+      this.columnSearches.set({});
+      this.tableSort.set({ columnId: null, direction: null });
+      this.page.set(1);
+      this.filterError.set('');
+      if (request.kind === 'valid') {
+        const reset = resetForEmployerNavigation(FILTER_DEFAULTS, request.employerId);
+        this.draft = { ...reset.filters };
+        this.applied.set(reset.filters);
+        this.preferences.saveFilters(LIST_ID, reset.filters);
+      } else {
+        const unavailable = { ...FILTER_DEFAULTS, employerId: '__invalid_employer__' };
+        this.draft = { ...FILTER_DEFAULTS };
+        this.applied.set(unavailable);
+        this.filterError.set('ارتباط معتبر کارفرما برای این فهرست پیدا نشد؛ هیچ رکوردی نمایش داده نمی‌شود.');
+      }
+      void this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { [EMPLOYER_ACTION_ID_PARAM]: null, [EMPLOYER_ACTION_SOURCE_PARAM]: null },
+        queryParamsHandling: 'merge',
+        replaceUrl: true
+      });
+    });
+  }
 
   applyFilters(event: Event): void { event.preventDefault(); const normalized = validateStoredFilters(this.draft)!; if (!this.validDraftAmounts() || (this.draft.fromTimestamp && !storedTimestamp(this.draft.fromTimestamp)) || (this.draft.toTimestamp && !storedTimestamp(this.draft.toTimestamp, true))) { this.filterError.set('مبلغ یا تاریخ واردشده معتبر نیست.'); return; } if (normalized.fromTimestamp && normalized.toTimestamp && normalized.fromTimestamp > normalized.toTimestamp) { this.filterError.set('بازه تاریخ و ساعت معتبر نیست.'); return; } this.filterError.set(''); this.draft = { ...normalized }; this.applied.set(normalized); this.preferences.saveFilters(LIST_ID, normalized); this.page.set(1); }
   showAll(): void { this.draft = { ...FILTER_DEFAULTS }; this.applied.set(FILTER_DEFAULTS); this.preferences.resetFilters(LIST_ID); this.filterError.set(''); this.page.set(1); }
@@ -172,7 +209,7 @@ export class InternalTransactionsComponent {
   private createManual(): void { const employer = this.employers().find(user => String(user.id) === this.manualDraft.employerId); if (!employer) return; const result = this.transactions.createManualTransaction({ requestId: this.manualRequestId, employerId: String(employer.id), mobile: employer.mobile, fullName: employer.fullName ?? '', companyName: employer.companyName, workplaceName: employer.companyName, userType: employer.userType, amountRial: this.manualDraft.amountRial, direction: this.manualDraft.direction, createdAt: this.currentTimestamp() }); if (!result.ok) { this.manualError.set(result.error === 'insufficient-funds' ? 'موجودی کیف پول کافی نیست؛ هیچ تغییری اعمال نشد.' : result.error === 'forbidden' ? 'دسترسی انجام تراکنش مالی وجود ندارد.' : 'تراکنش انجام نشد.'); this.toast.show(this.manualError(), 'error'); return; } this.manualOpen.set(false); this.toast.show(result.existing ? 'این درخواست قبلاً ثبت شده و دوباره اعمال نشد.' : 'تراکنش دستی و مانده کیف پول ثبت شد.', 'success'); }
   private issueInvoice(transactionId: string): void { const result = this.transactions.issueFormalInvoice(transactionId); if (!result.ok) { this.toast.show('صدور فاکتور رسمی انجام نشد.', 'error'); return; } this.toast.show(result.existing ? 'فاکتور این تراکنش قبلاً صادر شده است.' : 'فاکتور رسمی صادر شد؛ تراکنش و کیف پول تغییر نکردند.', 'success'); }
   private deleteInvoice(transactionId: string): void { const result = this.transactions.deleteFormalInvoice(transactionId); if (!result.ok) { this.toast.show('حذف فاکتور رسمی انجام نشد.', 'error'); return; } this.toast.show('فقط فاکتور رسمی حذف شد؛ تراکنش و کیف پول تغییر نکردند.', 'success'); }
-  private matches(row: Fish24WalletTransaction, filter: TransactionFilters): boolean { const amount = filter.amount ? Number(filter.amount) : null; const debit = filter.exactDebit ? Number(filter.exactDebit) : null; const credit = filter.exactCredit ? Number(filter.exactCredit) : null; return (!filter.name || row.fullName.includes(filter.name)) && (!filter.mobile || row.mobile.includes(filter.mobile)) && (!filter.company || row.companyName.includes(filter.company)) && (amount === null || row.amountRial === amount) && (!filter.trackingCode || row.trackingCode.includes(filter.trackingCode)) && (filter.status === 'all' || row.status === filter.status) && (!filter.fromTimestamp || row.createdAt >= filter.fromTimestamp) && (!filter.toTimestamp || row.createdAt <= filter.toTimestamp) && (filter.direction === 'all' || row.direction === filter.direction) && (debit === null || row.direction === 'debit' && row.amountRial === debit) && (credit === null || row.direction === 'credit' && row.amountRial === credit) && (filter.invoice === 'all' || (filter.invoice === 'with') === Boolean(row.formalInvoiceNumber)); }
+  private matches(row: Fish24WalletTransaction, filter: TransactionFilters): boolean { const amount = filter.amount ? Number(filter.amount) : null; const debit = filter.exactDebit ? Number(filter.exactDebit) : null; const credit = filter.exactCredit ? Number(filter.exactCredit) : null; return (filter.employerId === 'all' || row.employerId === filter.employerId) && (!filter.name || row.fullName.includes(filter.name)) && (!filter.mobile || row.mobile.includes(filter.mobile)) && (!filter.company || row.companyName.includes(filter.company)) && (amount === null || row.amountRial === amount) && (!filter.trackingCode || row.trackingCode.includes(filter.trackingCode)) && (filter.status === 'all' || row.status === filter.status) && (!filter.fromTimestamp || row.createdAt >= filter.fromTimestamp) && (!filter.toTimestamp || row.createdAt <= filter.toTimestamp) && (filter.direction === 'all' || row.direction === filter.direction) && (debit === null || row.direction === 'debit' && row.amountRial === debit) && (credit === null || row.direction === 'credit' && row.amountRial === credit) && (filter.invoice === 'all' || (filter.invoice === 'with') === Boolean(row.formalInvoiceNumber)); }
   private validDraftAmounts(): boolean { return [this.draft.amount, this.draft.exactDebit, this.draft.exactCredit].every(value => !value || parsePositiveRialAmount(value) !== null); }
   private newRequestId(): string { return `manual-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`; }
   private currentTimestamp(): string { const parts = new Intl.DateTimeFormat('fa-IR-u-ca-persian-nu-latn', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(new Date()); const value = (type: Intl.DateTimeFormatPartTypes) => parts.find(part => part.type === type)?.value ?? ''; return `${value('year')}/${value('month')}/${value('day')} ${value('hour')}:${value('minute')}`; }

@@ -13,6 +13,7 @@ import { InternalListColumn, InternalListColumnSearches, InternalListSort, filte
 import { InternalListPreferencesService } from '../../../../shared/ui/data-list/internal-list-preferences.service';
 import { PlainXlsxService } from '../../../../shared/ui/data-list/plain-xlsx.service';
 import { InternalSmsHistoryPreviewService } from '../sms/internal-sms-history-preview.service';
+import { employerActionQuery } from './employer-list-navigation';
 
 type UserCapability = Fish24RoleId;
 type RoleFilter = 'all' | BusinessUserRole;
@@ -121,8 +122,6 @@ function validateBusinessUserFilters(value: unknown): BusinessUserMainFilters | 
 }
 
 const DEFERRED_ACTIONS: readonly DeferredAction[] = [
-  { label: 'لیست ارسال‌ها', hiddenForSupport: true },
-  { label: 'لیست تراکنش‌ها', hiddenForSupport: true },
   { label: 'تخصیص کوپن', hiddenForSupport: true },
   { label: 'لیست کوپن‌ها', hiddenForSupport: true },
   { label: 'ثبت نظر کارفرما', employerOnly: true }
@@ -517,6 +516,16 @@ const DEFERRED_ACTIONS: readonly DeferredAction[] = [
                     <ui-icon name="login" [size]="17"></ui-icon>
                     ورود به حساب کاربری
                   </button>
+                  @if (canOpenEmployerLists(user)) {
+                    <button type="button" (click)="openEmployerList(user, 'sends')" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-primary/30 px-3 text-sm font-bold text-primary hover:bg-primary/10 focus:outline-none focus:ring-2 focus:ring-primary/25">
+                      <ui-icon name="send" [size]="17"></ui-icon>
+                      لیست ارسال‌ها
+                    </button>
+                    <button type="button" (click)="openEmployerList(user, 'transactions')" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-primary/30 px-3 text-sm font-bold text-primary hover:bg-primary/10 focus:outline-none focus:ring-2 focus:ring-primary/25">
+                      <ui-icon name="credit-card" [size]="17"></ui-icon>
+                      لیست تراکنش‌ها
+                    </button>
+                  }
                 </div>
 
                 <div class="mt-4 border-t border-border pt-4 dark:border-slate-700">
@@ -988,6 +997,17 @@ export class InternalUsersComponent {
   openEdit(user: BusinessUserRecord): void {
     this.closeOperations();
     void this.router.navigate(['/fish24/internal/users', user.id, 'edit']);
+  }
+
+  canOpenEmployerLists(user: BusinessUserRecord): boolean {
+    return !this.isSupportView() && this.hasEmployerCapability(user);
+  }
+
+  openEmployerList(user: BusinessUserRecord, destination: 'sends' | 'transactions'): void {
+    const queryParams = this.canOpenEmployerLists(user) ? employerActionQuery(user) : null;
+    if (!queryParams) return;
+    this.closeOperations();
+    void this.router.navigate([`/fish24/internal/${destination}`], { queryParams });
   }
 
   requestActivationChange(user: BusinessUserRecord): void {

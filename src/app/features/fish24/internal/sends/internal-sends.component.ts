@@ -1,5 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Fish24DocumentDistributionPreviewService, Fish24DocumentSend } from '../../../../core/fish24/financial/fish24-document-distribution-preview.service';
 import { InternalDocumentReceipt } from '../../../../core/fish24/financial/fish24-document-pricing-preview.service';
 import { normalizeFish24Digits, normalizeJalaliDate } from '../../../../core/fish24/financial/fish24-financial-preview.service';
@@ -9,6 +11,7 @@ import { InternalListColumn, InternalListColumnSearches, InternalListSort, filte
 import { InternalListPreferencesService } from '../../../../shared/ui/data-list/internal-list-preferences.service';
 import { PlainXlsxService } from '../../../../shared/ui/data-list/plain-xlsx.service';
 import { ToastService } from '../../../../shared/ui/toast/toast.service';
+import { EMPLOYER_ACTION_ID_PARAM, EMPLOYER_ACTION_SOURCE_PARAM, readEmployerNavigation, resetForEmployerNavigation } from '../users/employer-list-navigation';
 
 interface SendFilters { readonly employerId: string; readonly mobile: string; readonly sendId: string; readonly fromDate: string; readonly toDate: string; }
 type SendAction = 'pay' | 'delete' | 'access';
@@ -89,6 +92,8 @@ export class InternalSendsComponent {
   private readonly preferences = inject(InternalListPreferencesService);
   private readonly xlsx = inject(PlainXlsxService);
   private readonly toast = inject(ToastService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly restoredPreference = this.preferences.loadFilters(LIST_ID, FILTER_DEFAULTS, validateFilters);
   private readonly restored: SendFilters = {
     ...this.restoredPreference,
@@ -115,6 +120,33 @@ export class InternalSendsComponent {
   readonly tableRows = computed(() => sortInternalListRows(filterByInternalListColumns(this.filteredRows(), this.columns, this.selectedColumns(), this.columnSearches()), this.columns, this.tableSort()));
   readonly pending = signal<PendingAction | null>(null);
   readonly receiptModal = signal<{ send: Fish24DocumentSend; receipt: InternalDocumentReceipt } | null>(null);
+
+  constructor() {
+    this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe(params => {
+      const request = readEmployerNavigation(params, this.employers().map(employer => employer.id));
+      if (request.kind === 'absent') return;
+      this.columnSearches.set({});
+      this.tableSort.set({ columnId: null, direction: null });
+      this.filterError.set('');
+      if (request.kind === 'valid') {
+        const reset = resetForEmployerNavigation(FILTER_DEFAULTS, request.employerId);
+        this.draft = { ...reset.filters };
+        this.applied.set(reset.filters);
+        this.preferences.saveFilters(LIST_ID, reset.filters);
+      } else {
+        const unavailable = { ...FILTER_DEFAULTS, employerId: '__invalid_employer__' };
+        this.draft = { ...FILTER_DEFAULTS };
+        this.applied.set(unavailable);
+        this.filterError.set('ارتباط معتبر کارفرما برای این فهرست پیدا نشد؛ هیچ رکوردی نمایش داده نمی‌شود.');
+      }
+      void this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { [EMPLOYER_ACTION_ID_PARAM]: null, [EMPLOYER_ACTION_SOURCE_PARAM]: null },
+        queryParamsHandling: 'merge',
+        replaceUrl: true
+      });
+    });
+  }
 
   applyFilters(event: Event): void { event.preventDefault(); const normalized = validateFilters(this.draft); if (!normalized || (normalized.fromDate && normalized.toDate && normalized.fromDate > normalized.toDate)) { this.filterError.set('بازه تاریخ معتبر نیست.'); return; } this.filterError.set(''); this.draft = { ...normalized }; this.applied.set(normalized); this.preferences.saveFilters(LIST_ID, normalized); }
   showAll(): void { this.draft = { ...FILTER_DEFAULTS }; this.applied.set(FILTER_DEFAULTS); this.filterError.set(''); this.preferences.resetFilters(LIST_ID); }

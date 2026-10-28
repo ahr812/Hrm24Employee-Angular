@@ -67,3 +67,7 @@ The approved demonstration fixtures now provide deterministic MOCK debit events 
 The isolated runtime verification command is `node node_modules/@angular/cli/bin/ng.js test --configuration=financial --watch=false --progress=false`. Its dedicated Angular, TypeScript and Karma configuration compiles and runs only the pricing, distribution, financial-report, Jalali-calendar, financial-route-guard and user-scoped-preference suites. It intentionally leaves the unrelated Savings spec and the main test configuration unchanged.
 
 Discount usage remains deferred, so all six discount indicators intentionally contain no figures or controls.
+
+## User management actions
+
+`لیست ارسال‌ها` and `لیست تراکنش‌ها` are implemented from User Management using the selected user's stable employer ID. The destination replaces previous main filters with that employer, persists the editable result and consumes the one-time navigation parameters. Coupon assignment, coupon lists, employer reviews and account impersonation remain deferred.

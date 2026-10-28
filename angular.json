@@ -155,6 +155,16 @@
                 "src/app/shared/layout/navigation/fish24-nav.config.spec.ts",
                 "src/app/shared/ui/data-list/internal-list-preferences.service.spec.ts"
               ]
+            },
+            "user-actions": {
+              "tsConfig": "tsconfig.user-actions-spec.json",
+              "karmaConfig": "karma.user-actions.conf.js",
+              "include": [
+                "src/app/features/fish24/internal/users/employer-list-navigation.spec.ts",
+                "src/app/core/fish24/financial/fish24-wallet-preview.service.spec.ts",
+                "src/app/core/fish24/financial/fish24-document-distribution-preview.service.spec.ts",
+                "src/app/shared/ui/data-list/internal-list-preferences.service.spec.ts"
+              ]
             }
           }
         }
