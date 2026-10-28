@@ -1,5 +1,10 @@
 # Fish24 deferred work
 
+## Ticket reports
+
+- Department filtering and department-level ticket reporting are deferred.
+- Backend-backed authorization integration for internal ticket reports is deferred; Phase 1D.16 intentionally uses the existing preview capability model.
+
 ## User reports dashboard expansion
 
 “Expand user reports with additional reports and better-defined KPIs after reviewing business goals and available data.”

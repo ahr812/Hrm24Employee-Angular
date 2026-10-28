@@ -1,6 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Fish24DocumentDistributionPreviewService } from '../financial/fish24-document-distribution-preview.service';
 import { Fish24RoleId } from '../models/fish24-role.model';
+import { addJalaliDays, currentTehranJalaliDate, fish24ReportPeriodBounds, tehranSaturdayWeekday } from '../reports/fish24-report-calendar';
 
 export type Fish24TicketStatus = 'نیاز به بررسی' | 'جواب داده شده' | 'بسته شده';
 export type Fish24TicketDepartment = 'management' | 'sales' | 'support';
@@ -29,6 +30,26 @@ const INTERNAL_ROLES: readonly Fish24RoleId[] = ['super-admin', 'sales-expert', 
 const msg = (id: number, authorName: string, authorRole: string, senderSide: Fish24TicketActorSide, sentAt: string, text: string): EmployerTicketMessage => ({ id, authorName, authorRole, senderDisplay: authorName, senderSide, sentAt, text, attachments: [] });
 const demoSupportReply: EmployerTicketMessage = { id: 6, authorName: 'کارشناس پشتیبانی', authorRole: 'پشتیبانی', senderDisplay: 'کارشناس پشتیبانی', senderSide: 'internal', sentAt: '1405/06/18 12:15', text: 'درخواست شما بررسی شد. راهنمای نمونه برای مشاهده و دانلود به پاسخ پیوست شده است.', attachments: [{ id: 1, name: 'fish24-demo-support-reply.pdf', size: FISH24_DEMO_ATTACHMENT_BYTES.byteLength, type: 'application/pdf', blob: new Blob([FISH24_DEMO_ATTACHMENT_BYTES], { type: 'application/pdf' }) }] };
 
+/**
+ * Rolling MOCK coverage for ticket reports. Dates are derived once when the
+ * shared preview dataset is created, so navigation never duplicates records.
+ */
+function reportDemoTickets(now: Date): readonly EmployerTicketRecord[] {
+  const today = currentTehranJalaliDate(now);
+  const month = fish24ReportPeriodBounds('month', today, tehranSaturdayWeekday(now));
+  const currentEarlier = Number(today.slice(8, 10)) > 1 ? addJalaliDays(today, -1) : today;
+  const previousStart = month.previous!.start!;
+  const [year, monthNumber, day] = today.split('/').map(Number);
+  const previousYear = `${year - 1}/${String(monthNumber).padStart(2, '0')}/${String(Math.min(day, 28)).padStart(2, '0')}`;
+  return [
+    { id: 3005, ownerEmployerId: '1001', employerName: 'مریم احمدی', employerMobile: '09121234567', companyName: 'مجموعه نمونه سپهر', subject: 'پیگیری سند جاری', workplace: 'مجموعه نمونه سپهر', origin: 'employerToSystem', status: 'نیاز به بررسی', createdAt: `${today} 09:10`, updatedAt: `${today} 09:10`, recipientDepartment: 'support', employeeName: null, employeeMobile: null, messages: [msg(7, 'مریم احمدی', 'کارفرما', 'employer', `${today} 09:10`, 'درخواست نمایشی دوره جاری برای گزارش تیکت.')], referrals: [] },
+    { id: 3006, ownerEmployerId: '1002', employerName: 'رضا کریمی', employerMobile: '09129876543', companyName: 'مجموعه آزمایشی باران', subject: 'پرسش فروش دوره جاری', workplace: 'مجموعه آزمایشی باران', origin: 'employerToSystem', status: 'بسته شده', createdAt: `${currentEarlier} 11:20`, updatedAt: `${today} 08:15`, recipientDepartment: 'sales', employeeName: null, employeeMobile: null, messages: [msg(8, 'رضا کریمی', 'کارفرما', 'employer', `${currentEarlier} 11:20`, 'پرسش نمایشی فروش برای پوشش دوره جاری.')], referrals: [] },
+    { id: 3007, ownerEmployerId: '1001', employerName: 'مریم احمدی', employerMobile: '09121234567', companyName: 'مجموعه نمونه سپهر', subject: 'درخواست ماه قبل', workplace: 'مجموعه نمونه سپهر', origin: 'employerToSystem', status: 'نیاز به بررسی', createdAt: `${previousStart} 10:00`, updatedAt: `${previousStart} 10:00`, recipientDepartment: 'management', employeeName: null, employeeMobile: null, messages: [msg(9, 'مریم احمدی', 'کارفرما', 'employer', `${previousStart} 10:00`, 'درخواست نمایشی ماه قبل برای مقایسه گزارش.')], referrals: [] },
+    { id: 3008, ownerEmployerId: '1002', employerName: 'رضا کریمی', employerMobile: '09129876543', companyName: 'مجموعه آزمایشی باران', subject: 'پاسخ ماه قبل', workplace: 'مجموعه آزمایشی باران', origin: 'employerToSystem', status: 'جواب داده شده', createdAt: `${addJalaliDays(previousStart, 1)} 13:30`, updatedAt: `${addJalaliDays(previousStart, 1)} 15:10`, recipientDepartment: 'support', employeeName: null, employeeMobile: null, messages: [msg(10, 'رضا کریمی', 'کارفرما', 'employer', `${addJalaliDays(previousStart, 1)} 13:30`, 'درخواست نمایشی پاسخ‌داده‌شده در ماه قبل.'), msg(11, 'کارشناس پشتیبانی', 'پشتیبانی', 'internal', `${addJalaliDays(previousStart, 1)} 15:10`, 'پاسخ نمایشی ثبت شد.')], referrals: [] },
+    { id: 3009, ownerEmployerId: '1001', employerName: 'مریم احمدی', employerMobile: '09121234567', companyName: 'مجموعه نمونه سپهر', subject: 'تیکت بسته سال قبل', workplace: 'مجموعه نمونه سپهر', origin: 'employerToSystem', status: 'بسته شده', createdAt: `${previousYear} 08:45`, updatedAt: `${previousYear} 16:00`, recipientDepartment: 'management', employeeName: null, employeeMobile: null, messages: [msg(12, 'مریم احمدی', 'کارفرما', 'employer', `${previousYear} 08:45`, 'تیکت نمایشی سال قبل برای مقایسه سالانه.')], referrals: [] }
+  ];
+}
+
 @Injectable({ providedIn: 'root' })
 export class Fish24TicketPreviewService {
   private readonly distribution = inject(Fish24DocumentDistributionPreviewService);
@@ -38,7 +59,8 @@ export class Fish24TicketPreviewService {
     { id: 3001, ownerEmployerId: '1001', employerName: 'مریم احمدی', employerMobile: '09121234567', companyName: 'مجموعه نمونه سپهر', subject: 'فیش حقوق مرداد ۱۴۰۵', workplace: 'مجموعه نمونه سپهر', origin: 'employerToSystem', status: 'نیاز به بررسی', createdAt: '1405/06/16 09:45', updatedAt: '1405/06/16 10:20', recipientDepartment: 'support', employeeName: null, employeeMobile: null, messages: [msg(1, 'مریم احمدی', 'کارفرما', 'employer', '1405/06/16 09:45', 'لطفاً وضعیت سند ارسالی را بررسی کنید.')], referrals: [] },
     { id: 3002, ownerEmployerId: '1002', employerName: 'رضا کریمی', employerMobile: '09129876543', companyName: 'مجموعه آزمایشی باران', subject: 'گواهی پرداخت پاداش', workplace: 'مجموعه آزمایشی باران', origin: 'employerToSystem', status: 'جواب داده شده', createdAt: '1405/05/30 11:05', updatedAt: '1405/05/30 14:10', recipientDepartment: 'sales', employeeName: null, employeeMobile: null, messages: [msg(2, 'رضا کریمی', 'کارفرما', 'employer', '1405/05/30 11:05', 'لطفاً نتیجه پردازش این سند را بررسی کنید.'), msg(3, 'کارشناس فروش', 'فروش', 'internal', '1405/05/30 14:10', 'بررسی انجام شد و نتیجه در پنل قابل مشاهده است.')], referrals: [] },
     { id: 3003, ownerEmployerId: 'user-1', employerName: 'علی احمدی', employerMobile: '09123456789', companyName: 'مجموعه نمایشی نارنج', subject: 'پیش‌نمایش پرداخت شهریور', workplace: 'مجموعه نمایشی نارنج', origin: 'employerToSystem', status: 'بسته شده', createdAt: '1405/06/12 08:40', updatedAt: '1405/06/12 16:25', recipientDepartment: 'management', employeeName: null, employeeMobile: null, messages: [msg(4, 'علی احمدی', 'کارفرما', 'employer', '1405/06/12 08:40', 'لطفاً جزئیات این سند را بررسی کنید.')], referrals: [] },
-    { id: FISH24_DEMO_TICKET_ID, ownerEmployerId: FISH24_DEMO_EMPLOYER_ID, employerName: 'علی احمدی', employerMobile: '09123456789', companyName: 'مجموعه نمایشی نارنج', subject: 'راهنمای دریافت سند ارسالی', workplace: 'مجموعه نمایشی نارنج', origin: 'employerToSystem', status: 'جواب داده شده', createdAt: '1405/06/18 10:30', updatedAt: '1405/06/18 12:15', recipientDepartment: 'support', employeeName: null, employeeMobile: null, messages: [msg(5, 'علی احمدی', 'کارفرما', 'employer', '1405/06/18 10:30', 'لطفاً درباره نحوه دریافت و مشاهده سند ارسالی راهنمایی کنید.'), demoSupportReply], referrals: [] }
+    { id: FISH24_DEMO_TICKET_ID, ownerEmployerId: FISH24_DEMO_EMPLOYER_ID, employerName: 'علی احمدی', employerMobile: '09123456789', companyName: 'مجموعه نمایشی نارنج', subject: 'راهنمای دریافت سند ارسالی', workplace: 'مجموعه نمایشی نارنج', origin: 'employerToSystem', status: 'جواب داده شده', createdAt: '1405/06/18 10:30', updatedAt: '1405/06/18 12:15', recipientDepartment: 'support', employeeName: null, employeeMobile: null, messages: [msg(5, 'علی احمدی', 'کارفرما', 'employer', '1405/06/18 10:30', 'لطفاً درباره نحوه دریافت و مشاهده سند ارسالی راهنمایی کنید.'), demoSupportReply], referrals: [] },
+    ...reportDemoTickets(new Date())
   ]);
   readonly tickets = this.state.asReadonly();
   readonly needsReviewCount = computed(() => this.state().filter(ticket => ticket.status === 'نیاز به بررسی').length);

@@ -1,5 +1,9 @@
 # سامانه جامع منابع انسانی کارکنان (HRM24 Employee Panel)
 
+## Fish24 ticket reports preview
+
+The internal ticket report is available at `/fish24/internal/reports/tickets` for Administrator, Sales, and Support preview roles. It aggregates the shared ticket service, persists the created-ticket period per signed-in user, and keeps current-status metrics independent of that period. See `docs/fish24-ticket-reports-demo-data.md` for the rolling MOCK coverage and focused runtime-test command.
+
 این پروژه یک پنل مدرن و واکنش‌گرا (Responsive) برای مدیریت امور پرسنلی کارکنان است که با استفاده از فریم‌ورک **Angular 19** و طراحی **Tailwind CSS** پیاده‌سازی شده است. تمرکز اصلی این پروژه بر روی **تجربه کاربری ساده (UX)** برای تمامی سطوح سواد و پشتیبانی کامل از **حالت تاریک (Dark Mode)** است.
 
 ## 🚀 ویژگی‌های کلیدی

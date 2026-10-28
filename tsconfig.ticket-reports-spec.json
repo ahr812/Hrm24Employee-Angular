@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "outDir": "./out-tsc/ticket-reports-spec", "types": ["jasmine"] },
+  "include": [
+    "src/app/core/fish24/tickets/fish24-ticket-preview.service.spec.ts",
+    "src/app/core/fish24/reports/fish24-ticket-reports.service.spec.ts",
+    "src/app/core/fish24/reports/fish24-report-calendar.spec.ts",
+    "src/app/core/fish24/permissions/ticket-reports.guard.spec.ts",
+    "src/app/features/fish24/internal/reports/internal-ticket-reports.component.spec.ts",
+    "src/app/shared/layout/navigation/fish24-nav.config.spec.ts",
+    "src/app/shared/ui/data-list/internal-list-preferences.service.spec.ts",
+    "src/**/*.d.ts"
+  ]
+}

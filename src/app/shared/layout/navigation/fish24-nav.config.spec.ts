@@ -66,3 +66,13 @@ describe('Fish24 user reports navigation', () => {
     expect(ROLE_CAPABILITIES['support-expert'] as readonly string[]).not.toContain(report.permission!);
   });
 });
+
+describe('Fish24 ticket reports navigation', () => {
+  it('routes the ticket report for all three internal roles', () => {
+    const group=FISH24_ADMIN_NAV_CONFIG.find(item=>item.id==='fish24-admin-reports')!;
+    const report=group.children?.find(item=>item.id==='fish24-admin-reports-tickets')!;
+    expect(report.label).toBe('گزارشات تیکت‌ها');
+    expect(report.route).toBe('/fish24/internal/reports/tickets');
+    for(const role of ['super-admin','sales-expert','support-expert'] as const) expect(ROLE_CAPABILITIES[role] as readonly string[]).toContain(report.permission!);
+  });
+});
