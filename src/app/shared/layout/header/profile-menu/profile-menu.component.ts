@@ -78,6 +78,10 @@ import { EmployeeDataService } from '../../../../core/data/employee-data.service
             <div class="flex items-center justify-between mb-2">
               <span class="text-sm text-foreground dark:text-slate-200">حالت تاریک</span>
               <button
+                type="button"
+                role="switch"
+                aria-label="حالت تاریک"
+                [attr.aria-checked]="themeService.isDark()"
                 (click)="themeService.toggle()"
                 class="relative w-9 h-5 rounded-full transition-colors"
                 [class.bg-primary]="themeService.isDark()"
@@ -95,6 +99,9 @@ import { EmployeeDataService } from '../../../../core/data/employee-data.service
               <div class="flex gap-1">
                 @for (color of colors; track color.id) {
                   <button
+                    type="button"
+                    [attr.aria-label]="'رنگ سازمانی ' + color.id"
+                    [attr.aria-pressed]="themeService.getThemeColor() === color.id"
                     (click)="themeService.setThemeColor(color.id)"
                     class="w-5 h-5 rounded-full ring-1 ring-offset-1 ring-offset-surface dark:ring-offset-slate-800"
                     [class.ring-primary]="themeService.getThemeColor() === color.id"

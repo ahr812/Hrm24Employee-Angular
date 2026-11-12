@@ -114,8 +114,8 @@ export function validateFish24UserReportPeriods(value: unknown): Fish24UserRepor
           <article class="snapshot-card"><ui-icon name="check-circle" [size]="21" class="text-success"/><div><p class="snapshot-value">{{ count(snapshot().employersWithCompletedDistribution) }}</p><p class="snapshot-label">کارفرما با توزیع تکمیل‌شده</p></div></article>
           <article class="snapshot-card"><ui-icon name="inbox" [size]="21" class="text-primary"/><div><p class="snapshot-value">{{ count(snapshot().employeesWhoReceivedDocuments) }}</p><p class="snapshot-label">کارمند دریافت‌کننده سند</p></div></article>
         </div>
-        <article class="report-card grid gap-4 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-center">
-          <div>
+        <article class="report-card grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-center">
+          <div class="min-w-0">
             <h3 class="card-title">وضعیت دسترسی فعلی کارکنان به اسناد</h3>
             <p class="mt-1 text-xs leading-6 text-muted">جمع دو گروه برابر با کل افراد یکتای دارای نقش کارمند است.</p>
             <div highchartsChart [options]="coverageChart()" (chartInstance)="watchChart($event)" class="chart chart--coverage" aria-label="نمودار توزیع کارکنان دارای سند فعال و بدون سند فعال"></div>

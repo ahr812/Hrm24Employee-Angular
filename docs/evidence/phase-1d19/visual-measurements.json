@@ -1,0 +1,194 @@
+[
+  {
+    "report": "general",
+    "theme": "dark",
+    "charts": 5,
+    "points": 10,
+    "scrollWidth": 382,
+    "width": 390
+  },
+  {
+    "report": "general",
+    "theme": "dark",
+    "charts": 5,
+    "points": 10,
+    "scrollWidth": 760,
+    "width": 768
+  },
+  {
+    "report": "general",
+    "theme": "dark",
+    "charts": 5,
+    "points": 10,
+    "scrollWidth": 1432,
+    "width": 1440
+  },
+  {
+    "report": "users",
+    "theme": "dark",
+    "charts": 5,
+    "points": 10,
+    "scrollWidth": 382,
+    "width": 390
+  },
+  {
+    "report": "users",
+    "theme": "dark",
+    "charts": 5,
+    "points": 10,
+    "scrollWidth": 760,
+    "width": 768
+  },
+  {
+    "report": "users",
+    "theme": "dark",
+    "charts": 5,
+    "points": 10,
+    "scrollWidth": 1440,
+    "width": 1440
+  },
+  {
+    "report": "financial",
+    "theme": "dark",
+    "charts": 2,
+    "points": 13,
+    "scrollWidth": 382,
+    "width": 390
+  },
+  {
+    "report": "financial",
+    "theme": "dark",
+    "charts": 2,
+    "points": 13,
+    "scrollWidth": 760,
+    "width": 768
+  },
+  {
+    "report": "financial",
+    "theme": "dark",
+    "charts": 2,
+    "points": 13,
+    "scrollWidth": 1432,
+    "width": 1440
+  },
+  {
+    "report": "tickets",
+    "theme": "dark",
+    "charts": 2,
+    "points": 5,
+    "scrollWidth": 382,
+    "width": 390
+  },
+  {
+    "report": "tickets",
+    "theme": "dark",
+    "charts": 2,
+    "points": 5,
+    "scrollWidth": 760,
+    "width": 768
+  },
+  {
+    "report": "tickets",
+    "theme": "dark",
+    "charts": 2,
+    "points": 5,
+    "scrollWidth": 1432,
+    "width": 1440
+  },
+  {
+    "report": "general",
+    "theme": "light",
+    "charts": 5,
+    "points": 10,
+    "scrollWidth": 382,
+    "width": 390
+  },
+  {
+    "report": "general",
+    "theme": "light",
+    "charts": 5,
+    "points": 10,
+    "scrollWidth": 760,
+    "width": 768
+  },
+  {
+    "report": "general",
+    "theme": "light",
+    "charts": 5,
+    "points": 10,
+    "scrollWidth": 1432,
+    "width": 1440
+  },
+  {
+    "report": "users",
+    "theme": "light",
+    "charts": 5,
+    "points": 10,
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "report": "users",
+    "theme": "light",
+    "charts": 5,
+    "points": 10,
+    "scrollWidth": 760,
+    "width": 768
+  },
+  {
+    "report": "users",
+    "theme": "light",
+    "charts": 5,
+    "points": 10,
+    "scrollWidth": 1432,
+    "width": 1440
+  },
+  {
+    "report": "financial",
+    "theme": "light",
+    "charts": 2,
+    "points": 13,
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "report": "financial",
+    "theme": "light",
+    "charts": 2,
+    "points": 13,
+    "scrollWidth": 760,
+    "width": 768
+  },
+  {
+    "report": "financial",
+    "theme": "light",
+    "charts": 2,
+    "points": 13,
+    "scrollWidth": 1440,
+    "width": 1440
+  },
+  {
+    "report": "tickets",
+    "theme": "light",
+    "charts": 2,
+    "points": 5,
+    "scrollWidth": 382,
+    "width": 390
+  },
+  {
+    "report": "tickets",
+    "theme": "light",
+    "charts": 2,
+    "points": 5,
+    "scrollWidth": 760,
+    "width": 768
+  },
+  {
+    "report": "tickets",
+    "theme": "light",
+    "charts": 2,
+    "points": 5,
+    "scrollWidth": 1432,
+    "width": 1440
+  }
+]

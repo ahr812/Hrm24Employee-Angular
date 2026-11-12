@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./out-tsc/fish24-audit-spec",
+    "types": ["jasmine"]
+  },
+  "include": [
+    "src/app/core/fish24/**/*.spec.ts",
+    "src/app/features/fish24/**/*.spec.ts",
+    "src/app/shared/fish24/**/*.spec.ts",
+    "src/app/shared/layout/navigation/fish24-nav.config.spec.ts",
+    "src/app/shared/ui/data-list/internal-list-preferences.service.spec.ts",
+    "src/**/*.d.ts"
+  ]
+}

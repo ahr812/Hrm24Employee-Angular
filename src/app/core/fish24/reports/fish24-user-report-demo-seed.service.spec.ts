@@ -16,6 +16,9 @@ describe('Fish24 user report rolling demo data', () => {
     const wallets = TestBed.inject(Fish24WalletPreviewService);
     const userCountBefore = users.users().length;
     const sendCountBefore = distributions.sends().length;
+    const uploadCountBefore = distributions.sends().filter(send => send.uploadedAt !== null).length;
+    const paidCountBefore = distributions.sends().filter(send => send.isPaid).length;
+    const unpaidCountBefore = distributions.sends().filter(send => !send.isPaid).length;
     const transactionCountBefore = wallets.transactions().length;
     const reports = TestBed.inject(Fish24UserReportsService);
 
@@ -35,15 +38,15 @@ describe('Fish24 user report rolling demo data', () => {
     expect(reports.snapshot().employeesWithActiveDocuments + reports.snapshot().employeesWithoutActiveDocuments).toBe(reports.snapshot().totalEmployees);
 
     const uploads = distributions.sends().filter(send => send.uploadedAt !== null);
-    expect(uploads.length).toBe(11);
+    expect(uploads.length).toBe(uploadCountBefore + 6);
     expect(uploads.every(send => send.sourceFile !== null && send.sourceFileSizeBytes === send.sourceFile.size)).toBeTrue();
     for (const upload of uploads) {
       const content = new TextDecoder().decode(await upload.sourceFile!.arrayBuffer());
       expect(content.startsWith('%PDF-1.4')).toBeTrue();
       expect(content.trimEnd().endsWith('%%EOF')).toBeTrue();
     }
-    expect(distributions.sends().filter(send => !send.isPaid).length).toBe(3);
-    expect(distributions.sends().filter(send => send.isPaid).length).toBe(8);
+    expect(distributions.sends().filter(send => !send.isPaid).length).toBe(unpaidCountBefore + 2);
+    expect(distributions.sends().filter(send => send.isPaid).length).toBe(paidCountBefore + 4);
     expect(distributions.sends().find(send => send.id === 'demo-report-03')?.expiresAt).toBe('1405/06/22');
     expect(distributions.sends().find(send => send.id === 'demo-report-02')?.employeeAccessActive).toBeFalse();
 

@@ -1,0 +1,53 @@
+> Building...
+√ Building...
+Initial chunk files   | Names                           |  Raw size | Estimated transfer size
+chunk-AILZTJ7N.js     | -                               | 148.32 kB |                43.96 kB
+styles-NVVJIPZ7.css   | styles                          |  91.26 kB |                11.43 kB
+chunk-SEAX77ZL.js     | -                               |  90.42 kB |                22.75 kB
+main-7MQPLWKJ.js      | main                            |  86.13 kB |                15.75 kB
+chunk-X62LFXMF.js     | -                               |  49.39 kB |                 9.77 kB
+chunk-37SQ3MCW.js     | -                               |  41.81 kB |                 6.43 kB
+polyfills-B6TNHZQ6.js | polyfills                       |  34.58 kB |                11.32 kB
+chunk-FP632W6L.js     | -                               |  26.51 kB |                 4.03 kB
+chunk-ABJ34GTC.js     | -                               |  21.16 kB |                 5.16 kB
+chunk-GB6JIOPQ.js     | -                               |  19.34 kB |                 3.64 kB
+chunk-AINF2HAL.js     | -                               |  13.27 kB |                 3.10 kB
+chunk-7FO7Z5BJ.js     | -                               |  11.03 kB |                 1.76 kB
+chunk-SVYWIXT2.js     | -                               |  10.66 kB |                 2.89 kB
+chunk-D7SV6DYV.js     | -                               |   9.42 kB |                 2.00 kB
+chunk-2LYLVV72.js     | -                               |   9.31 kB |                 2.64 kB
+chunk-ZHP7TQ45.js     | -                               |   6.18 kB |                 1.84 kB
+chunk-LVUOS4IK.js     | -                               |   5.11 kB |                 1.29 kB
+chunk-C7R2AGSR.js     | -                               |   4.13 kB |                 1.45 kB
+chunk-SZ6ALGQA.js     | -                               |   3.06 kB |               768 bytes
+chunk-QACVUOKO.js     | -                               |   2.34 kB |                 1.09 kB
+chunk-6TU2AD54.js     | -                               |   2.10 kB |               655 bytes
+chunk-XNEG4Q2J.js     | -                               |   1.55 kB |               579 bytes
+chunk-EQDQRRRY.js     | -                               |   1.28 kB |               564 bytes
+chunk-KB4HZTFY.js     | -                               | 617 bytes |               617 bytes
+chunk-LR2HWLXZ.js     | -                               | 418 bytes |               418 bytes
+chunk-LVAKM3PG.js     | -                               | 417 bytes |               417 bytes
+
+                      | Initial total                   | 689.82 kB |               156.32 kB
+
+Lazy chunk files      | Names                           |  Raw size | Estimated transfer size
+chunk-XFPDFOX7.js     | internal-news-form-component    | 466.09 kB |               123.29 kB
+chunk-BOZLV4NR.js     | -                               | 410.87 kB |               112.91 kB
+chunk-FTHY2FRX.js     | -                               | 280.02 kB |                90.77 kB
+chunk-CUQAP5HE.js     | comparison-component            | 218.30 kB |                64.57 kB
+chunk-QMQTSFHS.js     | -                               | 203.11 kB |                38.47 kB
+chunk-DCZITNND.js     | index-es                        | 159.23 kB |                47.00 kB
+chunk-WAHF3NO3.js     | accessibility                   | 137.44 kB |                35.05 kB
+chunk-LNJVRWRD.js     | training-component              | 116.58 kB |                19.75 kB
+chunk-PGBGDA66.js     | internal-users-component        |  77.69 kB |                12.52 kB
+chunk-WCAYXNPU.js     | attendance-component            |  75.69 kB |                15.05 kB
+chunk-FMYL6AJ5.js     | missions-component              |  57.10 kB |                 9.90 kB
+chunk-C7GTGNTM.js     | surveys-component               |  56.66 kB |                10.54 kB
+chunk-FQUE6BSV.js     | internal-transactions-component |  48.41 kB |                10.23 kB
+chunk-MK6VXLGP.js     | savings-component               |  43.77 kB |                 8.29 kB
+chunk-LDGHEW27.js     | loan-component                  |  39.84 kB |                 7.67 kB
+...and 83 more lazy chunks files. Use "--verbose" to show all the files.
+
+Application bundle generation complete. [31.082 seconds]
+
+Output location: C:\Users\Vision-Sale\.codex\.chatgpt-projects\g-p-6a9735c566f08191b6eef3207387b6c9\repo\dist\hrm24-employee

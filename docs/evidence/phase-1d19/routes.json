@@ -1,0 +1,82 @@
+[
+  {
+    "path": "staff",
+    "heading": "فهرست کاربران داخلی",
+    "layout": {
+      "scrollWidth": 1440,
+      "width": 1440
+    }
+  },
+  {
+    "path": "vat-settings",
+    "heading": "مدیریت تنظیمات ارزش افزوده",
+    "layout": {
+      "scrollWidth": 1440,
+      "width": 1440
+    }
+  },
+  {
+    "path": "pricing",
+    "heading": "مدیریت قیمت‌گذاری",
+    "layout": {
+      "scrollWidth": 1440,
+      "width": 1440
+    }
+  },
+  {
+    "path": "sms-history",
+    "heading": "مدیریت پیامک‌های ارسالی",
+    "layout": {
+      "scrollWidth": 1432,
+      "width": 1440
+    }
+  },
+  {
+    "path": "news",
+    "heading": "مدیریت اخبار",
+    "layout": {
+      "scrollWidth": 1432,
+      "width": 1440
+    }
+  },
+  {
+    "path": "news/categories",
+    "heading": "دسته‌بندی اخبار",
+    "layout": {
+      "scrollWidth": 1440,
+      "width": 1440
+    }
+  },
+  {
+    "path": "news/comments",
+    "heading": "مدیریت دیدگاه‌های اخبار",
+    "layout": {
+      "scrollWidth": 1440,
+      "width": 1440
+    }
+  },
+  {
+    "path": "geography/provinces",
+    "heading": "مدیریت استان‌ها",
+    "layout": {
+      "scrollWidth": 1440,
+      "width": 1440
+    }
+  },
+  {
+    "path": "geography/counties",
+    "heading": "مدیریت شهرستان‌ها",
+    "layout": {
+      "scrollWidth": 1440,
+      "width": 1440
+    }
+  },
+  {
+    "path": "geography/cities",
+    "heading": "مدیریت شهرها",
+    "layout": {
+      "scrollWidth": 1440,
+      "width": 1440
+    }
+  }
+]

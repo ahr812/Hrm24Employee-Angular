@@ -29,7 +29,7 @@ const ARABIC_DIGITS = '٠١٢٣٤٥٦٧٨٩';
 export class Fish24FaqPreviewService {
   private readonly records = signal<readonly Fish24Faq[]>([
     { id: 1, question: 'چگونه یک سند جدید ارسال کنم؟', answer: 'از منوی «فیش‌ها و اسناد ارسالی» گزینه سند جدید را انتخاب کنید.\nسپس فایل را بررسی و تأیید نهایی کنید.', displayOrder: 0, active: true },
-    { id: 2, question: 'هزینه ارسال سند چگونه محاسبه می‌شود؟', answer: 'هزینه بر اساس تنظیمات قیمت‌گذاری جاری و تعداد گیرندگان محاسبه می‌شود.', displayOrder: 1, active: true },
+    { id: 2, question: 'هزینه ارسال سند چگونه محاسبه می‌شود؟', answer: 'مجموع قیمت هر صفحه در پلن انتخابی و هزینه پیامک هر صفحه، در تعداد صفحات ضرب می‌شود. مبلغ رسید پس از صدور ثابت می‌ماند.', displayOrder: 1, active: true },
     { id: 3, question: 'چرا یک سند دیگر قابل حذف نیست؟', answer: 'سندی که توزیع شده باشد برای حفظ سابقه قابل حذف نیست.', displayOrder: 2, active: false },
     { id: 4, question: 'متن‌های ویژه چگونه نگهداری می‌شوند؟', answer: '=SUM(1,2) به‌صورت متن ساده ذخیره و صادر می‌شود؛ <b>HTML اجرا نمی‌شود</b>.', displayOrder: 2, active: true }
   ]);

@@ -165,6 +165,17 @@
                 "src/app/core/fish24/financial/fish24-document-distribution-preview.service.spec.ts",
                 "src/app/shared/ui/data-list/internal-list-preferences.service.spec.ts"
               ]
+            },
+            "fish24-audit": {
+              "tsConfig": "tsconfig.fish24-audit-spec.json",
+              "karmaConfig": "karma.user-actions.conf.js",
+              "include": [
+                "src/app/core/fish24/**/*.spec.ts",
+                "src/app/features/fish24/**/*.spec.ts",
+                "src/app/shared/fish24/**/*.spec.ts",
+                "src/app/shared/layout/navigation/fish24-nav.config.spec.ts",
+                "src/app/shared/ui/data-list/internal-list-preferences.service.spec.ts"
+              ]
             }
           }
         }

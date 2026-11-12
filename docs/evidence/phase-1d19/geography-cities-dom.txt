@@ -1,0 +1,141 @@
+- generic: Fish24
+- generic: لطفاً صبر کنید...
+- banner:
+  - button "منو":
+  - img "Fish24"
+  - button "جستجو":
+    - generic: جستجو...
+    - generic: Ctrl+K
+  - button "منوی کاربر":
+    - img "پروفایل"
+- generic: ش
+- paragraph: شرکت فناوری اطلاعات پیشرو
+- paragraph: کارشناس ارشد نرم‌افزار
+- generic: "وضعیت قرارداد:"
+- generic: فعال
+- complementary:
+  - generic: پیش‌نمایش نقش (Dev)
+  - combobox:
+    - option "مدیر اصلی سامانه" [selected]
+    - option "کارشناس فروش"
+    - option "کارشناس پشتیبانی"
+    - option "کارفرما"
+    - option "کارمند"
+  - navigation:
+    - link "داشبورد":
+      - /url: /dashboard
+      - generic: داشبورد
+    - button "گزارشات":
+      - generic: گزارشات
+    - button "مدیریت کاربران":
+      - generic: مدیریت کاربران
+    - button "مدیریت مالی":
+      - generic: مدیریت مالی
+    - button "تیکت و پیام 3":
+      - generic: تیکت و پیام
+      - generic: "3"
+    - button "مدیریت تخفیفات":
+      - generic: مدیریت تخفیفات
+    - link "قیمت گذاری":
+      - /url: /fish24/internal/pricing
+      - generic: قیمت گذاری
+    - button "مدیریت اخبار":
+      - generic: مدیریت اخبار
+    - generic: مشترکین
+    - button "تنظیمات سایت":
+      - generic: تنظیمات سایت
+    - button "مناطق جغرافیایی":
+      - generic: مناطق جغرافیایی
+    - button "خروج":
+      - generic: خروج
+- main:
+  - heading "مدیریت شهرها" [level=1]
+  - paragraph: مدیریت سلسله‌مراتب مناطق جغرافیایی
+  - navigation "مدیریت مناطق جغرافیایی":
+    - link "استان‌ها":
+      - /url: /fish24/internal/geography/provinces
+    - link "شهرستان‌ها":
+      - /url: /fish24/internal/geography/counties
+    - link "شهرها":
+      - /url: /fish24/internal/geography/cities
+  - heading "جستجو" [level=2]
+  - button "جدید"
+  - text: استان
+  - combobox "استان":
+    - option "همه استان‌ها" [selected]
+    - option "تهران"
+    - option "البرز"
+  - text: شهرستان
+  - combobox "شهرستان":
+    - option "همه شهرستان‌ها" [selected]
+    - option "تهران"
+    - option "کرج"
+  - text: نام شهر
+  - textbox "نام شهر"
+  - text: وضعیت
+  - combobox "وضعیت":
+    - option "همه" [selected]
+    - option "فعال"
+    - option "غیرفعال"
+  - button "جستجو"
+  - button "مشاهده همه"
+  - heading "لیست شهرها (۲ رکورد)" [level=2]
+  - button "انتخاب ستون‌ها"
+  - button "خروجی Excel"
+  - table:
+    - rowgroup:
+      - row "شناسه ↕ نام ↕ نام شهرستان ↕ نام استان ↕ تاریخ ایجاد ↕ وضعیت ↕ عملیات":
+        - columnheader "شناسه ↕":
+          - button "شناسه ↕":
+            - generic: شناسه
+            - generic: ↕
+          - textbox "جستجو در شناسه"
+        - columnheader "نام ↕":
+          - button "نام ↕":
+            - generic: نام
+            - generic: ↕
+          - textbox "جستجو در نام"
+        - columnheader "نام شهرستان ↕":
+          - button "نام شهرستان ↕":
+            - generic: نام شهرستان
+            - generic: ↕
+          - textbox "جستجو در نام شهرستان"
+        - columnheader "نام استان ↕":
+          - button "نام استان ↕":
+            - generic: نام استان
+            - generic: ↕
+          - textbox "جستجو در نام استان"
+        - columnheader "تاریخ ایجاد ↕":
+          - button "تاریخ ایجاد ↕":
+            - generic: تاریخ ایجاد
+            - generic: ↕
+          - textbox "جستجو در تاریخ ایجاد"
+        - columnheader "وضعیت ↕":
+          - button "وضعیت ↕":
+            - generic: وضعیت
+            - generic: ↕
+          - textbox "جستجو در وضعیت"
+        - columnheader "عملیات"
+    - rowgroup:
+      - row "1001 تهران تهران تهران ۱۴۰۳/۰۲/۱۸ فعال ویرایش غیرفعال‌کردن":
+        - cell "1001"
+        - cell "تهران"
+        - cell "تهران"
+        - cell "تهران"
+        - cell "۱۴۰۳/۰۲/۱۸"
+        - cell "فعال":
+          - generic: فعال
+        - cell "ویرایش غیرفعال‌کردن":
+          - button "ویرایش"
+          - button "غیرفعال‌کردن"
+      - row "1002 کرج کرج البرز ۱۴۰۳/۰۲/۱۸ فعال ویرایش غیرفعال‌کردن":
+        - cell "1002"
+        - cell "کرج"
+        - cell "کرج"
+        - cell "البرز"
+        - cell "۱۴۰۳/۰۲/۱۸"
+        - cell "فعال":
+          - generic: فعال
+        - cell "ویرایش غیرفعال‌کردن":
+          - button "ویرایش"
+          - button "غیرفعال‌کردن"

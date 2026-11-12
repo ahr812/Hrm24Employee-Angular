@@ -1,0 +1,253 @@
+- generic: Fish24
+- generic: لطفاً صبر کنید...
+- banner:
+  - button "منو":
+  - img "Fish24"
+  - button "جستجو":
+    - generic: جستجو...
+    - generic: Ctrl+K
+  - button "منوی کاربر":
+    - img "پروفایل"
+- generic: ش
+- paragraph: شرکت فناوری اطلاعات پیشرو
+- paragraph: کارشناس ارشد نرم‌افزار
+- generic: "وضعیت قرارداد:"
+- generic: فعال
+- complementary:
+  - generic: پیش‌نمایش نقش (Dev)
+  - combobox:
+    - option "مدیر اصلی سامانه" [selected]
+    - option "کارشناس فروش"
+    - option "کارشناس پشتیبانی"
+    - option "کارفرما"
+    - option "کارمند"
+  - navigation:
+    - link "داشبورد":
+      - /url: /dashboard
+      - generic: داشبورد
+    - button "گزارشات":
+      - generic: گزارشات
+    - button "مدیریت کاربران":
+      - generic: مدیریت کاربران
+    - button "مدیریت مالی":
+      - generic: مدیریت مالی
+    - button "تیکت و پیام 3":
+      - generic: تیکت و پیام
+      - generic: "3"
+    - button "مدیریت تخفیفات":
+      - generic: مدیریت تخفیفات
+    - link "قیمت گذاری":
+      - /url: /fish24/internal/pricing
+      - generic: قیمت گذاری
+    - button "مدیریت اخبار":
+      - generic: مدیریت اخبار
+    - generic: مشترکین
+    - button "تنظیمات سایت":
+      - generic: تنظیمات سایت
+    - button "مناطق جغرافیایی":
+      - generic: مناطق جغرافیایی
+    - button "خروج":
+      - generic: خروج
+- main:
+  - heading "مدیریت اخبار" [level=1]
+  - paragraph: پیش‌نمایش داخلی محتوای خبری Fish24
+  - link "خبر جدید":
+    - /url: /fish24/internal/news/new
+    - text: خبر جدید
+  - navigation "بخش‌های مدیریت اخبار":
+    - link "لیست اخبار":
+      - /url: /fish24/internal/news
+    - link "دسته‌بندی اخبار":
+      - /url: /fish24/internal/news/categories
+    - link "مدیریت دیدگاه‌ها":
+      - /url: /fish24/internal/news/comments
+  - heading "جستجو" [level=2]
+  - text: دسته‌بندی
+  - combobox "دسته‌بندی":
+    - option "همه دسته‌بندی‌ها" [selected]
+    - option "اخبار عمومی"
+    - option "حقوق و دستمزد"
+    - option "آرشیو بخشنامه‌ها (غیرفعال)"
+    - option "دسته آماده انتشار"
+  - text: عنوان خبر
+  - textbox "عنوان خبر"
+  - button "جستجو"
+  - button "مشاهده همه"
+  - heading "لیست اخبار (۵ رکورد)" [level=2]
+  - button "انتخاب ستون":
+    - text: انتخاب ستون
+  - button "Excel":
+    - text: Excel
+  - table:
+    - rowgroup:
+      - row "شناسه ↕ تاریخ ایجاد ↕ تصویر خبر ↕ عنوان خبر ↕ دسته‌بندی ↕ کامنت‌ها ↕ لایک‌ها ↕ بازدیدها ↕ وضعیت ↕ عملیات":
+        - columnheader "شناسه ↕":
+          - button "شناسه ↕":
+            - generic: شناسه
+            - generic: ↕
+        - columnheader "تاریخ ایجاد ↕":
+          - button "تاریخ ایجاد ↕":
+            - generic: تاریخ ایجاد
+            - generic: ↕
+        - columnheader "تصویر خبر ↕":
+          - button "تصویر خبر ↕":
+            - generic: تصویر خبر
+            - generic: ↕
+        - columnheader "عنوان خبر ↕":
+          - button "عنوان خبر ↕":
+            - generic: عنوان خبر
+            - generic: ↕
+        - columnheader "دسته‌بندی ↕":
+          - button "دسته‌بندی ↕":
+            - generic: دسته‌بندی
+            - generic: ↕
+        - columnheader "کامنت‌ها ↕":
+          - button "کامنت‌ها ↕":
+            - generic: کامنت‌ها
+            - generic: ↕
+        - columnheader "لایک‌ها ↕":
+          - button "لایک‌ها ↕":
+            - generic: لایک‌ها
+            - generic: ↕
+        - columnheader "بازدیدها ↕":
+          - button "بازدیدها ↕":
+            - generic: بازدیدها
+            - generic: ↕
+        - columnheader "وضعیت ↕":
+          - button "وضعیت ↕":
+            - generic: وضعیت
+            - generic: ↕
+        - columnheader "عملیات"
+      - row "جستجو در شناسه جستجو در تاریخ ایجاد جستجو در تصویر خبر جستجو در عنوان خبر جستجو در دسته‌بندی جستجو در کامنت‌ها جستجو در لایک‌ها جستجو در بازدیدها جستجو در وضعیت":
+        - columnheader "جستجو در شناسه":
+          - searchbox "جستجو در شناسه"
+        - columnheader "جستجو در تاریخ ایجاد":
+          - searchbox "جستجو در تاریخ ایجاد"
+        - columnheader "جستجو در تصویر خبر":
+          - searchbox "جستجو در تصویر خبر"
+        - columnheader "جستجو در عنوان خبر":
+          - searchbox "جستجو در عنوان خبر"
+        - columnheader "جستجو در دسته‌بندی":
+          - searchbox "جستجو در دسته‌بندی"
+        - columnheader "جستجو در کامنت‌ها":
+          - searchbox "جستجو در کامنت‌ها"
+        - columnheader "جستجو در لایک‌ها":
+          - searchbox "جستجو در لایک‌ها"
+        - columnheader "جستجو در بازدیدها":
+          - searchbox "جستجو در بازدیدها"
+        - columnheader "جستجو در وضعیت":
+          - searchbox "جستجو در وضعیت"
+        - columnheader
+    - rowgroup:
+      - row "401 1405/06/28 نمای پنل Fish24 راهنمای استفاده از خدمات جدید Fish24 اخبار عمومی حقوق و دستمزد 2 12 248 فعال پیش‌نمایش ویرایش غیرفعال‌سازی حذف":
+        - cell "401"
+        - cell "1405/06/28"
+        - cell "نمای پنل Fish24":
+          - img "نمای پنل Fish24"
+        - cell "راهنمای استفاده از خدمات جدید Fish24":
+          - link "راهنمای استفاده از خدمات جدید Fish24":
+            - /url: /fish24/internal/news/401
+        - cell "اخبار عمومی حقوق و دستمزد":
+          - generic: اخبار عمومی
+          - generic: حقوق و دستمزد
+        - cell "2"
+        - cell "12"
+        - cell "248"
+        - cell "فعال":
+          - generic: فعال
+        - cell "پیش‌نمایش ویرایش غیرفعال‌سازی حذف":
+          - link "پیش‌نمایش":
+            - /url: /fish24/internal/news/401
+          - link "ویرایش":
+            - /url: /fish24/internal/news/401/edit
+          - button "غیرفعال‌سازی"
+          - button "حذف"
+      - row "402 1405/06/20 نشان Fish24 بخشنامه نمونه محاسبات حقوق حقوق و دستمزد آرشیو بخشنامه‌ها 0 4 91 غیرفعال پیش‌نمایش ویرایش فعال‌سازی حذف":
+        - cell "402"
+        - cell "1405/06/20"
+        - cell "نشان Fish24":
+          - img "نشان Fish24"
+        - cell "بخشنامه نمونه محاسبات حقوق":
+          - link "بخشنامه نمونه محاسبات حقوق":
+            - /url: /fish24/internal/news/402
+        - cell "حقوق و دستمزد آرشیو بخشنامه‌ها":
+          - generic: حقوق و دستمزد
+          - generic: آرشیو بخشنامه‌ها
+        - cell "0"
+        - cell "4"
+        - cell "91"
+        - cell "غیرفعال":
+          - generic: غیرفعال
+        - cell "پیش‌نمایش ویرایش فعال‌سازی حذف":
+          - link "پیش‌نمایش":
+            - /url: /fish24/internal/news/402
+          - link "ویرایش":
+            - /url: /fish24/internal/news/402/edit
+          - button "فعال‌سازی"
+          - button "حذف"
+      - row "403 1405/08/20 — خبر فعال دوره جاری اخبار عمومی 0 0 0 فعال پیش‌نمایش ویرایش غیرفعال‌سازی حذف":
+        - cell "403"
+        - cell "1405/08/20"
+        - cell "—"
+        - cell "خبر فعال دوره جاری":
+          - link "خبر فعال دوره جاری":
+            - /url: /fish24/internal/news/403
+        - cell "اخبار عمومی":
+          - generic: اخبار عمومی
+        - cell "0"
+        - cell "0"
+        - cell "0"
+        - cell "فعال":
+          - generic: فعال
+        - cell "پیش‌نمایش ویرایش غیرفعال‌سازی حذف":
+          - link "پیش‌نمایش":
+            - /url: /fish24/internal/news/403
+          - link "ویرایش":
+            - /url: /fish24/internal/news/403/edit
+          - button "غیرفعال‌سازی"
+          - button "حذف"
+      - row "404 1405/07/01 — خبر فعال دوره قبل اخبار عمومی 0 0 0 فعال پیش‌نمایش ویرایش غیرفعال‌سازی حذف":
+        - cell "404"
+        - cell "1405/07/01"
+        - cell "—"
+        - cell "خبر فعال دوره قبل":
+          - link "خبر فعال دوره قبل":
+            - /url: /fish24/internal/news/404
+        - cell "اخبار عمومی":
+          - generic: اخبار عمومی
+        - cell "0"
+        - cell "0"
+        - cell "0"
+        - cell "فعال":
+          - generic: فعال
+        - cell "پیش‌نمایش ویرایش غیرفعال‌سازی حذف":
+          - link "پیش‌نمایش":
+            - /url: /fish24/internal/news/404
+          - link "ویرایش":
+            - /url: /fish24/internal/news/404/edit
+          - button "غیرفعال‌سازی"
+          - button "حذف"
+      - row "405 1405/08/20 — خبر غیرفعال دوره جاری اخبار عمومی 0 0 0 غیرفعال پیش‌نمایش ویرایش فعال‌سازی حذف":
+        - cell "405"
+        - cell "1405/08/20"
+        - cell "—"
+        - cell "خبر غیرفعال دوره جاری":
+          - link "خبر غیرفعال دوره جاری":
+            - /url: /fish24/internal/news/405
+        - cell "اخبار عمومی":
+          - generic: اخبار عمومی
+        - cell "0"
+        - cell "0"
+        - cell "0"
+        - cell "غیرفعال":
+          - generic: غیرفعال
+        - cell "پیش‌نمایش ویرایش فعال‌سازی حذف":
+          - link "پیش‌نمایش":
+            - /url: /fish24/internal/news/405
+          - link "ویرایش":
+            - /url: /fish24/internal/news/405/edit
+          - button "فعال‌سازی"
+          - button "حذف"
+  - generic: صفحه ۱ از ۱
+  - button "قبلی" [disabled]
+  - button "بعدی" [disabled]

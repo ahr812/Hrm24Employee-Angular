@@ -1,0 +1,165 @@
+- generic: Fish24
+- generic: لطفاً صبر کنید...
+- banner:
+  - button "منو":
+  - img "Fish24"
+  - button "جستجو":
+    - generic: جستجو...
+    - generic: Ctrl+K
+  - button "منوی کاربر":
+    - img "پروفایل"
+- generic: ش
+- paragraph: شرکت فناوری اطلاعات پیشرو
+- paragraph: کارشناس ارشد نرم‌افزار
+- generic: "وضعیت قرارداد:"
+- generic: فعال
+- complementary:
+  - generic: پیش‌نمایش نقش (Dev)
+  - combobox:
+    - option "مدیر اصلی سامانه" [selected]
+    - option "کارشناس فروش"
+    - option "کارشناس پشتیبانی"
+    - option "کارفرما"
+    - option "کارمند"
+  - navigation:
+    - link "داشبورد":
+      - /url: /dashboard
+      - generic: داشبورد
+    - button "گزارشات":
+      - generic: گزارشات
+    - button "مدیریت کاربران":
+      - generic: مدیریت کاربران
+    - button "مدیریت مالی":
+      - generic: مدیریت مالی
+    - button "تیکت و پیام 3":
+      - generic: تیکت و پیام
+      - generic: "3"
+    - button "مدیریت تخفیفات":
+      - generic: مدیریت تخفیفات
+    - link "قیمت گذاری":
+      - /url: /fish24/internal/pricing
+      - generic: قیمت گذاری
+    - button "مدیریت اخبار":
+      - generic: مدیریت اخبار
+    - generic: مشترکین
+    - button "تنظیمات سایت":
+      - generic: تنظیمات سایت
+    - button "مناطق جغرافیایی":
+      - generic: مناطق جغرافیایی
+    - button "خروج":
+      - generic: خروج
+- main:
+  - heading "مدیریت دیدگاه‌های اخبار" [level=1]
+  - paragraph: تأیید دیدگاه‌ها و ثبت یک پاسخ متنی
+  - navigation "بخش‌های مدیریت اخبار":
+    - link "لیست اخبار":
+      - /url: /fish24/internal/news
+    - link "دسته‌بندی اخبار":
+      - /url: /fish24/internal/news/categories
+    - link "مدیریت دیدگاه‌ها":
+      - /url: /fish24/internal/news/comments
+  - heading "جستجو" [level=2]
+  - text: نام
+  - textbox "نام"
+  - text: موبایل
+  - textbox "موبایل"
+  - button "جستجو"
+  - button "مشاهده همه"
+  - heading "لیست دیدگاه‌ها (۳ رکورد)" [level=2]
+  - button "انتخاب ستون‌ها"
+  - button "خروجی Excel"
+  - table:
+    - rowgroup:
+      - row "شناسه ↕ تاریخ ↕ عنوان خبر ↕ نام کاربر ↕ موبایل ↕ متن پیام ↕ پاسخ ↕ وضعیت ↕ عملیات":
+        - columnheader "شناسه ↕":
+          - button "شناسه ↕":
+            - generic: شناسه
+            - generic: ↕
+          - textbox "جستجو در شناسه"
+        - columnheader "تاریخ ↕":
+          - button "تاریخ ↕":
+            - generic: تاریخ
+            - generic: ↕
+          - textbox "جستجو در تاریخ"
+        - columnheader "عنوان خبر ↕":
+          - button "عنوان خبر ↕":
+            - generic: عنوان خبر
+            - generic: ↕
+          - textbox "جستجو در عنوان خبر"
+        - columnheader "نام کاربر ↕":
+          - button "نام کاربر ↕":
+            - generic: نام کاربر
+            - generic: ↕
+          - textbox "جستجو در نام کاربر"
+        - columnheader "موبایل ↕":
+          - button "موبایل ↕":
+            - generic: موبایل
+            - generic: ↕
+          - textbox "جستجو در موبایل"
+        - columnheader "متن پیام ↕":
+          - button "متن پیام ↕":
+            - generic: متن پیام
+            - generic: ↕
+          - textbox "جستجو در متن پیام"
+        - columnheader "پاسخ ↕":
+          - button "پاسخ ↕":
+            - generic: پاسخ
+            - generic: ↕
+          - textbox "جستجو در پاسخ"
+        - columnheader "وضعیت ↕":
+          - button "وضعیت ↕":
+            - generic: وضعیت
+            - generic: ↕
+          - textbox "جستجو در وضعیت"
+        - columnheader "عملیات"
+    - rowgroup:
+      - row "7001 1405/06/29 09:15 راهنمای استفاده از خدمات جدید Fish24 کاربر نمونه اول 09120000001 راهنما مفید بود. لطفاً بخش گزارش‌ها را هم با یک مثال تکمیل کنید. — تأییدشده تأیید نشود × پاسخ":
+        - cell "7001"
+        - cell "1405/06/29 09:15"
+        - cell "راهنمای استفاده از خدمات جدید Fish24":
+          - link "راهنمای استفاده از خدمات جدید Fish24":
+            - /url: /fish24/internal/news/401
+        - cell "کاربر نمونه اول"
+        - cell "09120000001"
+        - cell "راهنما مفید بود. لطفاً بخش گزارش‌ها را هم با یک مثال تکمیل کنید.":
+          - generic: راهنما مفید بود. لطفاً بخش گزارش‌ها را هم با یک مثال تکمیل کنید.
+        - cell "—":
+          - generic: —
+        - cell "تأییدشده":
+          - generic: تأییدشده
+        - cell "تأیید نشود × پاسخ":
+          - button "تأیید نشود ×"
+          - button "پاسخ"
+      - row "7002 1405/06/29 10:40 راهنمای استفاده از خدمات جدید Fish24 کاربر نمونه دوم 09120000002 Is the new document flow available on mobile? این متن ترکیبی فارسی و English است. بله، جریان جدید در نمایش موبایل نیز قابل استفاده است. تأییدشده تأیید نشود × ویرایش پاسخ":
+        - cell "7002"
+        - cell "1405/06/29 10:40"
+        - cell "راهنمای استفاده از خدمات جدید Fish24":
+          - link "راهنمای استفاده از خدمات جدید Fish24":
+            - /url: /fish24/internal/news/401
+        - cell "کاربر نمونه دوم"
+        - cell "09120000002"
+        - cell "Is the new document flow available on mobile? این متن ترکیبی فارسی و English است.":
+          - generic: Is the new document flow available on mobile? این متن ترکیبی فارسی و English است.
+        - cell "بله، جریان جدید در نمایش موبایل نیز قابل استفاده است.":
+          - generic: بله، جریان جدید در نمایش موبایل نیز قابل استفاده است.
+        - cell "تأییدشده":
+          - generic: تأییدشده
+        - cell "تأیید نشود × ویرایش پاسخ":
+          - button "تأیید نشود ×"
+          - button "ویرایش پاسخ"
+      - row "7003 1405/06/30 08:30 بخشنامه نمونه محاسبات حقوق کاربر نمونه سوم 09120000003 =HYPERLINK(\"https://example.invalid\",\"این متن باید عیناً نمایش داده شود\") — تأییدنشده تأیید دیدگاه ✓":
+        - cell "7003"
+        - cell "1405/06/30 08:30"
+        - cell "بخشنامه نمونه محاسبات حقوق":
+          - link "بخشنامه نمونه محاسبات حقوق":
+            - /url: /fish24/internal/news/402
+        - cell "کاربر نمونه سوم"
+        - cell "09120000003"
+        - cell "=HYPERLINK(\"https://example.invalid\",\"این متن باید عیناً نمایش داده شود\")":
+          - generic: =HYPERLINK("https://example.invalid","این متن باید عیناً نمایش داده شود")
+        - cell "—":
+          - generic: —
+        - cell "تأییدنشده":
+          - generic: تأییدنشده
+        - cell "تأیید دیدگاه ✓":
+          - button "تأیید دیدگاه ✓"

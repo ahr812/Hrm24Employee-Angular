@@ -1,0 +1,104 @@
+- banner:
+  - button "منو":
+  - img "Fish24"
+  - button "جستجو":
+    - generic: جستجو...
+    - generic: Ctrl+K
+  - button "منوی کاربر":
+    - img "پروفایل"
+- generic: ش
+- paragraph: شرکت فناوری اطلاعات پیشرو
+- paragraph: کارشناس ارشد نرم‌افزار
+- generic: "وضعیت قرارداد:"
+- generic: فعال
+- complementary:
+  - generic: پیش‌نمایش نقش (Dev)
+  - combobox:
+    - option "مدیر اصلی سامانه"
+    - option "کارشناس فروش"
+    - option "کارشناس پشتیبانی"
+    - option "کارفرما" [selected]
+    - option "کارمند"
+  - navigation:
+    - link "داشبورد":
+      - /url: /fish24/employer/dashboard
+      - generic: داشبورد
+    - link "پروفایل":
+      - /url: /fish24/employer/profile
+      - generic: پروفایل
+    - link "تغییر رمز ثابت":
+      - /url: /fish24/employer/change-password
+      - generic: تغییر رمز ثابت
+    - link "کیف پول":
+      - /url: /fish24/employer/wallet
+      - generic: کیف پول
+    - link "شرکت‌ها و کارگاه‌ها":
+      - /url: /fish24/employer/companies
+      - generic: شرکت‌ها و کارگاه‌ها
+    - link "فیش‌ها و اسناد ارسالی":
+      - /url: /fish24/employer/documents
+      - generic: فیش‌ها و اسناد ارسالی
+    - link "لیست فاکتورها":
+      - /url: /fish24/employer/invoices
+      - generic: لیست فاکتورها
+    - link "کارکنان تحت پوشش":
+      - /url: /fish24/employer/employees
+      - generic: کارکنان تحت پوشش
+    - link "فهرست تیکت‌ها":
+      - /url: /fish24/employer/tickets
+      - generic: فهرست تیکت‌ها
+    - link "اطلاع‌رسانی کارکنان":
+      - /url: /fish24/employer/employee-notifications
+      - generic: اطلاع‌رسانی کارکنان
+    - button "فضای کارمندی من":
+      - generic: فضای کارمندی من
+    - link "آموزش سامانه":
+      - /url: /fish24/employer/training
+      - generic: آموزش سامانه
+    - button "خروج":
+      - generic: خروج
+- main:
+  - heading "راهنمای دریافت سند ارسالی" [level=1]
+  - generic: نیاز به بررسی
+  - paragraph: "تیکت #3004 · ایجاد 1405/06/18 10:30 · بروزرسانی 1405/08/21 07:30"
+  - link "بازگشت به فهرست":
+    - /url: /fish24/employer/tickets
+  - button "بستن تیکت"
+  - main:
+    - heading "گفت‌وگو" [level=2]
+    - list:
+      - article:
+        - strong: علی احمدی
+        - text: کارفرما
+        - time: 1405/06/18 10:30
+        - paragraph: لطفاً درباره نحوه دریافت و مشاهده سند ارسالی راهنمایی کنید.
+      - article:
+        - strong: کارشناس پشتیبانی
+        - text: پشتیبانی
+        - time: 1405/06/18 12:15
+        - paragraph: درخواست شما بررسی شد. راهنمای نمونه برای مشاهده و دانلود به پاسخ پیوست شده است.
+        - button "fish24-demo-support-reply.pdf 1 کیلوبایت":
+          - generic: fish24-demo-support-reply.pdf
+          - generic: 1 کیلوبایت
+      - article:
+        - strong: علی احمدی
+        - text: مدیریت
+        - time: 1405/08/21 07:30
+        - paragraph: پاسخ آزمایشی ممیزی 1D.19
+    - heading "ثبت پاسخ" [level=2]
+    - textbox "متن پاسخ را بنویسید..."
+    - button "افزودن فایل"
+    - button "افزودن فایل":
+      - text: افزودن فایل
+    - paragraph: حداکثر ۵ فایل؛ هر فایل تا ۱۰ مگابایت. تصویر، PDF، Word، Excel و ZIP مجاز است.
+    - button "ارسال پاسخ"
+  - complementary:
+    - heading "اطلاعات تیکت" [level=2]
+    - term: کارفرما
+    - definition: علی احمدی
+    - term: شرکت / کارگاه
+    - definition: مجموعه نمایشی نارنج
+    - term: موبایل
+    - definition: "09123456789"
+    - term: دریافت‌کننده
+    - definition: فروش
