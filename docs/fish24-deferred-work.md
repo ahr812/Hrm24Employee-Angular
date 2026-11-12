@@ -1,5 +1,9 @@
 # Fish24 deferred work
 
+## Discounts — explicitly postponed (2026-11-13)
+
+Per the product owner's latest decision, quantity discounts, coupons, time-based discounts and their integrations must wait until backend implementation and completion of the project. Do not automatically resume this module as the next frontend phase. Revisit it with the owner after those milestones; no discount calculation contract is implied by existing placeholders.
+
 ## Subscribers (Phase 1D.20)
 
 The read-only internal subscriber list is implemented at `/fish24/internal/subscribers` with exactly the approved name/mobile/email columns. Membership is derived from the existing `newsletterEmail` preference in the shared business-user source. It does not create separate contacts, infer consent from an email address, or exclude subscribed users based on account status. Missing profile values remain empty in Excel.
