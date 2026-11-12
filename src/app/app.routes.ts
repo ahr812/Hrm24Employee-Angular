@@ -6,6 +6,7 @@ import { pricingManagementGuard } from './core/fish24/permissions/pricing-manage
 import { ticketsMessagesGuard } from './core/fish24/permissions/tickets-messages.guard';
 import { newsManagementGuard } from './core/fish24/permissions/news-management.guard';
 import { faqManagementGuard } from './core/fish24/permissions/faq-management.guard';
+import { subscriberManagementGuard } from './core/fish24/permissions/subscriber-management.guard';
 import { geographicManagementGuard } from './core/fish24/permissions/geographic-management.guard';
 import { userReportsGuard } from './core/fish24/permissions/user-reports.guard';
 import { financialReportsGuard } from './core/fish24/permissions/financial-reports.guard';
@@ -38,6 +39,7 @@ export const routes: Routes = [
   { path: 'fish24/internal/news/:id', loadComponent: () => import('./features/fish24/internal/news/internal-news-preview.component').then(m => m.InternalNewsPreviewComponent), canActivate: [authGuard, newsManagementGuard] },
   { path: 'fish24/internal/news', loadComponent: () => import('./features/fish24/internal/news/internal-news-management.component').then(m => m.InternalNewsManagementComponent), canActivate: [authGuard, newsManagementGuard] },
   { path: 'fish24/internal/faqs', loadComponent: () => import('./features/fish24/internal/faqs/internal-faqs.component').then(m => m.InternalFaqsComponent), canActivate: [authGuard, faqManagementGuard] },
+  { path: 'fish24/internal/subscribers', loadComponent: () => import('./features/fish24/internal/subscribers/internal-subscribers.component').then(m => m.InternalSubscribersComponent), canActivate: [authGuard, subscriberManagementGuard] },
   { path: 'fish24/internal/geography/provinces', data:{kind:'province'}, loadComponent: () => import('./features/fish24/internal/geography/internal-geography.component').then(m => m.InternalGeographyComponent), canActivate: [authGuard, geographicManagementGuard] },
   { path: 'fish24/internal/geography/counties', data:{kind:'county'}, loadComponent: () => import('./features/fish24/internal/geography/internal-geography.component').then(m => m.InternalGeographyComponent), canActivate: [authGuard, geographicManagementGuard] },
   { path: 'fish24/internal/geography/cities', data:{kind:'city'}, loadComponent: () => import('./features/fish24/internal/geography/internal-geography.component').then(m => m.InternalGeographyComponent), canActivate: [authGuard, geographicManagementGuard] },

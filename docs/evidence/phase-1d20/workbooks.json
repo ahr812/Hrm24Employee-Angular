@@ -1,0 +1,32 @@
+[
+  {
+    "file": "fish24-subscribers.xlsx",
+    "rows": [
+      [
+        "نام",
+        "موبایل",
+        "ایمیل"
+      ],
+      [
+        "مریم احمدی",
+        "09121234567",
+        "maryam@example.test"
+      ]
+    ],
+    "formulas": 0,
+    "styles": 0
+  },
+  {
+    "file": "fish24-subscribers (1).xlsx",
+    "rows": [
+      [
+        "موبایل"
+      ],
+      [
+        "09121234567"
+      ]
+    ],
+    "formulas": 0,
+    "styles": 0
+  }
+]

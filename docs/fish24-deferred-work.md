@@ -1,5 +1,11 @@
 # Fish24 deferred work
 
+## Subscribers (Phase 1D.20)
+
+The read-only internal subscriber list is implemented at `/fish24/internal/subscribers` with exactly the approved name/mobile/email columns. Membership is derived from the existing `newsletterEmail` preference in the shared business-user source. It does not create separate contacts, infer consent from an email address, or exclude subscribed users based on account status. Missing profile values remain empty in Excel.
+
+All internal roles can view the list; Administrator and Sales can export, following the existing panel convention. Column selection is user/list scoped. Header searches, three-state sorting and pagination affect the table only. With no main filter on this page, Excel exports all subscribers in source order using selected columns. No creation, editing, deletion, unsubscribe or send action is offered here. Newsletter delivery remains deferred. Preview membership edits disappear after refresh, like other shared in-memory user edits; column preferences persist independently.
+
 ## General reports
 
 - Revisit automatic document-notification SMS reporting and its separation from manual SMS.

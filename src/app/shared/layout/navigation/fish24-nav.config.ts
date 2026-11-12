@@ -177,8 +177,8 @@ export const FISH24_ADMIN_NAV_CONFIG: readonly Fish24NavItem[] = [
     id: 'fish24-admin-subscribers',
     label: 'مشترکین',
     icon: 'mail',
-    permission: 'subscriber-management'
-    // Future: route: '/fish24/admin/subscribers'
+    permission: 'subscriber-management',
+    route: '/fish24/internal/subscribers'
   },
   {
     id: 'fish24-admin-settings',
